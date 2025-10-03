@@ -108,6 +108,7 @@ ART surface patch index and `material` is a string identifying the surface mater
 only contain ASCII letters, digits, or underscores.**
 Each `usemtl` line applies to all faces defined in following lines, until the next `usemtl` 
 line. In the example below, each surface patch is a rectangle formed by two adjacent triangles.
+**Our code requires all triangles in each patch to have the same normal vector.**
 
 #### Example
 
@@ -155,12 +156,12 @@ you may find them useful for visual validation of the patch assignment.
 
 ```
 newmtl Patch_1_Mat_Carpet
-Kd 1.0 0.7849 0.302
+Kd 1.0 0.7232 0.102
 newmtl Patch_2_Mat_Bricks_open_joints
-Kd 0.8084 0.7571 0.0644
+Kd 0.9289 0.8723 0.1074
 [...]
 newmtl Patch_20_Mat_Concrete_painted
-Kd 0.098 0.6756 1.0
+Kd 0.0 0.5751 0.898
 ```
 
 ### materials.csv
@@ -179,7 +180,7 @@ frequency-independent.
 #### Example
 
 ```
-Frequencies, 125.0 250.0 500.0 1000.0 2000.0 4000.0 8000.0 16000.0
+Frequencies, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0, 16000.0
 Carpet, 0.05, 0.13, 0.6, 0.24, 0.28, 0.32, 0.32, 0.32
 Carpet, 0.3
 Bricks_open_joints, 0.07, 0.38, 0.21, 0.15, 0.25, 0.31, 0.31, 0.31

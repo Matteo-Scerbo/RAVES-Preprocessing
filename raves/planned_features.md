@@ -1,23 +1,28 @@
-### Planned features
+# TODO
 
-#### What goes where?
-`raytracing` module:
-- TriangleMeshSoA class
-- RayBundleSoA class (methods for tracing; works as pencil or single ray by using broadcasting)
+### `io.py`
+- All necessary parsers and writers
 
-`io` module:
-- All of the parsers and writers
+### `compute_ART.py`
+- Load `mesh.obj` into a `TriangleMesh`; store the material name of each patch for later use
+- Initialize `path_lengths`, `kernel_diffuse`, and `kernel_specular` (sparse arrays)
+- Perform surface integrals. For each patch:
+  - Get patch areas as sum of triangle areas. Uniformly sample the patch surface. For each sample 
+    point, trace rays in visible hemisphere; accumulate and normalize as in existing code. Note 
+    that etendue can be inferred from patch areas and `kernel_diffuse`.
+- Write `ART_kernel_diffuse.mtx`, `ART_kernel_specular.mtx`, `path_lengths.csv`
+- Read `materials.csv`, prepare and write `ART_octave_band_1.mtx`, `ART_octave_band_2.mtx`, etc.
 
-#### Avoid using classes where it's not required.
-We probably don't need a model class.
-We probably don't need node classes.
-We definitely don't need the propagation line class.
+### `update_ART_materials.py`
+- Read `mesh.obj` and store the material name of each patch; read `materials.csv`
+- Read `ART_kernel_diffuse.mtx`, `ART_kernel_specular.mtx`
+- Prepare and write `ART_octave_band_1.mtx`, `ART_octave_band_2.mtx`, etc.
 
-#### Polygon format
-Replace the polygon class with a TriangleMeshSoA, translating back from C++.
+### `compute_MoDART.py`
+- Read `ART_kernel_diffuse.mtx`, `ART_kernel_specular.mtx`, `path_lengths.csv`
+- Perform real-valued decomposition as in existing code
+- Rescale eigenvectors; note that etendue can be inferred from patch areas and `kernel_diffuse`
+- Write `MoD-ART.csv`
 
-#### RTM algorithm
-Replace the ray-tracing functions with triangle-based algorithms, translated back from C++.
-
-#### Validate, improve, and replace the surface integral
+### Validate, improve, and replace the surface integral
 Use a solid angle integral from each surface sample point.

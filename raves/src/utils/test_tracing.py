@@ -100,17 +100,9 @@ def build_test_mesh():
             vert_triplets[int(i/3), j] = i+j
         patch_ids[int(i/3)] = int(i/3)
 
-    mesh = TriangleMesh.from_triangles(vertices, vert_triplets, patch_ids)
+    mesh = TriangleMesh(vertices, vert_triplets, patch_ids)
     assert mesh.size() == 14
     return mesh
-
-
-def UnitVector(v):
-    v = np.asarray(v, dtype=float)
-    n = np.linalg.norm(v)
-    if n == 0:
-        return v
-    return v / n
 
 
 # PlatonicVertices helper exactly as in C++ unit tests (ported)
@@ -188,6 +180,9 @@ class TracingClassesTests(unittest.TestCase):
     def test_pencil_tracing(self):
         testMesh = build_test_mesh()
 
+        self.assertTrue(np.allclose(np.linalg.norm(testMesh.n, axis=1), 1.0),
+                        msg='\n' + str(np.linalg.norm(testMesh.n)))
+
         testDirections = np.array([
             [0.0, 0.0, -1.0],
             [0.4, -0.1, -1.0],
@@ -206,10 +201,8 @@ class TracingClassesTests(unittest.TestCase):
             testPencil = RayBundle.from_shared_origin(testOrigins[oi], testDirections)
 
             # Check that directions are automatically normalized on construction.
-            actualDirections = testPencil.getDirections()
-            for di in range(testDirections.shape[0]):
-                magnitude = np.linalg.norm(actualDirections[di])
-                self.assertTrue(np.isclose(magnitude, 1.0))
+            self.assertTrue(np.allclose(np.linalg.norm(testPencil.getDirections(), axis=1), 1.0),
+                            msg='\n' + str(np.linalg.norm(testPencil.getDirections())))
 
             testPencil.traceAll(testMesh)
             frontDistances, backDistances = testPencil.getDistances()
@@ -217,12 +210,15 @@ class TracingClassesTests(unittest.TestCase):
             frontIndices, backIndices = testPencil.getIndices()
 
             # Either both or neither distance should be NaN.
-            self.assertTrue(np.all(np.isnan(EXPECTED_DIST_PAIR[oi, :, 0]) == np.isnan(frontDistances)))
+            self.assertTrue(np.all(np.isnan(EXPECTED_DIST_PAIR[oi, :, 0]) == np.isnan(frontDistances)),
+                            msg='\n' + str(EXPECTED_DIST_PAIR[oi, :, 0]) + '\n' + str(frontDistances))
             # Either both or neither distance should be finite.
-            self.assertTrue(np.all(np.isnan(EXPECTED_DIST_PAIR[oi, :, 0]) == ~np.isfinite(frontDistances)))
+            self.assertTrue(np.all(np.isnan(EXPECTED_DIST_PAIR[oi, :, 0]) == ~np.isfinite(frontDistances)),
+                            msg='\n' + str(EXPECTED_DIST_PAIR[oi, :, 0]) + '\n' + str(frontDistances))
             # The distances have the same sign (if neither is NaN).
             self.assertTrue(np.all((np.sign(EXPECTED_DIST_PAIR[oi, :, 0]) == np.sign(frontDistances))
-                                   | np.isnan(EXPECTED_DIST_PAIR[oi, :, 0])))
+                                   | np.isnan(EXPECTED_DIST_PAIR[oi, :, 0])),
+                            msg='\n' + str(EXPECTED_DIST_PAIR[oi, :, 0]) + '\n' + str(frontDistances))
             # The triangle indices should match expectations.
             self.assertTrue(np.all(EXPECTED_IDX_PAIR[oi, :, 0] == frontIndices),
                             msg='\n' + str(EXPECTED_IDX_PAIR[oi, :, 0]) + '\n' + str(frontIndices))
@@ -230,11 +226,15 @@ class TracingClassesTests(unittest.TestCase):
                             msg='\n' + str(EXPECTED_IDX_PAIR[oi, :, 1]) + '\n' + str(backIndices))
 
     def test_pencil_clustering(self):
-        # TODO
+        # TODO: Translate clustering unit tests
+
         return
 
     def test_pencil_hemisphere(self):
-        # TODO
+        # TODO: Translate hemisphere unit tests
+
+        # TODO: Test north_pole rotation thoroughly
+
         return
 
 

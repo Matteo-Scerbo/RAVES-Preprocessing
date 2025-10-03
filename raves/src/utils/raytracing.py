@@ -2,7 +2,6 @@
 Python translation of TracingTypes.h/.cpp and TracingUtils.h/.cpp (with PLUCKER_KERNEL and LEAN_PLUCKER assumed False),
 revised to store all x/y/z data as (N,3) arrays for efficient vectorized NumPy operations.
 """
-from __future__ import annotations
 import numpy as np
 from scipy.constants import golden
 from typing import Tuple
@@ -25,7 +24,7 @@ class TriangleMesh:
       - edge2: C-A
       - n: Surface normal = edge1 x edge2
       - d0: plane offset so that dot(n, X) - d0 = 0 for all X on the triangle's plane
-      - patch_id
+      - ID
 
     Notes:
       * The kernel enforces:
@@ -35,30 +34,9 @@ class TriangleMesh:
       * In case of Z-fighting, the lower triangle index wins (mirrors the original logic).
     """
 
-    def __init__(self, A: np.ndarray,
-                 edge1: np.ndarray, edge2: np.ndarray,
-                 n: np.ndarray, d0: np.ndarray,
-                 patch_id: np.ndarray):
-        """
-        Basic, explicit constructor.
-          * Expected shapes:
-              - A, edge1, edge2, n: (N, 3)
-              - d0: (N,)
-              - patch_id: (N,)
-        """
-        self.A = np.asarray(A, dtype=float)
-        self.edge1 = np.asarray(edge1, dtype=float)
-        self.edge2 = np.asarray(edge2, dtype=float)
-        self.n = np.asarray(n, dtype=float)
-        self.d0 = np.asarray(d0, dtype=float)
-        self.patch_id = np.asarray(patch_id, dtype=int)
-
-    @classmethod
-    def from_triangles(cls,
-                       vertices: np.ndarray,
-                       vert_triplets: np.ndarray,
-                       patch_ids: np.ndarray,
-    ) -> "TriangleMesh":
+    def __init__(self, vertices: np.ndarray,
+                 vert_triplets: np.ndarray,
+                 patch_ids: np.ndarray):
         """
         Build the SoA from:
           - vertices:       (N,3) array of 3D coordinates (float)
@@ -71,35 +49,32 @@ class TriangleMesh:
         # Validate & coerce inputs
         V = np.asarray(vertices, dtype=float)
         F = np.asarray(vert_triplets, dtype=int)
-        patch_id = np.asarray(patch_ids, dtype=int)
+        self.ID = np.asarray(patch_ids, dtype=int)
 
         if V.ndim != 2 or V.shape[1] != 3:
             raise ValueError("vertices must have shape (N, 3)")
         if F.ndim != 2 or F.shape[1] != 3:
             raise ValueError("faces must have shape (M, 3)")
-        if patch_id.ndim != 1 or patch_id.shape[0] != F.shape[0]:
+        if self.ID.ndim != 1 or self.ID.shape[0] != F.shape[0]:
             raise ValueError("patch_ids must have shape (M,) matching faces.shape[0]")
 
-        Nverts = V.shape[0]
-        if F.min() < 0 or F.max() >= Nverts:
+        if F.min() < 0 or F.max() >= V.shape[0]:
             raise IndexError("faces contain vertex indices out of range for `vertices`")
 
-        # Gather triangle vertices
-        A = V[F[:, 0]]
-        B = V[F[:, 1]]
-        C = V[F[:, 2]]
+        self.v1 = V[F[:, 0]]
+        self.edge1 = V[F[:, 1]] - self.v1
+        self.edge2 = V[F[:, 2]] - self.v1
+        self.n = np.cross(self.edge1, self.edge2)
 
-        # Precompute SoA fields (vectorized)
-        edge1 = B - A
-        edge2 = C - A
-        n = np.cross(edge1, edge2)
-        d0 = np.einsum("ij,ij->i", n, A)
+        # Note: these work because self.n is not normalized yet
+        self.d0 = np.einsum("ij,ij->i", self.n, self.v1)
+        self.area = 0.5 * np.linalg.norm(self.n, axis=1)
 
-        # Construct TriangleMesh
-        return cls(A, edge1, edge2, n, d0, patch_id)
+        # Normalize normal
+        self.n /= np.linalg.norm(self.n, axis=1)[:, None]
 
     def size(self) -> int:
-        return int(self.A.shape[0])
+        return int(self.v1.shape[0])
 
 
 # TODO: In "hemisphere mode", add two options:
@@ -123,8 +98,8 @@ class RayBundle:
 
         N = self.O.shape[0]
         # Per-ray state (initialized to defaults)
-        self.radiance = np.ones(N, dtype=float)
-        self.totalDistance = np.zeros(N, dtype=float)
+        self.radiance = np.ones(N)
+        self.totalDistance = np.zeros(N)
 
         # TODO: Use currentTriangle to avoid self-hits
         self.currentTriangle = np.full(N, -1, dtype=int)
@@ -170,6 +145,7 @@ class RayBundle:
 
         return cls(O, D)
 
+    # TODO: Allow using this method to construct several pencils.
     @classmethod
     def from_origins_and_directions(cls,
                                     origins: np.ndarray,
@@ -202,11 +178,13 @@ class RayBundle:
 
         return cls(O, D)
 
+    # TODO: Allow using this method to construct several pencils.
     @classmethod
-    def hemisphere(cls,
-                   num_rays: int,
-                   hemisphere_only: bool = True,
-                   origin: np.ndarray = np.zeros(3, dtype=float),
+    def sample_sphere(cls,
+                      num_rays: int,
+                      hemisphere_only: bool = False,
+                      origin: np.ndarray = np.zeros(3),
+                      north_pole: np.ndarray = np.array([0., 0., 1.]),
     ) -> "RayBundle":
         """
         Build a 'pencil' of directions sampled uniformly on a Fibonacci sphere,
@@ -220,23 +198,30 @@ class RayBundle:
             If True, restrict to +Z hemisphere; else use the full sphere.
         origin : (3,) float ndarray, default zeros(3)
             Common origin for all rays.
+        north_pole : (3,) float ndarray, default (0, 0, 1)
+            Center of the +Z hemisphere.
 
         Notes
         -----
         Directions are normalized in the RayBundle constructor.
         """
-        # Validate origin
         O = np.asarray(origin, dtype=float)
         if O.ndim != 1 or O.shape[0] != 3:
             raise ValueError("origin must have shape (3,)")
+        north_pole = np.asarray(north_pole, dtype=float)
+        if north_pole.ndim != 1 or north_pole.shape[0] != 3:
+            raise ValueError("north_pole must have shape (3,)")
+        if np.linalg.norm(north_pole) == 0:
+            raise ValueError("north_pole must be non-zero")
+        north_pole /= np.linalg.norm(north_pole)
 
         N = int(num_rays)
         if N <= 0:
-            return cls(np.zeros((0, 3), dtype=float), np.zeros((0, 3), dtype=float))
+            return cls(np.zeros((0, 3)), np.zeros((0, 3)))
 
         # Number of candidate points we generate (2N ensures we can take N points on +Z hemisphere)
         Nr = 2 * N if hemisphere_only else N
-        i = np.arange(Nr, dtype=float)
+        i = np.arange(Nr)
 
         # Vogel/Fibonacci sphere parameters
         z = 1 - 2 * (i + 0.5) / Nr
@@ -256,7 +241,33 @@ class RayBundle:
         # Broadcast origin to all rays
         O = np.repeat(O[None, :], D.shape[0], axis=0)
 
-        return cls(O, D)
+        # Rotate so +Z maps to north_pole
+        pos_z = np.array([0.0, 0.0, 1.0])
+        if np.allclose(north_pole, pos_z, atol=1e-7):
+            # Already aligned, nothing to do
+            return cls(O, D)
+        elif np.allclose(north_pole, -pos_z, atol=1e-7):
+            # Opposite: flip along Z
+            D[:, 2] *= -1
+
+            return cls(O, D)
+        else:
+            # N.B.: Using atol=1e-7 in the previous two checks means that the cross product's norm is guaranteed to be nonzero.
+            c = np.dot(pos_z, north_pole)
+            axis = np.cross(pos_z, north_pole)
+            s = np.linalg.norm(axis)
+
+            # Rodrigues' rotation formula
+            # https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula#Matrix_notation
+            ax, ay, az = axis / s
+            K = np.array([[0, -az, ay],
+                          [az, 0, -ax],
+                          [-ay, ax, 0]])
+            R = np.eye(3) + K * s + (K @ K) * (1 - c)
+
+            D = D @ R.T
+
+            return cls(O, D)
 
     def getNumRays(self) -> int:
         return int(self.D.shape[0])
@@ -286,8 +297,29 @@ class RayBundle:
         return self.frontPatch.copy(), self.backPatch.copy()
 
     def getRadiance(self) -> np.ndarray:
-        """Returns the per-ray radiance values (unused; kept for parity)."""
+        """Returns the per-ray radiance values."""
         return self.radiance.copy()
+
+    def moveOrigins(self, origins: np.ndarray) -> None:
+        """
+        Change the rays' origins (if one origin is given, it is used for all rays).
+
+        Parameters
+        ----------
+        origins : (M,3) float ndarray
+            Per-ray origin points. If M==1, the value is used for all rays.
+        """
+        if origins.ndim < 1 or origins.ndim > 2 or origins.shape[-1] != 3:
+            raise ValueError("origins must have shape (M, 3), and M must either be 1 or the number of rays")
+
+        if origins.ndim == 1:
+            self.O = np.repeat(origins, self.O.shape[0], axis=0)
+        elif origins.shape[0] == 1:
+            self.O = np.repeat(origins[0], self.O.shape[0], axis=0)
+        elif origins.shape == self.O.shape:
+            self.O = origins.copy()
+        else:
+            raise ValueError("origins must have shape (M, 3), and M must either be 1 or the number of rays.")
 
     def traceAll(self, triangles: TriangleMesh) -> None:
         """
@@ -301,19 +333,19 @@ class RayBundle:
 
         # 1) Facing test: faceNum = dot(n, O) - d0 -> (M,N)
         faceNum = np.einsum("nj,mj->mn", triangles.n, self.O) - triangles.d0[None, :]  # (M,N)
-        face_ok = (faceNum >= EPS_FACING)
+        face_ok = (faceNum > EPS_FACING)
 
         # 2) Möller–Trumbore (broadcasted over (M,N,3))
         D = self.D[:, None, :]  # (M,1,3)
         O = self.O[:, None, :]  # (M,1,3)
-        A = triangles.A[None, :, :]  # (1,N,3)
+        v1 = triangles.v1[None, :, :]  # (1,N,3)
         edge1 = triangles.edge1[None, :, :]  # (1,N,3)
         edge2 = triangles.edge2[None, :, :]  # (1,N,3)
 
         pvec = np.cross(D, edge2)  # (M,N,3)
         det = np.einsum("mnj,mnj->mn", pvec, edge1)  # (M,N)
 
-        tvec = O - A  # (M,N,3)
+        tvec = O - v1  # (M,N,3)
         u_num = np.einsum("mnj,mnj->mn", tvec, pvec)  # (M,N)
 
         qvec = np.cross(tvec, edge1)  # (M,N,3)
@@ -359,11 +391,11 @@ class RayBundle:
         cand_back = np.where(tie_back, idx, N)
         i_back = cand_back.min(axis=1)  # (M,)
 
-        # TODO: This np.arange can be replaced by a smart use of np.take_along_axis.
+        # TODO: This np.arange can be replaced by a smart use of np.take_along_axis. But would it be any faster?
         row = np.arange(M)
 
         front_ok = (i_front < N)
-        self.frontPatch[front_ok] = triangles.patch_id[i_front[front_ok]]
+        self.frontPatch[front_ok] = triangles.ID[i_front[front_ok]]
         self.frontDistance[front_ok] = dist[row[front_ok], i_front[front_ok]]
         self.frontCosine[front_ok] = cosv[row[front_ok], i_front[front_ok]]
         self.frontPatch[~front_ok] = -1
@@ -371,11 +403,13 @@ class RayBundle:
         self.frontCosine[~front_ok] = np.nan
 
         back_ok = (i_back < N)
-        self.backPatch[back_ok] = triangles.patch_id[i_back[back_ok]]
+        self.backPatch[back_ok] = triangles.ID[i_back[back_ok]]
         self.backDistance[back_ok] = -dist[row[back_ok], i_back[back_ok]]
         self.backCosine[back_ok] = cosv[row[back_ok], i_back[back_ok]]
         self.backPatch[~back_ok] = -1
         self.backDistance[~back_ok] = np.nan
         self.backCosine[~back_ok] = np.nan
+
+    # TODO: Implement direction clustering
 
     # TODO: Implement "advance", "reflect", etc.
