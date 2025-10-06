@@ -8,9 +8,8 @@ from typing import Tuple
 
 EPS_EDGE = 1e-7         # edge-inclusive tolerance for ray hits
 EPS_FACING = 1e-7       # ray-plane test perpendicular tolerance
-EPS_PARALLEL = 1e-7    # ray-plane test parallel tolerance
+EPS_PARALLEL = 1e-7     # ray-plane test parallel tolerance
 EPS_ZFIGHT = 1e-5       # tie-breaker window for Z-fighting
-# TODO: Use this, and also, fix its use in C++ (it currently checks against patch_id)
 EPS_SELFHIT = 1e-3      # reject hits too close to the ray origin
 
 

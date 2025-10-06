@@ -4,10 +4,10 @@ import sys
 from utils import validate_inputs
 
 
-def main(path) -> None:
-    if os.path.isdir(path):
-        if validate_inputs(path):
-            print('Running `compute_MoDART` in the environment "' + path.split('/')[-1] + '"')
+def main(folder_path) -> None:
+    if os.path.isdir(folder_path):
+        if validate_inputs(folder_path):
+            print('Running `compute_MoDART` in the environment "' + folder_path.split('/')[-1] + '"')
 
             # TODO: Read `ART_kernel_diffuse.mtx`, `ART_kernel_specular.mtx`, `path_lengths.csv`
 
@@ -17,7 +17,7 @@ def main(path) -> None:
 
             # TODO: Write `MoD-ART.csv`
     else:
-        print('Not a valid folder path:\n\t' + path)
+        print('Not a valid folder path:\n\t' + folder_path)
 
 
 if __name__ == "__main__":

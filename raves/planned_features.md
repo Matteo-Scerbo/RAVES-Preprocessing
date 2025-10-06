@@ -1,5 +1,10 @@
 # TODO
 
+- Improve and validate the surface integral.
+  Use a solid angle integral from each surface sample point.
+- Revise all comments and documentation
+- Add `run_ART.py`
+
 ### `io.py`
 - All necessary parsers and writers
 
@@ -23,6 +28,3 @@
 - Perform real-valued decomposition as in existing code
 - Rescale eigenvectors; note that etendue can be inferred from patch areas and `kernel_diffuse`
 - Write `MoD-ART.csv`
-
-### Validate, improve, and replace the surface integral
-Use a solid angle integral from each surface sample point.

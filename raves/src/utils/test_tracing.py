@@ -225,17 +225,48 @@ class TracingClassesTests(unittest.TestCase):
             self.assertTrue(np.all(EXPECTED_IDX_PAIR[oi, :, 1] == backIndices),
                             msg='\n' + str(EXPECTED_IDX_PAIR[oi, :, 1]) + '\n' + str(backIndices))
 
-    def test_pencil_clustering(self):
-        # TODO: Translate clustering unit tests
+            # DONE: Test construction with different origins
+            # TODO: Test moving to different origins
 
-        return
+    def test_pencil_sphere(self):
+        for numRays in np.logspace(2, 5, 4, dtype=int):
+            for numClusters in [1, 2, 3, 4, 6, 8, 12, 20]:
+                testClusters = PlatonicVertices(numClusters)
+                self.assertTrue(np.allclose(np.linalg.norm(testClusters, axis=1), 1.0),
+                                msg='\n' + str(np.linalg.norm(testClusters)))
+
+                testPencil = RayBundle.sample_sphere(numRays)
+
+                effectiveNumRays = testPencil.getNumRays()
+                self.assertEqual(numRays, effectiveNumRays, msg='\n' + str(numRays) + ' != ' + str(effectiveNumRays))
+
+                # Check that directions are automatically normalized on construction.
+                self.assertTrue(np.allclose(np.linalg.norm(testPencil.getDirections(), axis=1), 1.0),
+                                msg='\n' + str(np.linalg.norm(testPencil.getDirections())))
+
+                cosineSimilarities = np.einsum("nj,mj->nm", testClusters, testPencil.getDirections())
+                _, clusters = np.unique(np.argmax(cosineSimilarities, axis=0), return_counts=True)
+
+                # Check that the difference between the minimum and maximum cluster size is relatively small.
+                self.assertTrue(np.max(clusters) - np.min(clusters) <= int(effectiveNumRays / 10),
+                                msg='\n' + str(clusters))
 
     def test_pencil_hemisphere(self):
-        # TODO: Translate hemisphere unit tests
+        for numRays in np.logspace(2, 5, 4, dtype=int):
+            for northPole in PlatonicVertices(20):
+                testPencil = RayBundle.sample_sphere(numRays, hemisphere_only=True, north_pole=northPole)
 
-        # TODO: Test north_pole rotation thoroughly
+                effectiveNumRays = testPencil.getNumRays()
+                self.assertEqual(numRays, effectiveNumRays, msg='\n' + str(numRays) + ' != ' + str(effectiveNumRays))
 
-        return
+                # Check that directions are automatically normalized on construction.
+                self.assertTrue(np.allclose(np.linalg.norm(testPencil.getDirections(), axis=1), 1.0),
+                                msg='\n' + str(np.linalg.norm(testPencil.getDirections())))
+
+                # Test north_pole rotation
+                cosineSimilarities = np.einsum("j,mj->m", northPole, testPencil.getDirections())
+                self.assertTrue(np.all(cosineSimilarities >= 0.0),
+                                msg='\n' + str(cosineSimilarities))
 
 
 if __name__ == "__main__":

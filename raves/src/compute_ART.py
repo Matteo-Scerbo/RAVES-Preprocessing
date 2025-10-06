@@ -5,13 +5,16 @@ import numpy as np
 from utils import validate_inputs, load_mesh, RayBundle
 
 
-def main(path) -> None:
-    if os.path.isdir(path):
-        if validate_inputs(path):
-            print('Running `compute_ART` in the environment "' + path.split('/')[-1] + '"')
+def main(folder_path) -> None:
+    if os.path.isdir(folder_path):
+        if validate_inputs(folder_path):
+            print('Running `compute_ART` in the environment "' + folder_path.split('/')[-1] + '"')
 
-            mesh, patch_materials = load_mesh(path + '/mesh.obj')
+            mesh, patch_materials = load_mesh(folder_path + '/mesh.obj')
 
+            num_patches = len(patch_materials)
+
+            # TODO: These two checks look at triangles. They should look at patches.
             if mesh.size() > 1000:
                 print('Warning: the mesh contains a very large number of patches (' + str(mesh.size()) + ')')
             if np.any(mesh.area < 0.1):
@@ -33,7 +36,7 @@ def main(path) -> None:
             # TODO: Read materials.csv
             # TODO: Write ART_octave_band_1.mtx, ART_octave_band_2.mtx, etc. (for each frequency band)
     else:
-        print('Not a valid folder path:\n\t' + path)
+        print('Not a valid folder path:\n\t' + folder_path)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
