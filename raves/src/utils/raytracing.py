@@ -75,6 +75,72 @@ class TriangleMesh:
     def size(self) -> int:
         return int(self.v1.shape[0])
 
+    def sample_triangle(self, triangle_idx: int, points_per_square_meter: float) -> np.ndarray:
+        """
+        Quasi-Monte Carlo surface sampling for numerical integration.
+        This approach in inspired by the one proposed in:
+        Kinjal Basu and Art B. Owen. "Low discrepancy constructions in the triangle." SIAM Journal on Numerical Analysis 53.2 (2015): 743-761.
+        However, here we test sample points against the target triangle.
+        In the cited paper, the authors test sample points against the unit right triangle, and then apply a linear transformation to the target triangle.
+        """
+        edge1_len = np.linalg.norm(self.edge1[triangle_idx])
+        edge2_len = np.linalg.norm(self.edge2[triangle_idx])
+        # The maximum extent for the 2D lattice (see below)
+        grid_extent = max(edge1_len, edge2_len)
+
+        # Start by using one edge of the triangle as a reference tangent vector
+        tangent1 = self.edge1[triangle_idx] / edge1_len
+        # Rotate the tangent by an irrational angle (3*pi/8) using Rodrigues' rotation formula
+        # https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula#Matrix_notation
+        theta = 3. * np.pi / 8.
+        axis = self.n[triangle_idx]
+        tangent1 = tangent1 * np.cos(theta) \
+                   + np.cross(axis, tangent1) * np.sin(theta) \
+                   + axis * np.dot(axis, tangent1) * (1 - np.cos(theta))
+
+        # Find a second tangent vector orthogonal to the first
+        tangent2 = np.cross(tangent1, self.n[triangle_idx])
+
+        # Prepare the 2D lattice (this lives in the coordinate space defined by the two orthogonal tangents)
+        sample_spacing = np.sqrt(1 / points_per_square_meter)
+        lattice_2D = np.dstack(np.meshgrid(np.arange(-grid_extent, grid_extent, sample_spacing),
+                                           np.arange(-grid_extent, grid_extent, sample_spacing)))
+        lattice_2D = lattice_2D.reshape(-1, 2)
+
+        # Translate the triangle's edges into the coordinate space defined by the two orthogonal tangents
+        edge1_2D = np.array([tangent1.dot(self.edge1[triangle_idx]),
+                             tangent2.dot(self.edge1[triangle_idx])])
+        edge2_2D = np.array([tangent1.dot(self.edge2[triangle_idx]),
+                             tangent2.dot(self.edge2[triangle_idx])])
+
+        # Vectorized 2D point-in-triangle test (test whole lattice in one go)
+        # https://stackoverflow.com/a/51479401
+        #   x, y = lattice_2D
+        #   ax, ay = (0, 0) (the reference vertex v1 is the origin of the lattice)
+        #   bx, by = edge1_2D
+        #   cx, cy = edge2_2D
+        side_1 = np.cross(lattice_2D - edge1_2D, -edge1_2D)
+        side_2 = np.cross(lattice_2D - edge2_2D, edge1_2D - edge2_2D)
+        side_3 = np.cross(lattice_2D, edge2_2D)
+
+        allNonNeg = (side_1 >= -EPS_EDGE) & (side_2 >= -EPS_EDGE) & (side_3 >= -EPS_EDGE)
+        allNonPos = (side_1 <= +EPS_EDGE) & (side_2 <= +EPS_EDGE) & (side_3 <= +EPS_EDGE)
+        within_edges = (allNonNeg | allNonPos)
+
+        # Take only the lattice points which passed the test (inside triangle)
+        sample_points_2D = list()
+        for i, point in enumerate(lattice_2D):
+            if within_edges[i]:
+                sample_points_2D.append(point)
+        sample_points_2D = np.array(sample_points_2D)
+
+        # Translate back to 3D cartesian coordinates
+        sample_points_3D = self.v1[triangle_idx] \
+                           + sample_points_2D[:, 0, None] * tangent1[None, :] \
+                           + sample_points_2D[:, 1, None] * tangent2[None, :]
+
+        return sample_points_3D
+
 
 # TODO: In "hemisphere mode", add two options:
 #       - Expose the fact that it's a hemisphere

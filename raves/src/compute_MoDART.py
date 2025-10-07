@@ -9,11 +9,11 @@ def main(folder_path) -> None:
         if validate_inputs(folder_path):
             print('Running `compute_MoDART` in the environment "' + folder_path.split('/')[-1] + '"')
 
-            # TODO: Read `ART_kernel_diffuse.mtx`, `ART_kernel_specular.mtx`, `path_lengths.csv`
+            # TODO: Read `ART_diffuse_kernel.mtx`, `ART_specular_kernel.mtx`, `path_lengths.csv`
 
             # TODO: Perform real-valued decomposition as in existing code (for each frequency band)
 
-            # TODO: Rescale eigenvectors; note that etendue can be inferred from patch areas and `kernel_diffuse`
+            # TODO: Rescale eigenvectors; note that etendue can be inferred from patch areas and `diffuse_kernel`
 
             # TODO: Write `MoD-ART.csv`
     else:

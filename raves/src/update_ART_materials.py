@@ -11,7 +11,7 @@ def main(folder_path) -> None:
 
             mesh, patch_materials = load_mesh(folder_path + '/mesh.obj')
 
-            # TODO: Read `ART_kernel_diffuse.mtx`, `ART_kernel_specular.mtx`, `path_indexing.mtx`
+            # TODO: Read `ART_diffuse_kernel.mtx`, `ART_specular_kernel.mtx`, `path_indexing.mtx`
             # TODO: Check that the number of patches in the kernels matches the loaded mesh
             # TODO: Check that path_indexing makes sense (how?)
 

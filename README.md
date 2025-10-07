@@ -200,9 +200,9 @@ Concrete_painted, 0.3
 TODO: Explanation will go here.
 TODO: Make sure to specify the definition (power, not radiance).
 
-- `ART_kernel_diffuse.mtx`
+- `ART_diffuse_kernel.mtx`
     - TODO: Explanation will go here.
-- `ART_kernel_specular.mtx`
+- `ART_specular_kernel.mtx`
     - TODO: Explanation will go here.
 - `ART_octave_band_1.mtx`, `ART_octave_band_2.mtx`, ...
     - TODO: Explanation will go here.

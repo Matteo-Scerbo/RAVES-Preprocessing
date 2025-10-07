@@ -88,18 +88,27 @@ def load_mesh(file_path: str) -> Tuple[TriangleMesh, np.ndarray]:
 
     # Parse OBJ material names.
     patch_ids = list()
-    patch_materials = list()
+    patch_materials_dict = dict()
     for face_material in face_material_list:
         match = re.match(r'Patch_(\d+)_Mat_(.+)', face_material)
-        patch_ids.append(int(match.group(1)))
-        patch_materials.append(match.group(2))
+        patch_id = int(match.group(1)) - 1  # Convert to 0-indexing.
+        patch_material = match.group(2)
+        patch_ids.append(patch_id)
+        if patch_id not in patch_materials_dict.keys():
+            patch_materials_dict[patch_id] = patch_material
+        elif patch_materials_dict[patch_id] != patch_material:
+            raise ValueError('Each patch should only feature a single material.'
+                             + ' Bad patch index: ' + str(patch_id))
+
     patch_ids = np.array(patch_ids, dtype=int)
-    if np.any(patch_ids < 1):
-        raise ValueError('Patch indices should start from 1.')
-    if np.any(patch_ids > patch_ids.shape[0]):
-        raise ValueError('Patch index out of bounds.')
-    # Convert to 0-indexing.
-    patch_ids -= 1
+    # Check that patch_ids is a proper range.
+    if np.min(patch_ids) != 0 or np.max(patch_ids) != len(patch_materials_dict) - 1:
+        raise ValueError('The patch indices should form a contiguous range.'
+                         + ' Min ID: ' + str(np.min(patch_ids))
+                         + ' Max ID: ' + str(np.max(patch_ids))
+                         + ' Num ID: ' + str(len(patch_materials_dict)))
+
+    patch_materials = [patch_materials_dict[i] for i in range(len(patch_materials_dict))]
 
     mesh = TriangleMesh(vertices, vert_triplets, patch_ids)
 
