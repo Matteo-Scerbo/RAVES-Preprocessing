@@ -2,7 +2,8 @@
 
 - Improve and validate the surface integral.
   Use a solid angle integral from each surface sample point.
-- Revise all comments and documentation
+- Revise all comments and documentation.
+- Consistent use of camel case and underscores.
 - Add `run_ART.py`
 
 ### `io.py`

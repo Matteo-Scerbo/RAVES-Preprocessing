@@ -1,6 +1,8 @@
 import os
 import sys
+import time
 import numpy as np
+from tqdm import tqdm
 from scipy.sparse import lil_array
 
 import matplotlib as mpl
@@ -43,18 +45,17 @@ def main(folder_path: str,
             # Initialize `path_lengths`, `diffuse_kernel`, and `specular_kernel` (sparse arrays).
             num_paths = num_patches ** 2
             path_lengths = lil_array((num_paths, 1))
-            path_etendues = lil_array((num_paths, 1))
+            diffuse_kernel = lil_array((num_paths, num_paths))
             specular_kernel = lil_array((num_paths, num_paths))
-            # `diffuse_kernel` is created after the loop, based on `path_etendues`
 
-            def path_idx(i: int, j: int) -> int:
+            def path_index(i: int, j: int) -> int:
                 return i + (j * num_patches)
 
             # For debugging: plot the surface sample points, adding one triangle at a time.
             """
             all_plots = list()
-            for patch_idx in range(num_patches):
-                for triangle_idx in patch_triangles[patch_idx]:
+            for i in range(num_patches):
+                for triangle_idx in patch_triangles[i]:
                     # Uniformly sample the triangle's surface.
                     sample_points = mesh.sample_triangle(triangle_idx, points_per_square_meter)
 
@@ -103,36 +104,147 @@ def main(folder_path: str,
                     plt.show()
             """
 
-            for patch_idx in range(num_patches):
+            times = {'Build ray pencils ': 0.,
+                     'Sample surface    ': 0.,
+                     'Move ray pencils  ': 0.,
+                     'Trace ray pencils ': 0.,
+                     'Bundle rays       ': 0.,
+                     'Sum contributions ': 0.,
+                     'Normalize and log ': 0.}
+
+            for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
                 # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
-                patch_normal = mesh.n[patch_triangles[patch_idx][0]]
+                patch_normal = mesh.n[patch_triangles[i][0]]
+
+                start = time.time()
 
                 # Prepare a pencil of rays uniformly sampling the hemisphere.
                 # This pencil's origin will be moved to different sample points, to avoid re-instantiating the class.
-                hemispherePencil = RayBundle.sample_sphere(rays_per_hemisphere,
-                                                           hemisphere_only=True,
-                                                           north_pole=patch_normal)
+                hemisphere_pencil = RayBundle.sample_sphere(rays_per_hemisphere, hemisphere_only=True, north_pole=patch_normal)
+                # The effective number of rays may be different from the target.
+                num_rays = hemisphere_pencil.getNumRays()
+                # We need to keep track of the surface sample points used to integrate this patch.
+                num_points = 0
 
-                for triangle_idx in patch_triangles[patch_idx]:
+                # Prepare a pencil formed by the specular reflection of `hemisphere_pencil` across the surface normal.
+                # This pencil will be moved and traced in conjunction with `hemisphere_pencil` to obtain the specular reflection kernel.
+                hemisphere_directions = hemisphere_pencil.getDirections()
+                hemisphere_cosines = np.einsum('ij,j->i', hemisphere_directions, patch_normal)
+                specular_directions = 2 * hemisphere_cosines[:, np.newaxis] * patch_normal[np.newaxis] - hemisphere_directions
+                specular_pencil = RayBundle.from_shared_origin(origin=np.zeros(3), directions=specular_directions)
+
+                # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
+                # Refer to "ART_theory.md" for more info on this process.
+                accumulated_num_hits = np.zeros(num_patches)
+                accumulated_distances = np.zeros(num_patches)
+                accumulated_cosines = np.zeros(num_patches)
+                accumulated_specular_kernel = np.zeros((num_patches, num_patches))
+
+                end = time.time()
+                times['Build ray pencils '] += end - start
+
+                for triangle_idx in patch_triangles[i]:
+                    start = time.time()
+
                     # Uniformly sample the triangle's surface.
                     sample_points = mesh.sample_triangle(triangle_idx, points_per_square_meter)
+                    # We need to keep track of the surface sample points used to integrate this patch.
+                    num_points += sample_points.shape[0]
 
-                    for sample_point in mesh.sample_triangle(triangle_idx, points_per_square_meter):
-                        hemispherePencil.moveOrigins(sample_point)
-                        hemispherePencil.traceAll(mesh)
-                        
-                        # TODO: Accumulate as in existing code
-                        #  path_lengths
-                        #  path_etendues
-                        #  specular_kernel
+                    end = time.time()
+                    times['Sample surface    '] += end - start
 
-            # TODO: Normalize as in existing code
-            #  path_lengths
-            #  path_etendues
-            #  specular_kernel
-            # TODO: Generate diffuse_kernel from path_etendues and patch_areas
+                    for sample_point in sample_points:
+                        start = time.time()
 
-            # TODO: Assess numerical quality by comparing path etendue symmetricity
+                        hemisphere_pencil.moveOrigins(sample_point)
+                        specular_pencil.moveOrigins(sample_point)
+
+                        end = time.time()
+                        times['Move ray pencils  '] += end - start
+
+                        start = time.time()
+
+                        hemisphere_pencil.traceAll(mesh)
+                        specular_pencil.traceAll(mesh)
+
+                        end = time.time()
+                        times['Trace ray pencils '] += end - start
+
+                        start = time.time()
+
+                        hemisphere_patch_ids, _ = hemisphere_pencil.getIndices(copy=False)
+                        specular_patch_ids, _ = specular_pencil.getIndices(copy=False)
+                        hemisphere_distances, _ = hemisphere_pencil.getDistances(copy=False)
+                        specular_distances, _ = specular_pencil.getDistances(copy=False)
+                        # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
+                        # specular_cosines, _ = specular_pencil.getCosines(copy=False)
+
+                        hemisphere_hits_per_patch = np.zeros((num_patches, num_rays), dtype=bool)
+                        specular_hits_per_patch = np.zeros((num_patches, num_rays), dtype=bool)
+                        for j in range(num_patches):
+                            hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
+                            specular_hits_per_patch[j] = (specular_patch_ids == j)
+
+                        end = time.time()
+                        times['Bundle rays       '] += end - start
+
+                        start = time.time()
+
+                        for j in range(num_patches):
+                            # Combine the two bundles to ensure symmetry.
+                            # Each ray appears once as "main" and once as specular; both count as hits.
+                            accumulated_num_hits[j] += np.count_nonzero(hemisphere_hits_per_patch[j])
+                            accumulated_num_hits[j] += np.count_nonzero(specular_hits_per_patch[j])
+
+                            accumulated_distances[j] += np.sum(hemisphere_distances[hemisphere_hits_per_patch[j]])
+                            accumulated_distances[j] += np.sum(specular_distances[specular_hits_per_patch[j]])
+
+                            # The departure cosine is the same for specular rays.
+                            accumulated_cosines[j] += np.sum(hemisphere_cosines[hemisphere_hits_per_patch[j]])
+                            accumulated_cosines[j] += np.sum(hemisphere_cosines[specular_hits_per_patch[j]])
+
+                            for h in range(num_patches):
+                                accumulated_specular_kernel[h, j] += 2 * np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
+                                # The multiplication by 2 makes this equivalent to:
+                                # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
+                                # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[h] & specular_hits_per_patch[j])
+
+                        end = time.time()
+                        times['Sum contributions '] += end - start
+
+                start = time.time()
+
+                # Normalize accumulators and add to global trackers.
+                for j in range(num_patches):
+                    if accumulated_num_hits[j] == 0:
+                        # No visibility between any point in j and any point in i.
+                        continue
+                    ij = path_index(i, j)
+
+                    path_lengths[ij] = accumulated_distances[j] / accumulated_num_hits[j]
+
+                    for h in range(num_patches):
+                        if accumulated_num_hits[h] == 0:
+                            # No visibility between any point in h and any point in i.
+                            continue
+                        hi = path_index(h, i)
+
+                        diffuse_kernel[hi, ij] = accumulated_cosines[j] * 2 / (num_rays * num_points)
+                        specular_kernel[hi, ij] = accumulated_specular_kernel[h, j] / accumulated_num_hits[h]
+
+                end = time.time()
+                times['Normalize and log '] += end - start
+
+            # TODO: Assert unit row sums in the specular kernel.
+
+            # TODO: Assess numerical precision by checking unit row sums in the diffuse kernel.
+
+            # TODO: Assess numerical precision by comparing diffuse kernel symmetricity.
+
+            print('\nTime elapsed for different tasks (seconds):')
+            for k, i in times.items():
+                print('\t', k, i)
 
             # TODO: Write
             #           ART_diffuse_kernel.mtx

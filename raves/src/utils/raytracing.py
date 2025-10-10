@@ -337,33 +337,52 @@ class RayBundle:
     def getNumRays(self) -> int:
         return int(self.D.shape[0])
 
-    def getOrigins(self) -> np.ndarray:
+    def getOrigins(self, copy: bool = True) -> np.ndarray:
         """Return Nx3 array of origins."""
-        return self.O.copy()
+        if copy:
+            return self.O.copy()
+        else:
+            return self.O
 
-    def getDirections(self) -> np.ndarray:
+    def getDirections(self, copy: bool = True) -> np.ndarray:
         """Return Nx3 array of directions."""
-        return self.D.copy()
+        if copy:
+            return self.D.copy()
+        else:
+            return self.D
 
-    def getTotalDistances(self) -> np.ndarray:
+    def getTotalDistances(self, copy: bool = True) -> np.ndarray:
         """For each ray, returns the total travel distance in meters. NaN denotes invalid intersections."""
-        return self.totalDistance.copy()
+        if copy:
+            return self.totalDistance.copy()
+        else:
+            return self.totalDistance
 
-    def getDistances(self) -> Tuple[np.ndarray, np.ndarray]:
+    def getDistances(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """For each ray, returns the distance of the closest intersection (front and back). NaN denotes invalid intersections."""
-        return self.frontDistance.copy(), self.backDistance.copy()
+        if copy:
+            return self.frontDistance.copy(), self.backDistance.copy()
+        else:
+            return self.frontDistance, self.backDistance
 
-    def getCosines(self) -> Tuple[np.ndarray, np.ndarray]:
+    def getCosines(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """For each ray, returns the incidence cosine of the closest intersection (front and back). NaN denotes invalid intersections."""
-        return self.frontCosine.copy(), self.backCosine.copy()
+        if copy:
+            return self.frontCosine.copy(), self.backCosine.copy()
+        else:
+            return self.frontCosine, self.backCosine
 
-    def getIndices(self) -> Tuple[np.ndarray, np.ndarray]:
+    def getIndices(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """Returns (current, previous) patch indices per ray. -1 denotes invalid intersections."""
-        return self.frontPatch.copy(), self.backPatch.copy()
+        if copy:
+            return self.frontPatch.copy(), self.backPatch.copy()
+        else:
+            return self.frontPatch, self.backPatch
 
-    def getRadiance(self) -> np.ndarray:
+    def getRadiance(self, copy: bool = True) -> np.ndarray:
         """Returns the per-ray radiance values."""
-        return self.radiance.copy()
+        if copy:
+            return self.radiance.copy()
 
     def moveOrigins(self, origins: np.ndarray) -> None:
         """
@@ -378,9 +397,9 @@ class RayBundle:
             raise ValueError("origins must have shape (M, 3), and M must either be 1 or the number of rays")
 
         if origins.ndim == 1:
-            self.O = np.repeat(origins, self.O.shape[0], axis=0)
+            self.O = np.repeat(origins[None, :], self.O.shape[0], axis=0)
         elif origins.shape[0] == 1:
-            self.O = np.repeat(origins[0], self.O.shape[0], axis=0)
+            self.O = np.repeat(origins, self.O.shape[0], axis=0)
         elif origins.shape == self.O.shape:
             self.O = origins.copy()
         else:
