@@ -7,14 +7,14 @@ from scipy.sparse import lil_array
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 
 from utils import validate_inputs, load_mesh, RayBundle
 
 
 def main(folder_path: str,
          points_per_square_meter: int = 10,
-         rays_per_hemisphere: int = 100) -> None:
+         rays_per_hemisphere: int = 100,
+         detect_open_surface: bool = True) -> None:
     if os.path.isdir(folder_path):
         if validate_inputs(folder_path):
             print('Running `compute_ART` in the environment "' + folder_path.split('/')[-1] + '"')
@@ -47,6 +47,9 @@ def main(folder_path: str,
             path_lengths = lil_array((num_paths, 1))
             diffuse_kernel = lil_array((num_paths, num_paths))
             specular_kernel = lil_array((num_paths, num_paths))
+
+            if detect_open_surface:
+                miss_percentages = np.zeros(num_patches)
 
             def path_index(i: int, j: int) -> int:
                 return i + (j * num_patches)
@@ -140,6 +143,9 @@ def main(folder_path: str,
                 accumulated_cosines = np.zeros(num_patches)
                 accumulated_specular_kernel = np.zeros((num_patches, num_patches))
 
+                if detect_open_surface:
+                    accumulated_num_misses = 0
+
                 end = time.time()
                 times['Build ray pencils '] += end - start
 
@@ -186,6 +192,11 @@ def main(folder_path: str,
                             hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
                             specular_hits_per_patch[j] = (specular_patch_ids == j)
 
+                        if detect_open_surface:
+                            # An index of -1 indicates that the ray has no valid intersections.
+                            accumulated_num_misses += np.count_nonzero(hemisphere_patch_ids == -1)
+                            accumulated_num_misses += np.count_nonzero(specular_patch_ids == -1)
+
                         end = time.time()
                         times['Bundle rays       '] += end - start
 
@@ -220,6 +231,7 @@ def main(folder_path: str,
                     if accumulated_num_hits[j] == 0:
                         # No visibility between any point in j and any point in i.
                         continue
+
                     ij = path_index(i, j)
 
                     path_lengths[ij] = accumulated_distances[j] / accumulated_num_hits[j]
@@ -228,15 +240,73 @@ def main(folder_path: str,
                         if accumulated_num_hits[h] == 0:
                             # No visibility between any point in h and any point in i.
                             continue
+
                         hi = path_index(h, i)
 
-                        diffuse_kernel[hi, ij] = accumulated_cosines[j] * 2 / (num_rays * num_points)
+                        # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
+                        # In practice, we do not need it because each ray is counted once as "main" and once as specular.
+                        diffuse_kernel[hi, ij] = accumulated_cosines[j] / (num_rays * num_points)
                         specular_kernel[hi, ij] = accumulated_specular_kernel[h, j] / accumulated_num_hits[h]
+
+                if detect_open_surface:
+                    # Note: again, we multiply by 50 instead of 100 because we accumulated both ray pencils.
+                    miss_percentages[i] = 50 * accumulated_num_misses / (num_rays * num_points)
 
                 end = time.time()
                 times['Normalize and log '] += end - start
 
+            if detect_open_surface:
+                print('Percentage of invalid rays from each patch:')
+                print('\t Maximum (patch ' + str(np.argmax(miss_percentages)+1) + '): ' + str(np.round(np.max(miss_percentages), 2)) + '%')
+                print('\t Average: ' + str(np.round(np.mean(miss_percentages), 2)) + '%')
+                print('\t Median: ' + str(np.round(np.median(miss_percentages), 2)) + '%')
+                print('A high percentage of missed rays indicates the surface is not closed.')
+                print('If the average is above 50%, check the orientation of normal vectors.')
+
+            # This is used in some upcoming assertions.
+            reverse_path_indexing = np.zeros(num_paths, dtype=int)
+            for i in range(num_patches):
+                for j in range(num_patches):
+                    reverse_path_indexing[path_index(i, j)] = path_index(j, i)
+
+            # These should theoretically be identical, but may not be due to the discretized integration.
+            # Nevertheless, they should be close enough.
+            path_visibility = (path_lengths.toarray().squeeze() != 0)
+            reverse_path_visibility = path_visibility[reverse_path_indexing]
+
             # TODO: Assert unit row sums in the specular kernel.
+            # fig, axs = plt.subplots(2, 2, dpi=200, figsize=(8, 6))
+            #
+            # axs[0, 0].plot(diffuse_kernel.sum(axis=0)[path_visibility], label='diffuse 0')
+            # axs[0, 0].plot(diffuse_kernel.sum(axis=1)[path_visibility], label='diffuse 1')
+            # axs[0, 0].plot(specular_kernel.sum(axis=0)[path_visibility], label='specular 0')
+            # axs[0, 0].plot(specular_kernel.sum(axis=1)[path_visibility], label='specular 1')
+            # axs[0, 0].set_title('path_visibility')
+            # axs[0, 0].legend()
+            #
+            # axs[1, 0].plot(diffuse_kernel.sum(axis=0)[~path_visibility], label='diffuse 0')
+            # axs[1, 0].plot(diffuse_kernel.sum(axis=1)[~path_visibility], label='diffuse 1')
+            # axs[1, 0].plot(specular_kernel.sum(axis=0)[~path_visibility], label='specular 0')
+            # axs[1, 0].plot(specular_kernel.sum(axis=1)[~path_visibility], label='specular 1')
+            # axs[1, 0].set_title('~path_visibility')
+            # axs[1, 0].legend()
+            #
+            # axs[0, 1].plot(diffuse_kernel.sum(axis=0)[reverse_path_visibility], label='diffuse 0')
+            # axs[0, 1].plot(diffuse_kernel.sum(axis=1)[reverse_path_visibility], label='diffuse 1')
+            # axs[0, 1].plot(specular_kernel.sum(axis=0)[reverse_path_visibility], label='specular 0')
+            # axs[0, 1].plot(specular_kernel.sum(axis=1)[reverse_path_visibility], label='specular 1')
+            # axs[0, 1].set_title('reverse_path_visibility')
+            # axs[0, 1].legend()
+            #
+            # axs[1, 1].plot(diffuse_kernel.sum(axis=0)[~reverse_path_visibility], label='diffuse 0')
+            # axs[1, 1].plot(diffuse_kernel.sum(axis=1)[~reverse_path_visibility], label='diffuse 1')
+            # axs[1, 1].plot(specular_kernel.sum(axis=0)[~reverse_path_visibility], label='specular 0')
+            # axs[1, 1].plot(specular_kernel.sum(axis=1)[~reverse_path_visibility], label='specular 1')
+            # axs[1, 1].set_title('~reverse_path_visibility')
+            # axs[1, 1].legend()
+            #
+            # plt.tight_layout()
+            # plt.show()
 
             # TODO: Assess numerical precision by checking unit row sums in the diffuse kernel.
 
