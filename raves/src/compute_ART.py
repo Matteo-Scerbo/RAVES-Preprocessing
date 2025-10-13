@@ -124,8 +124,6 @@ def main(folder_path: str,
                 # Prepare a pencil of rays uniformly sampling the hemisphere.
                 # This pencil's origin will be moved to different sample points, to avoid re-instantiating the class.
                 hemisphere_pencil = RayBundle.sample_sphere(rays_per_hemisphere, hemisphere_only=True, north_pole=patch_normal)
-                # The effective number of rays may be different from the target.
-                num_rays = hemisphere_pencil.getNumRays()
                 # We need to keep track of the surface sample points used to integrate this patch.
                 num_points = 0
 
@@ -186,8 +184,8 @@ def main(folder_path: str,
                         # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
                         # specular_cosines, _ = specular_pencil.getCosines(copy=False)
 
-                        hemisphere_hits_per_patch = np.zeros((num_patches, num_rays), dtype=bool)
-                        specular_hits_per_patch = np.zeros((num_patches, num_rays), dtype=bool)
+                        hemisphere_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
+                        specular_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
                         for j in range(num_patches):
                             hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
                             specular_hits_per_patch[j] = (specular_patch_ids == j)
@@ -245,18 +243,18 @@ def main(folder_path: str,
 
                         # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
                         # In practice, we do not need it because each ray is counted once as "main" and once as specular.
-                        diffuse_kernel[hi, ij] = accumulated_cosines[j] / (num_rays * num_points)
+                        diffuse_kernel[hi, ij] = accumulated_cosines[j] / (rays_per_hemisphere * num_points)
                         specular_kernel[hi, ij] = accumulated_specular_kernel[h, j] / accumulated_num_hits[h]
 
                 if detect_open_surface:
                     # Note: again, we multiply by 50 instead of 100 because we accumulated both ray pencils.
-                    miss_percentages[i] = 50 * accumulated_num_misses / (num_rays * num_points)
+                    miss_percentages[i] = 50 * accumulated_num_misses / (rays_per_hemisphere * num_points)
 
                 end = time.time()
                 times['Normalize and log '] += end - start
 
             if detect_open_surface:
-                print('Percentage of invalid rays from each patch:')
+                print('\nPercentage of invalid rays from each patch:')
                 print('\t Maximum (patch ' + str(np.argmax(miss_percentages)+1) + '): ' + str(np.round(np.max(miss_percentages), 2)) + '%')
                 print('\t Average: ' + str(np.round(np.mean(miss_percentages), 2)) + '%')
                 print('\t Median: ' + str(np.round(np.median(miss_percentages), 2)) + '%')
@@ -275,38 +273,30 @@ def main(folder_path: str,
             reverse_path_visibility = path_visibility[reverse_path_indexing]
 
             # TODO: Assert unit row sums in the specular kernel.
-            # fig, axs = plt.subplots(2, 2, dpi=200, figsize=(8, 6))
-            #
-            # axs[0, 0].plot(diffuse_kernel.sum(axis=0)[path_visibility], label='diffuse 0')
-            # axs[0, 0].plot(diffuse_kernel.sum(axis=1)[path_visibility], label='diffuse 1')
-            # axs[0, 0].plot(specular_kernel.sum(axis=0)[path_visibility], label='specular 0')
-            # axs[0, 0].plot(specular_kernel.sum(axis=1)[path_visibility], label='specular 1')
-            # axs[0, 0].set_title('path_visibility')
-            # axs[0, 0].legend()
-            #
-            # axs[1, 0].plot(diffuse_kernel.sum(axis=0)[~path_visibility], label='diffuse 0')
-            # axs[1, 0].plot(diffuse_kernel.sum(axis=1)[~path_visibility], label='diffuse 1')
-            # axs[1, 0].plot(specular_kernel.sum(axis=0)[~path_visibility], label='specular 0')
-            # axs[1, 0].plot(specular_kernel.sum(axis=1)[~path_visibility], label='specular 1')
-            # axs[1, 0].set_title('~path_visibility')
-            # axs[1, 0].legend()
-            #
-            # axs[0, 1].plot(diffuse_kernel.sum(axis=0)[reverse_path_visibility], label='diffuse 0')
-            # axs[0, 1].plot(diffuse_kernel.sum(axis=1)[reverse_path_visibility], label='diffuse 1')
-            # axs[0, 1].plot(specular_kernel.sum(axis=0)[reverse_path_visibility], label='specular 0')
-            # axs[0, 1].plot(specular_kernel.sum(axis=1)[reverse_path_visibility], label='specular 1')
-            # axs[0, 1].set_title('reverse_path_visibility')
-            # axs[0, 1].legend()
-            #
-            # axs[1, 1].plot(diffuse_kernel.sum(axis=0)[~reverse_path_visibility], label='diffuse 0')
-            # axs[1, 1].plot(diffuse_kernel.sum(axis=1)[~reverse_path_visibility], label='diffuse 1')
-            # axs[1, 1].plot(specular_kernel.sum(axis=0)[~reverse_path_visibility], label='specular 0')
-            # axs[1, 1].plot(specular_kernel.sum(axis=1)[~reverse_path_visibility], label='specular 1')
-            # axs[1, 1].set_title('~reverse_path_visibility')
-            # axs[1, 1].legend()
-            #
-            # plt.tight_layout()
-            # plt.show()
+            fig, axs = plt.subplots(2, 2, dpi=200, figsize=(8, 6))
+
+            axs[0, 0].plot(diffuse_kernel.sum(axis=1)[path_visibility], label='diffuse')
+            axs[0, 0].plot(specular_kernel.sum(axis=1)[path_visibility], label='specular')
+            axs[0, 0].set_title('path_visibility')
+            axs[0, 0].legend()
+
+            axs[1, 0].plot(diffuse_kernel.sum(axis=1)[~path_visibility], label='diffuse')
+            axs[1, 0].plot(specular_kernel.sum(axis=1)[~path_visibility], label='specular')
+            axs[1, 0].set_title('~path_visibility')
+            axs[1, 0].legend()
+
+            axs[0, 1].plot(diffuse_kernel.sum(axis=1)[reverse_path_visibility], label='diffuse')
+            axs[0, 1].plot(specular_kernel.sum(axis=1)[reverse_path_visibility], label='specular')
+            axs[0, 1].set_title('reverse_path_visibility')
+            axs[0, 1].legend()
+
+            axs[1, 1].plot(diffuse_kernel.sum(axis=1)[~reverse_path_visibility], label='diffuse')
+            axs[1, 1].plot(specular_kernel.sum(axis=1)[~reverse_path_visibility], label='specular')
+            axs[1, 1].set_title('~reverse_path_visibility')
+            axs[1, 1].legend()
+
+            plt.tight_layout()
+            plt.show()
 
             # TODO: Assess numerical precision by checking unit row sums in the diffuse kernel.
 

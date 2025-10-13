@@ -63,14 +63,15 @@ class TriangleMesh:
         self.v1 = V[F[:, 0]]
         self.edge1 = V[F[:, 1]] - self.v1
         self.edge2 = V[F[:, 2]] - self.v1
+
         self.n = np.cross(self.edge1, self.edge2)
+        nlen = np.linalg.norm(self.n, axis=1)
+        if np.any(nlen == 0):
+            raise ValueError("All faces must have nonzero area.")
+        self.n /= nlen[:, None]
 
-        # Note: these work because self.n is not normalized yet
+        self.area = 0.5 * nlen
         self.d0 = np.einsum("ij,ij->i", self.n, self.v1)
-        self.area = 0.5 * np.linalg.norm(self.n, axis=1)
-
-        # Normalize normal
-        self.n /= np.linalg.norm(self.n, axis=1)[:, None]
 
     def size(self) -> int:
         return int(self.v1.shape[0])

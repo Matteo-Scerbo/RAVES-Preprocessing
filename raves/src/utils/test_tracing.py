@@ -6,7 +6,8 @@ import numpy as np
 from scipy.constants import golden
 import unittest
 
-from raytracing import TriangleMesh, RayBundle
+from .raves_io import load_mesh
+from .raytracing import TriangleMesh, RayBundle, EPS_FACING, EPS_SELFHIT
 
 EXPECTED_DIST_PAIR = np.array([
     [  # origin index 0
@@ -45,6 +46,51 @@ EXPECTED_IDX_PAIR = np.array([
         [12, -1],  # dir 5
     ],
 ], dtype=int)
+
+
+def build_single_triangle(z, up_normal):
+    # Right triangle in the z = const plane with +Z normal
+    V = np.array([
+        [1.0, 0.0, z],
+        [0.0, 1.0, z],
+        [0.0, 0.0, z],
+    ])
+    if up_normal:
+        F = np.array([[0, 1, 2]], dtype=int)
+    else:
+        F = np.array([[0, 2, 1]], dtype=int)
+    P = np.array([0], dtype=int)
+    return TriangleMesh(V, F, P)
+
+
+def build_unit_cube(outward):
+    V = np.array([
+        [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],  # 0..3  (z=0)
+        [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1],  # 4..7  (z=1)
+    ])
+
+    # 12 triangles, outward normals via right-hand rule
+    F = np.array([
+        # z = 0 (normal -Z)
+        [0, 2, 1], [0, 3, 2],
+        # z = 1 (normal +Z)
+        [4, 5, 6], [4, 6, 7],
+        # y = 0 (normal -Y)
+        [0, 1, 5], [0, 5, 4],
+        # y = 1 (normal +Y)
+        [3, 7, 6], [3, 6, 2],
+        # x = 0 (normal -X)
+        [0, 4, 7], [0, 7, 3],
+        # x = 1 (normal +X)
+        [1, 2, 6], [1, 6, 5],
+    ], dtype=int)
+
+    if not outward:
+        # flip winding of every triangle to invert normals
+        F = F[:, [0, 2, 1]]
+
+    P = np.arange(F.shape[0], dtype=int)
+    return TriangleMesh(V, F, P)
 
 
 def build_test_mesh():
@@ -106,7 +152,7 @@ def build_test_mesh():
 
 
 # PlatonicVertices helper exactly as in C++ unit tests (ported)
-def PlatonicVertices(n):
+def platonic_vertices(n):
     if n == 1:
         verts = np.array([[0.0, 0.0, 1.0]], dtype=float)
     elif n == 2:
@@ -176,6 +222,73 @@ def PlatonicVertices(n):
     return verts
 
 
+class PlaneTests(unittest.TestCase):
+    def test_plane_parameters_consistency(self):
+        mesh, _ = load_mesh('../../example environments/AudioForGames_20_patches/mesh.obj')
+
+        # For any triangle, the plane identity dot(n, v1) - d0 must be ~0 if (n, d0) are consistent.
+        residual = np.einsum("ij,ij->i", mesh.n, mesh.v1) - mesh.d0
+
+        self.assertTrue(np.all(np.abs(residual) < EPS_FACING),
+                        msg='Plane (n, d0) inconsistent; max residual = ' + str(np.max(np.abs(residual))))
+
+    def test_origin_side_vs_direction(self):
+        for plane_z in [-3., 0., 3.]:
+            for triangle_normal in [1, -1]:
+                test_triangle = build_single_triangle(z=plane_z,
+                                                      up_normal=(triangle_normal > 0))
+                for ray_origin_position in [1, -1]:
+                    for ray_orientation in [1, -1]:
+                        test_ray = RayBundle.from_shared_origin(origin=np.array([0.25, 0.25, plane_z + ray_origin_position]),
+                                                                directions=ray_orientation * np.array([[0., 0., 1.]]))
+
+                        test_ray.traceAll(test_triangle)
+                        front, back = test_ray.getIndices()
+
+                        msg = 'Triangle normal ' + str(triangle_normal) + \
+                              ', ray origin ' + str(ray_origin_position) + \
+                              ', ray orientation ' + str(ray_orientation)
+
+                        if triangle_normal * ray_origin_position < 0:
+                            self.assertEqual(front, -1, msg=msg + '. Ray should NOT hit in the front.')
+                            self.assertEqual(back, -1, msg=msg + '. Ray should NOT hit in the back.')
+                        elif ray_origin_position * ray_orientation > 0:
+                            self.assertEqual(front, -1, msg=msg + '. Ray should NOT hit in the front.')
+                            self.assertNotEqual(back, -1, msg=msg + '. Ray should hit in the back.')
+                        else:
+                            self.assertNotEqual(front, -1, msg=msg + '. Ray should NOT hit in the front.')
+                            self.assertEqual(back, -1, msg=msg + '. Ray should hit in the back.')
+
+    def test_cube_hits_depend_on_normal(self):
+        """
+        For a watertight inward-facing cube, tracing from the center should find intersections in both directions.
+        If the cube is outward-facing, tracing from the center should find no intersections in either direction.
+        """
+        N = 1000
+
+        # Inward normals
+        cube_out = build_unit_cube(outward=False)
+        test_rays = RayBundle.sample_sphere(N, origin=np.array([0.5, 0.5, 0.5]))
+        test_rays.traceAll(cube_out)
+        front, back = test_rays.getIndices()
+
+        self.assertEqual(int(np.count_nonzero(front == -1)), 0,
+                         msg='There should be no invalid front hits from within an inward-facing cube.')
+        self.assertEqual(int(np.count_nonzero(back == -1)), 0,
+                         msg='There should be no invalid back hits from within an inward-facing cube.')
+
+        # Outward normals
+        cube_out = build_unit_cube(outward=True)
+        test_rays = RayBundle.sample_sphere(N, origin=np.array([0.5, 0.5, 0.5]))
+        test_rays.traceAll(cube_out)
+        front, back = test_rays.getIndices()
+
+        self.assertEqual(int(np.count_nonzero(front == -1)), N,
+                         msg='There should be no valid front hits from within an outward-facing cube.')
+        self.assertEqual(int(np.count_nonzero(back == -1)), N,
+                         msg='There should be no valid back hits from within an outward-facing cube.')
+
+
 class TracingClassesTests(unittest.TestCase):
     def test_pencil_tracing(self):
         testMesh = build_test_mesh()
@@ -231,7 +344,7 @@ class TracingClassesTests(unittest.TestCase):
     def test_pencil_sphere(self):
         for numRays in np.logspace(2, 5, 4, dtype=int):
             for numClusters in [1, 2, 3, 4, 6, 8, 12, 20]:
-                testClusters = PlatonicVertices(numClusters)
+                testClusters = platonic_vertices(numClusters)
                 self.assertTrue(np.allclose(np.linalg.norm(testClusters, axis=1), 1.0),
                                 msg='\n' + str(np.linalg.norm(testClusters)))
 
@@ -253,7 +366,7 @@ class TracingClassesTests(unittest.TestCase):
 
     def test_pencil_hemisphere(self):
         for numRays in np.logspace(2, 5, 4, dtype=int):
-            for northPole in PlatonicVertices(20):
+            for northPole in platonic_vertices(20):
                 testPencil = RayBundle.sample_sphere(numRays, hemisphere_only=True, north_pole=northPole)
 
                 effectiveNumRays = testPencil.getNumRays()
@@ -267,6 +380,56 @@ class TracingClassesTests(unittest.TestCase):
                 cosineSimilarities = np.einsum("j,mj->m", northPole, testPencil.getDirections())
                 self.assertTrue(np.all(cosineSimilarities >= 0.0),
                                 msg='\n' + str(cosineSimilarities))
+
+    def test_visibility_in_volume(self):
+        """
+        Load a triangle mesh which is known to be closed, trace rays (uniform sphere) from points inside it,
+        and assert that all rays find valid intersections in the front and back.
+        """
+        mesh, _ = load_mesh('../../example environments/AudioForGames_20_patches/mesh.obj')
+
+        num_rays = 1000
+        sphere_pencil = RayBundle.sample_sphere(num_rays)
+
+        for point_in_bounds in [np.array([2.1, 1.9, 1.5]),
+                                np.array([5.8, 4.1, 1.5]),
+                                np.array([7.2, 6.5, 1.5])]:
+            sphere_pencil.moveOrigins(point_in_bounds)
+            sphere_pencil.traceAll(mesh)
+            front_patch_ids, back_patch_ids = sphere_pencil.getIndices()
+
+            num_front_misses = np.count_nonzero(front_patch_ids == -1)
+            num_back_misses = np.count_nonzero(back_patch_ids == -1)
+
+            self.assertEqual(int(num_front_misses), 0,
+                             msg='Some rays had no valid front intersection from point ' + str(point_in_bounds))
+            self.assertEqual(int(num_back_misses), 0,
+                             msg='Some rays had no valid back intersection from point ' + str(point_in_bounds))
+
+    def test_visibility_on_surface(self):
+        """
+        Load a triangle mesh which is known to be closed, trace rays (uniform hemisphere) from points on the surface,
+        and assert that all rays find valid intersections in the front.
+        Back intersections are ignored. In theory, back rays should all hit the triangle itself;
+         in practice, the origin triangle will be ignored because it's too close to the ray origin (below EPS_SELFHIT).
+        """
+        mesh, _ = load_mesh('../../example environments/AudioForGames_20_patches/mesh.obj')
+
+        num_rays = 1000
+
+        for triangle_idx in range(mesh.size()):
+            centroid = mesh.v1[triangle_idx] + (mesh.edge1[triangle_idx] + mesh.edge2[triangle_idx]) / 3
+            hemisphere_pencil = RayBundle.sample_sphere(num_rays, hemisphere_only=True,
+                                                        origin=centroid,
+                                                        north_pole=mesh.n[triangle_idx])
+
+            hemisphere_pencil.traceAll(mesh)
+            front_patch_ids, _ = hemisphere_pencil.getIndices()
+
+            num_front_misses = np.count_nonzero(front_patch_ids == -1)
+
+            self.assertEqual(int(num_front_misses), 0,
+                             msg='Some rays had no valid front intersection from the centroid of triangle ' + str(triangle_idx+1))
 
 
 if __name__ == "__main__":
