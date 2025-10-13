@@ -338,6 +338,8 @@ def main(folder_path: str,
             print('\nThe etendues between patch pairs (i, j) have an RMSE of {:.2e} with respect to their counterparts (j, i).'.format(etendue_RMSE))
             print('The propagation path etendues should be symmetric, i.e., the RMSE should be low.')
             print('If it seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
+            print('N.B.: The etendue values are based on the diffuse kernel before it is normalized.')
+            print('      If the diffuse kernel row sums had a high RMSE, the normalization may skew this assessment.')
 
             # For debugging: plot the etendues.
             """
