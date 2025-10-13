@@ -3,7 +3,7 @@ import sys
 import time
 import numpy as np
 from tqdm import tqdm
-from scipy.sparse import lil_array
+from scipy.sparse import lil_array, diags
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -42,9 +42,11 @@ def main(folder_path: str,
             if np.any(patch_areas < 0.1):
                 print('Warning: the mesh contains very small patches (smallest area: ' + str(np.min(patch_areas)) + ')')
 
-            # Initialize `path_lengths`, `diffuse_kernel`, and `specular_kernel` (sparse arrays).
+            # Initialize `path_lengths`, `path_etendues`, `diffuse_kernel`, and `specular_kernel` (sparse arrays).
+            # The `path_etendues` will be used to assess the integration accuracy.
             num_paths = num_patches ** 2
             path_lengths = lil_array((num_paths, 1))
+            path_etendues = lil_array((num_paths, 1))
             diffuse_kernel = lil_array((num_paths, num_paths))
             specular_kernel = lil_array((num_paths, num_paths))
 
@@ -113,8 +115,12 @@ def main(folder_path: str,
                      'Trace ray pencils ': 0.,
                      'Bundle rays       ': 0.,
                      'Sum contributions ': 0.,
-                     'Normalize and log ': 0.}
+                     'Normalize and log ': 0.,
+                     'Assess accuracy   ': 0.}
 
+            # TODO: Envelop each patch computation in a function
+            # TODO: Envelop each surface point computation in a function
+            # TODO: Add parallelization of tasks
             for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
                 # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
                 patch_normal = mesh.n[patch_triangles[i][0]]
@@ -186,9 +192,13 @@ def main(folder_path: str,
 
                         hemisphere_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
                         specular_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
+                        num_hemisphere_hits_per_patch = np.zeros(num_patches)
+                        num_specular_hits_per_patch = np.zeros(num_patches)
                         for j in range(num_patches):
                             hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
                             specular_hits_per_patch[j] = (specular_patch_ids == j)
+                            num_hemisphere_hits_per_patch[j] = np.count_nonzero(hemisphere_patch_ids == j)
+                            num_specular_hits_per_patch[j] = np.count_nonzero(specular_patch_ids == j)
 
                         if detect_open_surface:
                             # An index of -1 indicates that the ray has no valid intersections.
@@ -203,13 +213,13 @@ def main(folder_path: str,
                         for j in range(num_patches):
                             # Combine the two bundles to ensure symmetry.
                             # Each ray appears once as "main" and once as specular; both count as hits.
-                            accumulated_num_hits[j] += np.count_nonzero(hemisphere_hits_per_patch[j])
-                            accumulated_num_hits[j] += np.count_nonzero(specular_hits_per_patch[j])
+                            accumulated_num_hits[j] += num_hemisphere_hits_per_patch[j]
+                            accumulated_num_hits[j] += num_specular_hits_per_patch[j]
 
                             accumulated_distances[j] += np.sum(hemisphere_distances[hemisphere_hits_per_patch[j]])
                             accumulated_distances[j] += np.sum(specular_distances[specular_hits_per_patch[j]])
 
-                            # The departure cosine is the same for specular rays.
+                            # The departure cosine of each ray is the same as the departure cosine of its specular ray.
                             accumulated_cosines[j] += np.sum(hemisphere_cosines[hemisphere_hits_per_patch[j]])
                             accumulated_cosines[j] += np.sum(hemisphere_cosines[specular_hits_per_patch[j]])
 
@@ -234,6 +244,9 @@ def main(folder_path: str,
 
                     path_lengths[ij] = accumulated_distances[j] / accumulated_num_hits[j]
 
+                    # Etendue is equal to form factor times surface area (times pi, but we don't need that for the check we'll make).
+                    path_etendues[ij] = patch_areas[i] * accumulated_cosines[j] / (rays_per_hemisphere * num_points)
+
                     for h in range(num_patches):
                         if accumulated_num_hits[h] == 0:
                             # No visibility between any point in h and any point in i.
@@ -253,11 +266,13 @@ def main(folder_path: str,
                 end = time.time()
                 times['Normalize and log '] += end - start
 
+            start = time.time()
+
             if detect_open_surface:
                 print('\nPercentage of invalid rays from each patch:')
-                print('\t Maximum (patch ' + str(np.argmax(miss_percentages)+1) + '): ' + str(np.round(np.max(miss_percentages), 2)) + '%')
-                print('\t Average: ' + str(np.round(np.mean(miss_percentages), 2)) + '%')
-                print('\t Median: ' + str(np.round(np.median(miss_percentages), 2)) + '%')
+                print('\t Maximum (patch {}): {:.2f}%'.format(np.argmax(miss_percentages)+1, np.max(miss_percentages)))
+                print('\t Average: {:.2f}%'.format(np.max(miss_percentages)))
+                print('\t Median: {:.2f}%'.format(np.max(miss_percentages)))
                 print('A high percentage of missed rays indicates the surface is not closed.')
                 print('If the average is above 50%, check the orientation of normal vectors.')
 
@@ -272,35 +287,69 @@ def main(folder_path: str,
             path_visibility = (path_lengths.toarray().squeeze() != 0)
             reverse_path_visibility = path_visibility[reverse_path_indexing]
 
-            # TODO: Assert unit row sums in the specular kernel.
-            fig, axs = plt.subplots(2, 2, dpi=200, figsize=(8, 6))
+            num_mismatches = np.count_nonzero(path_visibility & ~reverse_path_visibility)
+            print('\n' + str(num_mismatches) + ' pairs of patches have mismatched visibility (one sees the other, but not vice versa).')
+            print('This makes up {:.2f}% of all possible propagation paths.'.format(num_mismatches / num_paths))
+            print('If this seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
+            print('The mismatched pairs will be dropped (i.e., we assume there is no visibility).')
+            path_visibility = path_visibility & reverse_path_visibility
 
-            axs[0, 0].plot(diffuse_kernel.sum(axis=1)[path_visibility], label='diffuse')
-            axs[0, 0].plot(specular_kernel.sum(axis=1)[path_visibility], label='specular')
-            axs[0, 0].set_title('path_visibility')
-            axs[0, 0].legend()
+            # Set elements without visibility to 0, in case of mismatches.
+            diffuse_kernel[~path_visibility] = 0
+            diffuse_kernel[:, ~path_visibility] = 0
+            specular_kernel[~path_visibility] = 0
+            specular_kernel[:, ~path_visibility] = 0
 
-            axs[1, 0].plot(diffuse_kernel.sum(axis=1)[~path_visibility], label='diffuse')
-            axs[1, 0].plot(specular_kernel.sum(axis=1)[~path_visibility], label='specular')
-            axs[1, 0].set_title('~path_visibility')
-            axs[1, 0].legend()
+            # Evaluate the row sums of both kernels. All rows should sum to 1; any divergence is an artefact of numerical integration.
+            # As such, we can use these to assess the accuracy of the integration.
+            diffuse_row_sums = diffuse_kernel.sum(axis=1)
+            specular_row_sums = specular_kernel.sum(axis=1)
 
-            axs[0, 1].plot(diffuse_kernel.sum(axis=1)[reverse_path_visibility], label='diffuse')
-            axs[0, 1].plot(specular_kernel.sum(axis=1)[reverse_path_visibility], label='specular')
-            axs[0, 1].set_title('reverse_path_visibility')
-            axs[0, 1].legend()
+            diffuse_row_sums_RMSE = np.sqrt(np.mean(np.abs(diffuse_row_sums[path_visibility] - 1.) ** 2))
+            specular_row_sums_RMSE = np.sqrt(np.mean(np.abs(specular_row_sums[path_visibility] - 1.) ** 2))
 
-            axs[1, 1].plot(diffuse_kernel.sum(axis=1)[~reverse_path_visibility], label='diffuse')
-            axs[1, 1].plot(specular_kernel.sum(axis=1)[~reverse_path_visibility], label='specular')
-            axs[1, 1].set_title('~reverse_path_visibility')
-            axs[1, 1].legend()
+            print('\nThe kernel rows sum to 1 with an RMSE of {:.2e} for the diffuse kernel and {:.2e} for the specular kernel.'.format(diffuse_row_sums_RMSE, specular_row_sums_RMSE))
+            print('If either of these seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
+            print('The row sums will now be forcibly normalized.')
 
+            # Apply the normalization safely w.r.t. zero rows.
+            diffuse_row_normalization = np.divide(1., diffuse_row_sums,
+                                                  out=np.zeros(num_paths),
+                                                  where=(diffuse_row_sums != 0))
+            diffuse_kernel = lil_array(diags(diffuse_row_normalization) @ diffuse_kernel)
+            specular_row_normalization = np.divide(1., specular_row_sums,
+                                                   out=np.zeros(num_paths),
+                                                   where=(specular_row_sums != 0))
+            specular_kernel = lil_array(diags(specular_row_normalization) @ specular_kernel)
+            specular_kernel = lil_array(specular_kernel @ diags(specular_row_normalization))
+
+            # For debugging: plot the row sums.
+            """
+            fig, ax = plt.subplots(dpi=200, figsize=(8, 6))
+            plt.plot(diffuse_row_sums[path_visibility], label='diffuse (RMSE {:.2e})'.format(diffuse_row_sums_RMSE))
+            plt.plot(specular_row_sums[path_visibility], label='specular (RMSE {:.2e})'.format(specular_row_sums_RMSE))
+            plt.tight_layout()
+            plt.legend()
+            plt.show()
+            """
+
+            # Assess numerical precision by comparing diffuse kernel symmetricity.
+            etendue_RMSE = np.sqrt(np.mean(np.abs(path_etendues - path_etendues[reverse_path_indexing]) ** 2))
+            print('\nThe etendues between patch pairs (i, j) have an RMSE of {:.2e} with respect to their counterparts (j, i).'.format(etendue_RMSE))
+            print('The propagation path etendues should be symmetric, i.e., the RMSE should be low.')
+            print('If it seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
+
+            # For debugging: plot the etendues.
+            """
+            fig, ax = plt.subplots(dpi=200, figsize=(8, 6))
+            plt.plot(path_etendues.toarray()[path_visibility])
+            plt.plot(path_etendues.toarray()[reverse_path_indexing][path_visibility])
             plt.tight_layout()
             plt.show()
+            """
 
-            # TODO: Assess numerical precision by checking unit row sums in the diffuse kernel.
-
-            # TODO: Assess numerical precision by comparing diffuse kernel symmetricity.
+            end = time.time()
+            times['Assess accuracy   '] += end - start
 
             print('\nTime elapsed for different tasks (seconds):')
             for k, i in times.items():
