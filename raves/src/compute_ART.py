@@ -3,18 +3,19 @@ import sys
 import time
 import numpy as np
 from tqdm import tqdm
-from scipy.sparse import lil_array, diags
+from scipy.sparse import lil_array, csr_array, diags
 from scipy.io import mmwrite
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from utils import load_all_inputs, RayBundle
+from utils import load_all_inputs, RayBundle, air_absorption_in_band
 
 
 def main(folder_path: str,
          points_per_square_meter: float = 10.,
          rays_per_hemisphere: int = 100,
+         humidity: float = 50., temperature: float = 20., pressure: float = 100.,
          detect_open_surface: bool = True,
          profile_runtime: bool = False) -> None:
     # TODO: Fill out documentation properly.
@@ -24,6 +25,9 @@ def main(folder_path: str,
         folder_path:
         points_per_square_meter:
         rays_per_hemisphere:
+        humidity:
+        temperature:
+        pressure:
         detect_open_surface:
         profile_runtime:
 
@@ -33,6 +37,9 @@ def main(folder_path: str,
     if (type(folder_path) != str
             or type(points_per_square_meter) != float
             or type(rays_per_hemisphere) != int
+            or type(humidity) != float
+            or type(temperature) != float
+            or type(pressure) != float
             or type(detect_open_surface) != bool
             or type(profile_runtime) != bool):
         raise ValueError('Please respect the type hints.')
@@ -141,7 +148,8 @@ def main(folder_path: str,
                      'Sum contributions ': 0.,
                      'Normalize and log ': 0.,
                      'Assess accuracy   ': 0.,
-                     'Write files       ': 0.
+                     'Write core files  ': 0.,
+                     'Write freq. files ': 0.
         }
 
     # TODO: Wrap each patch computation in a function call, for legibility
@@ -348,7 +356,7 @@ def main(folder_path: str,
     """
 
     # Drop all non-visible paths from the ART model.
-    num_paths = np.count_nonzero(path_visibility)
+    num_valid_paths = np.count_nonzero(path_visibility)
     path_lengths = path_lengths[path_visibility]
     diffuse_kernel = lil_array(diffuse_kernel[path_visibility][:, path_visibility])
     specular_kernel = lil_array(specular_kernel[path_visibility][:, path_visibility])
@@ -367,14 +375,15 @@ def main(folder_path: str,
     print('The row sums will now be forcibly normalized.')
 
     # Apply the normalization safely w.r.t. zero rows.
+    # Also, switch to Compressed Sparse Row (CSR) format to make later operations more efficient.
     diffuse_row_normalization = np.divide(1., diffuse_row_sums,
-                                          out=np.zeros(num_paths),
+                                          out=np.zeros(num_valid_paths),
                                           where=(diffuse_row_sums != 0))
-    diffuse_kernel = lil_array(diags(diffuse_row_normalization) @ diffuse_kernel)
+    diffuse_kernel = csr_array(diags(diffuse_row_normalization) @ diffuse_kernel)
     specular_row_normalization = np.divide(1., specular_row_sums,
-                                           out=np.zeros(num_paths),
+                                           out=np.zeros(num_valid_paths),
                                            where=(specular_row_sums != 0))
-    specular_kernel = lil_array(diags(specular_row_normalization) @ specular_kernel)
+    specular_kernel = csr_array(diags(specular_row_normalization) @ specular_kernel)
 
     # For debugging: plot the row sums after normalization.
     """
@@ -408,8 +417,9 @@ def main(folder_path: str,
             if path_visibility[path_index(i, j)]:
                 num_registered_paths += 1
                 path_indexing[i, j] = num_registered_paths
-    assert num_registered_paths == len(path_lengths)
-    assert num_registered_paths == np.count_nonzero(path_visibility)
+    assert num_registered_paths == num_valid_paths
+    # We'll need this to be in Compressed Sparse Row (CSR) format.
+    path_indexing = csr_array(path_indexing)
 
     # Write the core ART parameters.
     mmwrite(folder_path + '/ART_diffuse_kernel.mtx', diffuse_kernel, field='real', symmetry='general',
@@ -423,13 +433,60 @@ def main(folder_path: str,
             'Zero elements denote invalid paths; patch and path indices both start from 1.')
     np.savetxt(folder_path + '/path_lengths.csv', path_lengths, fmt='%.18f', delimiter=', ')
 
-    # TODO: Use material_coefficients
-    # TODO: Prepare ART_octave_band_1.mtx, ART_octave_band_2.mtx, etc. (for each frequency band)
-    # TODO: Write ART_octave_band_1.mtx, ART_octave_band_2.mtx, etc. (for each frequency band)
+    if profile_runtime:
+        end = time.time()
+        profiling['Write core files  '] += end - start
+        start = time.time()
+
+    # Construct the full ART reflection kernel for each frequency band.
+    for band_idx, center_frequency in enumerate(material_coefficients['Frequencies']):
+        # This will be the final reflection kernel for this frequency band:
+        #   weighted sum of diffuse and specular kernels,
+        #   scaled by wall absorption and air absorption.
+        reflection_kernel = lil_array((num_valid_paths, num_valid_paths))
+
+        for i, patch_mat in enumerate(patch_materials):
+            # Retrieve the coefficients of patch i for this frequency band.
+            patch_i_absorption = material_coefficients[patch_mat][0, band_idx]
+            patch_i_scattering = material_coefficients[patch_mat][1, band_idx]
+
+            # Locate all propagation paths which originate at patch i. See docs of `csr_array`.
+            all_outgoing_paths_from_i = path_indexing.data[path_indexing.indptr[i]:path_indexing.indptr[i+1]]
+            # N.B. The path indices are 1-based; we need them to be 0-based here.
+            all_outgoing_paths_from_i -= 1
+
+            # Weighted sum of diffuse and specular kernels.
+            reflection_kernel[:, all_outgoing_paths_from_i] = \
+                patch_i_scattering * diffuse_kernel[:, all_outgoing_paths_from_i]\
+                + (1 - patch_i_scattering) * specular_kernel[:, all_outgoing_paths_from_i]
+
+            # Add surface material energy losses.
+            reflection_kernel[:, all_outgoing_paths_from_i] *= patch_i_absorption
+
+            # Add air absorption energy losses (based on path lengths).
+            for outgoing_path in all_outgoing_paths_from_i:
+                air_absorption_pressure_gain = air_absorption_in_band(
+                    fc=center_frequency, fd=np.sqrt(2),  # Using octave bands, the half-band factor is sqrt(2).
+                    distance=path_lengths[outgoing_path],
+                    humidity=humidity, temperature=temperature, pressure=pressure)
+                # Power level is the square of the pressure amplitude level.
+                air_absorption_energy_gain = air_absorption_pressure_gain**2
+
+                # [outgoing_path] is put into a list to avoid a shape mismatch error.
+                reflection_kernel[:, [outgoing_path]] *= air_absorption_energy_gain
+
+        # Write complete reflection kernel to ART_octave_band_<band_idx+1>.mtx
+        mmwrite(folder_path + '/ART_octave_band_{}.mtx'.format(band_idx+1), reflection_kernel, field='real', symmetry='general',
+                comment='Complete acoustic radiance transfer reflection kernel, '
+                'w.r.t. the {}th octave band (center freq. {:.2f}Hz). '.format(band_idx+1, center_frequency) +
+                'Includes energy losses due to surface materials and air absorption over propagation paths. ' +
+                'Generated using {:.0f} points per square meter and {:d} rays per hemisphere.'.format(points_per_square_meter, rays_per_hemisphere))
+        # TODO: Air absorption, to be totally correct, should not be baked into the reflection kernel.
+        #       Doing so means that it's applied one too many times when MoD-ART is performed.
 
     if profile_runtime:
         end = time.time()
-        profiling['Write files       '] += end - start
+        profiling['Write freq. files '] += end - start
 
         print('\nTime elapsed for different tasks (seconds):')
         for k, i in profiling.items():

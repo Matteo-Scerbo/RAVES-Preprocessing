@@ -1,5 +1,6 @@
 import re
 import csv
+import warnings
 import numpy as np
 from typing import Tuple, List, Dict, Set
 
@@ -176,6 +177,9 @@ def load_materials(file_path: str, expected_names: Set[str]) -> Dict[str, np.nda
             band_centers = np.array(first_row, dtype=float)
             if mat_name != 'Frequencies':
                 raise ValueError('The first row of material.csv should start with the word "Frequencies" and contain the octave band center frequencies.')
+            if len(first_row) == 0:
+                warnings.warn('No octave band center frequencies are reported in material.csv. Using broadband mode (one band centered at 0).')
+                band_centers = np.zeros(1)
             material_coefficients[mat_name] = band_centers
         else:
             raise ValueError('The first row of material.csv should start with the word "Frequencies" and contain the octave band center frequencies.')
