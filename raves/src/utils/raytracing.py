@@ -14,6 +14,7 @@ EPS_SELFHIT = 1e-3      # reject hits too close to the ray origin
 
 
 class TriangleMesh:
+    # TODO: Fill out documentation properly.
     """
     Structure-of-Arrays (SoA) container for a triangle mesh used by the tracing kernels.
 
@@ -36,6 +37,14 @@ class TriangleMesh:
     def __init__(self, vertices: np.ndarray,
                  vert_triplets: np.ndarray,
                  patch_ids: np.ndarray):
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            vertices:
+            vert_triplets:
+            patch_ids:
+        """
         """
         Build the SoA from:
           - vertices:       (N,3) array of 3D coordinates (float)
@@ -77,6 +86,16 @@ class TriangleMesh:
         return int(self.v1.shape[0])
 
     def sample_triangle(self, triangle_idx: int, points_per_square_meter: float) -> np.ndarray:
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            triangle_idx:
+            points_per_square_meter:
+
+        Returns:
+
+        """
         """
         Quasi-Monte Carlo surface sampling for numerical integration.
         This approach in inspired by the one proposed in:
@@ -147,12 +166,20 @@ class TriangleMesh:
 #       - Expose the fact that it's a hemisphere
 #       - Hide the fact that it's a hemisphere (return duplicated, inverted results, like the C++ code does)
 class RayBundle:
+    # TODO: Fill out documentation properly.
     """
     Class for tracing a bundle of rays with (possibly) separate origins and directions.
     All RayPencil functionality from the original code is folded into this class.
     """
 
     def __init__(self, O: np.ndarray, D: np.ndarray):
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            O:
+            D:
+        """
         """
         Basic, explicit constructor.
         It also allocates per-ray bookkeeping arrays on the instance.
@@ -183,6 +210,16 @@ class RayBundle:
                            origin: np.ndarray,
                            directions: np.ndarray,
     ) -> "RayBundle":
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            origin:
+            directions:
+
+        Returns:
+
+        """
         """
         Initialization with one shared origin and many directions.
 
@@ -217,6 +254,16 @@ class RayBundle:
                                     origins: np.ndarray,
                                     directions: np.ndarray,
     ) -> "RayBundle":
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            origins:
+            directions:
+
+        Returns:
+
+        """
         """
         Initialization with per-ray origins and directions.
 
@@ -252,6 +299,18 @@ class RayBundle:
                       origin: np.ndarray = np.zeros(3),
                       north_pole: np.ndarray = np.array([0., 0., 1.]),
     ) -> "RayBundle":
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            num_rays:
+            hemisphere_only:
+            origin:
+            north_pole:
+
+        Returns:
+
+        """
         """
         Build a 'pencil' of directions sampled uniformly on a Fibonacci sphere,
         optionally restricted to the +Z hemisphere (matching the C++ RayPencil constructor).
@@ -339,53 +398,55 @@ class RayBundle:
         return int(self.D.shape[0])
 
     def getOrigins(self, copy: bool = True) -> np.ndarray:
-        """Return Nx3 array of origins."""
         if copy:
             return self.O.copy()
         else:
             return self.O
 
     def getDirections(self, copy: bool = True) -> np.ndarray:
-        """Return Nx3 array of directions."""
         if copy:
             return self.D.copy()
         else:
             return self.D
 
     def getTotalDistances(self, copy: bool = True) -> np.ndarray:
-        """For each ray, returns the total travel distance in meters. NaN denotes invalid intersections."""
         if copy:
             return self.totalDistance.copy()
         else:
             return self.totalDistance
 
     def getDistances(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
-        """For each ray, returns the distance of the closest intersection (front and back). NaN denotes invalid intersections."""
         if copy:
             return self.frontDistance.copy(), self.backDistance.copy()
         else:
             return self.frontDistance, self.backDistance
 
     def getCosines(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
-        """For each ray, returns the incidence cosine of the closest intersection (front and back). NaN denotes invalid intersections."""
         if copy:
             return self.frontCosine.copy(), self.backCosine.copy()
         else:
             return self.frontCosine, self.backCosine
 
     def getIndices(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
-        """Returns (current, previous) patch indices per ray. -1 denotes invalid intersections."""
         if copy:
             return self.frontPatch.copy(), self.backPatch.copy()
         else:
             return self.frontPatch, self.backPatch
 
     def getRadiance(self, copy: bool = True) -> np.ndarray:
-        """Returns the per-ray radiance values."""
         if copy:
             return self.radiance.copy()
 
     def moveOrigins(self, origins: np.ndarray) -> None:
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            origins:
+
+        Returns:
+
+        """
         """
         Change the rays' origins (if one origin is given, it is used for all rays).
 
@@ -407,6 +468,15 @@ class RayBundle:
             raise ValueError("origins must have shape (M, 3), and M must either be 1 or the number of rays.")
 
     def traceAll(self, triangles: TriangleMesh) -> None:
+        # TODO: Fill out documentation properly.
+        """
+
+        Args:
+            triangles:
+
+        Returns:
+
+        """
         """
         Find the next intersection point of each ray and update the intersected triangle indices,
         without advancing the rays.
