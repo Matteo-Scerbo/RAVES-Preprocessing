@@ -12,8 +12,8 @@
   into your Unity project assets, matching the folder structure shown below. Follow the 
   instructions of the `RAVES-Unity` repository to set up RAVES in the Unity project.
 
-Alternatively, you may run the individual scripts `compute_ART`, `compute_MoDART`, and 
-`update_ART_materials`, or import them as you would a package, e.g. `from raves import compute_ART`.
+Alternatively, you may run the individual scripts `compute_ART`, `compute_MoDART`, or import 
+them as you would a package, e.g. `from raves import compute_ART`.
 
 ### Unity project folder structure
 
@@ -51,7 +51,7 @@ UnityProjectName/
 └── [...]
 ```
 
-### Modifying the materials of an existing ART model
+### [TODO] Modifying the materials of an existing ART model
 
 If you wish to modify the surface material properties after running `compute_ART` but
 before running `compute_MoDART`, it is possible to do so without having to re-run the most
@@ -59,8 +59,11 @@ expensive ART computations. Simply modify the contents of `materials.csv` and, i
 material `Mat_{material}` assigned to each surface patch in `mesh.mtl` and `mesh.obj`. Take care 
 not to change any other part of `mesh.mtl` and `mesh.obj`: **the mesh geometry and 
 patch-triangle grouping must remain unchanged w.r.t. the original ART computation.**
-After making your changes, run the `update_ART_materials` script, providing the path to your 
-environment folder as input.
+After making your changes, run the `compute_ART` script again.
+This will re-use the existing fundamental kernels (diffuse and specular) with the new material 
+data, instead of performing the numerical integration again.
+If you truly want to overwrite the existing numerical integration results, run the script with 
+argument `--overwrite`.
 
 ### Design considerations
 

@@ -9,7 +9,7 @@ from scipy.io import mmwrite
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from utils import load_all_inputs, RayBundle, air_absorption_in_band
+from .utils import load_all_inputs, RayBundle, air_absorption_in_band
 
 
 def main(folder_path: str,
@@ -463,17 +463,20 @@ def main(folder_path: str,
             # Add surface material energy losses.
             reflection_kernel[:, all_outgoing_paths_from_i] *= patch_i_absorption
 
-            # Add air absorption energy losses (based on path lengths).
-            for outgoing_path in all_outgoing_paths_from_i:
-                air_absorption_pressure_gain = air_absorption_in_band(
-                    fc=center_frequency, fd=np.sqrt(2),  # Using octave bands, the half-band factor is sqrt(2).
-                    distance=path_lengths[outgoing_path],
-                    humidity=humidity, temperature=temperature, pressure=pressure)
-                # Power level is the square of the pressure amplitude level.
-                air_absorption_energy_gain = air_absorption_pressure_gain**2
-
-                # [outgoing_path] is put into a list to avoid a shape mismatch error.
-                reflection_kernel[:, [outgoing_path]] *= air_absorption_energy_gain
+        # Add air absorption energy losses (based on path lengths).
+        air_absorption_pressure_gains = np.array([
+            air_absorption_in_band(fc=center_frequency, fd=np.sqrt(2),  # Using octave bands, the half-band factor is sqrt(2).
+                                   distance=propagation_distance,
+                                   humidity=humidity, temperature=temperature, pressure=pressure)
+            for propagation_distance in path_lengths
+        ])
+        # Power level is the square of the pressure amplitude level.
+        air_absorption_energy_gains = air_absorption_pressure_gains**2
+        # Scale each column by the relative gain.
+        reflection_kernel = reflection_kernel @ diags(air_absorption_energy_gains)
+        # TODO: Air absorption, to be totally correct, should not be baked into the reflection kernel.
+        #       Doing so means that it's applied one too many times when MoD-ART is performed.
+        #       In the future, the air_absorption_energy_gains will be saved and applied separately.
 
         # Write complete reflection kernel to ART_octave_band_<band_idx+1>.mtx
         mmwrite(folder_path + '/ART_octave_band_{}.mtx'.format(band_idx+1), reflection_kernel, field='real', symmetry='general',
@@ -481,8 +484,6 @@ def main(folder_path: str,
                 'w.r.t. the {}th octave band (center freq. {:.2f}Hz). '.format(band_idx+1, center_frequency) +
                 'Includes energy losses due to surface materials and air absorption over propagation paths. ' +
                 'Generated using {:.0f} points per square meter and {:d} rays per hemisphere.'.format(points_per_square_meter, rays_per_hemisphere))
-        # TODO: Air absorption, to be totally correct, should not be baked into the reflection kernel.
-        #       Doing so means that it's applied one too many times when MoD-ART is performed.
 
     if profile_runtime:
         end = time.time()
@@ -494,6 +495,10 @@ def main(folder_path: str,
 
 
 if __name__ == "__main__":
+    # TODO: Add "material update" feature.
+    #  If kernel files already exist, read them instead of performing the integration.
+    #  Unless the argument `--overwrite` is given, in which case, perform the integration anyway.
+    # TODO: Accept optional arguments and pass them on.
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:

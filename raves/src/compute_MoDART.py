@@ -27,6 +27,7 @@ def main(folder_path: str) -> None:
 
 
 if __name__ == "__main__":
+    # TODO: Accept optional arguments and pass them on.
     if len(sys.argv) > 1:
         main(sys.argv[1])
     else:
