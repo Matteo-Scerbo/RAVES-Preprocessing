@@ -496,7 +496,7 @@ def compute_ART(folder_path: str,
                 + (1 - patch_i_scattering) * specular_kernel[:, all_outgoing_paths_from_i]
 
             # Add surface material energy losses.
-            reflection_kernel[:, all_outgoing_paths_from_i] *= patch_i_absorption
+            reflection_kernel[:, all_outgoing_paths_from_i] *= 1 - patch_i_absorption
 
         # Add air absorption energy losses (based on path lengths).
         air_absorption_pressure_gains = np.array([

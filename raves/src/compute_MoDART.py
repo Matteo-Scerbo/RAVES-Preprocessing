@@ -192,11 +192,11 @@ def compute_MoDART(folder_path: str,
 
         plt.xlabel('Frequency band index')
 
-        # plt.yscale('log')
-        # ax.yaxis.set_major_locator(mtpl.ticker.LogLocator(subs=np.arange(0.1, 1, 0.1)))
-        # ax.yaxis.set_major_formatter(mtpl.ticker.ScalarFormatter())
-        # ax.yaxis.set_minor_locator(mtpl.ticker.LogLocator(subs=np.arange(0.01, 1, 0.01)))
-        # ax.yaxis.set_minor_formatter(mtpl.ticker.NullFormatter())
+        plt.yscale('log')
+        ax.yaxis.set_major_locator(mtpl.ticker.LogLocator(subs=np.arange(0.1, 1, 0.1)))
+        ax.yaxis.set_major_formatter(mtpl.ticker.ScalarFormatter())
+        ax.yaxis.set_minor_locator(mtpl.ticker.LogLocator(subs=np.arange(0.01, 1, 0.01)))
+        ax.yaxis.set_minor_formatter(mtpl.ticker.NullFormatter())
         plt.ylabel('T60 [s]')
         plt.grid(True, axis='y')
 
