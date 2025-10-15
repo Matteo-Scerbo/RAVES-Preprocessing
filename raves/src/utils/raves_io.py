@@ -1,3 +1,4 @@
+import os
 import re
 import csv
 import warnings
@@ -32,8 +33,8 @@ def load_all_inputs(folder_path: str) -> Tuple[TriangleMesh, List[str], Dict[str
     Returns:
 
     """
-    mesh, patch_materials = load_mesh(folder_path + '/mesh.obj')
-    material_coefficients = load_materials(folder_path + '/materials.csv', set(patch_materials))
+    mesh, patch_materials = load_mesh(os.path.join(folder_path, 'mesh.obj'))
+    material_coefficients = load_materials(os.path.join(folder_path, 'materials.csv'), set(patch_materials))
 
     return mesh, patch_materials, material_coefficients
 
@@ -53,7 +54,7 @@ def load_mesh(file_path: str) -> Tuple[TriangleMesh, List[str]]:
     face_material_list = list()
     current_material = None
 
-    with open(file_path, 'r') as file:
+    with open(file_path, mode='r') as file:
         for line_idx, line in enumerate(file):
             if line_idx == 0 and line != 'mtllib mesh.mtl\n':
                 raise ValueError('The first line of `mesh.obj` should be `mtllib mesh.mtl`. Instead, it is'
@@ -168,7 +169,7 @@ def load_materials(file_path: str, expected_names: Set[str]) -> Dict[str, np.nda
     # and removed when the scattering coefficients are read (second and last time the name appears in the file).
     expecting_scattering = set()
 
-    with open(file_path, newline='') as csvfile:
+    with open(file_path, mode='r', newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
 
         first_row = next(reader, None)

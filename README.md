@@ -203,11 +203,11 @@ Concrete_painted, 0.3
 TODO: Explanation will go here.
 TODO: Make sure to specify the definition (power, not radiance).
 
-- `ART_diffuse_kernel.mtx`
+- `ART_kernel_diffuse.mtx`
     - TODO: Explanation will go here.
-- `ART_specular_kernel.mtx`
+- `ART_kernel_specular.mtx`
     - TODO: Explanation will go here.
-- `ART_octave_band_1.mtx`, `ART_octave_band_2.mtx`, ...
+- `ART_kernel_<band_index>.mtx` for each octave band
     - TODO: Explanation will go here.
 
 ### Propagation paths
@@ -219,6 +219,9 @@ TODO: Double-check the accuracy of `<start patch idx> <end patch idx> <propagati
     - TODO: Sparse, square, integer-valued matrix...
 - `path_lengths.csv`
     - TODO: Propagation path lengths, in meters.
+    - TODO: Only reports paths with visibility.
+- `path_etendues.csv`
+    - TODO: Explain...
     - TODO: Only reports paths with visibility.
 
 #### Example `path_indexing.mtx`

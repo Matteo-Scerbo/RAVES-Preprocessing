@@ -1,4 +1,4 @@
-from .compute_ART import main as compute_ART
-from .compute_MoDART import main as compute_MoDART
+from .compute_ART import compute_ART
+from .compute_MoDART import compute_MoDART
 
 __all__ = ["compute_ART", "compute_MoDART"]
