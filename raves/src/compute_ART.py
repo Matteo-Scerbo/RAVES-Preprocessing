@@ -6,16 +6,13 @@ from tqdm import tqdm
 from scipy.sparse import lil_array, csr_array, diags
 from scipy.io import mmread, mmwrite
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-
 from .utils import load_all_inputs, RayBundle, air_absorption_in_band
 
 
 def compute_ART(folder_path: str,
                 overwrite: bool = False,
-                points_per_square_meter: float = 30.,
-                rays_per_hemisphere: int = 3000,
+                points_per_square_meter: float = 10.,
+                rays_per_hemisphere: int = 100,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.,
                 detect_open_surface: bool = True,
                 profile_runtime: bool = False
@@ -82,6 +79,9 @@ def compute_ART(folder_path: str,
 
     # For debugging: plot the surface sample points, adding one triangle at a time.
     """
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    
     all_plots = list()
     for i in range(num_patches):
         for triangle_idx in patch_triangles[i]:
@@ -344,8 +344,8 @@ def compute_ART(folder_path: str,
         if detect_open_surface:
             print('\nPercentage of invalid rays from each patch:')
             print('\t Maximum (patch {}): {:.2f}%'.format(np.argmax(miss_percentages)+1, np.max(miss_percentages)))
-            print('\t Average: {:.2f}%'.format(np.max(miss_percentages)))
-            print('\t Median: {:.2f}%'.format(np.max(miss_percentages)))
+            print('\t Average: {:.2f}%'.format(np.mean(miss_percentages)))
+            print('\t Median: {:.2f}%'.format(np.median(miss_percentages)))
             print('A high percentage of missed rays indicates the surface is not closed.')
             print('If the average is above 50%, check the orientation of normal vectors.')
 
@@ -363,33 +363,44 @@ def compute_ART(folder_path: str,
             print('If this seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
             print('The mismatched pairs will be dropped (i.e., we assume there is no visibility).')
             path_visibility = path_visibility & reverse_path_visibility
+            # Delete etendues where visibility is not mutual.
+            # Where visibility isn't mutual, the etendue is 0 from one side and tiny but nonzero from the other, which skews the upcoming assessment.
+            path_etendues[~path_visibility] = 0.
 
         # Assess numerical precision by comparing etendue symmetricity.
         reverse_path_etendues = np.zeros_like(path_etendues)
         for i in range(num_patches):
             for j in range(num_patches):
                 reverse_path_etendues[path_index(i, j)] = path_etendues[path_index(j, i)]
-        etendue_RMSE = np.sqrt(np.mean(np.abs(path_etendues - reverse_path_etendues) ** 2))
-        print('\nThe etendues between patch pairs (i, j) have an RMSE of {:.2e} with respect to their counterparts (j, i).'.format(etendue_RMSE))
-        print('The propagation path etendues should be symmetric, i.e., the RMSE should be low.')
-        print('If it seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
+        # Symmetric absolute percentage error. Note: etendues are guaranteed non-negative.
+        mean_etendues = (path_etendues + reverse_path_etendues) / 2
+        etendue_SAPE = 100 * np.divide(np.abs(path_etendues - reverse_path_etendues),
+                                       mean_etendues,
+                                       out=np.zeros_like(mean_etendues),
+                                       where=(mean_etendues != 0))
+        print('\nSymmetric absolute percentage errors (SAPE) of propagation path etendues:')
+        print('\t Maximum: {:.2f}%'.format(np.max(etendue_SAPE)))
+        print('\t Average: {:.2f}%'.format(np.mean(etendue_SAPE)))
+        print('\t Median: {:.2f}%'.format(np.median(etendue_SAPE)))
+        print('The propagation path etendues should be symmetric, i.e., the SAPEs should be low.')
+        print('If they seem too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
         print('N.B.: The etendue values are based on the diffuse kernel before it is normalized.')
-        print('      If the diffuse kernel row sums had a high RMSE, the normalization may skew this assessment.')
+        print('      If the diffuse kernel row sums are significantly different from 1, the upcoming normalization may skew this assessment.')
         # For debugging: plot the etendues.
         """
+        import matplotlib.pyplot as plt
+        
         fig, ax = plt.subplots(dpi=200, figsize=(8, 6))
         plt.plot(path_etendues[path_visibility])
         plt.plot(reverse_path_etendues[path_visibility])
         plt.tight_layout()
         plt.show()
         """
-        # Average the path etendues in opposite directions.
-        path_etendues = (path_etendues + reverse_path_etendues) / 2
 
         # Drop all non-visible paths from the ART model.
         num_valid_paths = np.count_nonzero(path_visibility)
         path_lengths = path_lengths[path_visibility]
-        path_etendues = path_etendues[path_visibility]
+        mean_etendues = mean_etendues[path_visibility]
         diffuse_kernel = lil_array(diffuse_kernel[path_visibility][:, path_visibility])
         specular_kernel = lil_array(specular_kernel[path_visibility][:, path_visibility])
 
@@ -402,7 +413,8 @@ def compute_ART(folder_path: str,
         diffuse_row_sums_RMSE = np.sqrt(np.mean(np.abs(diffuse_row_sums - 1.) ** 2))
         specular_row_sums_RMSE = np.sqrt(np.mean(np.abs(specular_row_sums[specular_row_sums != 0] - 1.) ** 2))
 
-        print('\nThe kernel rows sum to 1 with an RMSE of {:.2e} for the diffuse kernel and {:.2e} for the specular kernel.'.format(diffuse_row_sums_RMSE, specular_row_sums_RMSE))
+        print('\nThe kernel rows sum to 1 with a root mean squared error (RMSE) of',
+              '{:.2e} for the diffuse kernel and {:.2e} for the specular kernel.'.format(diffuse_row_sums_RMSE, specular_row_sums_RMSE))
         print('If either of these seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
         print('The row sums will now be forcibly normalized.')
 
@@ -424,6 +436,8 @@ def compute_ART(folder_path: str,
         diffuse_row_sums_RMSE = np.sqrt(np.mean(np.abs(diffuse_row_sums - 1.) ** 2))
         specular_row_sums_RMSE = np.sqrt(np.mean(np.abs(specular_row_sums[specular_row_sums != 0] - 1.) ** 2))
     
+        import matplotlib.pyplot as plt
+        
         fig, ax = plt.subplots(dpi=200, figsize=(8, 6))
         plt.plot(diffuse_row_sums, label='diffuse (RMSE {:.2e})'.format(diffuse_row_sums_RMSE))
         plt.plot(specular_row_sums, label='specular (RMSE {:.2e})'.format(specular_row_sums_RMSE))
@@ -456,17 +470,19 @@ def compute_ART(folder_path: str,
         mmwrite(os.path.join(folder_path, 'ART_kernel_diffuse.mtx'),
                 diffuse_kernel, field='real', symmetry='general',
                 comment='Diffuse (Lambertian) component of the acoustic radiance transfer reflection kernel. ' +
-                'Generated using {:.0f} points per square meter and {:d} rays per hemisphere.'.format(points_per_square_meter, rays_per_hemisphere))
+                'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
+                'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
         mmwrite(os.path.join(folder_path, 'ART_kernel_specular.mtx'),
                 specular_kernel, field='real', symmetry='general',
                 comment='Specular component of the acoustic radiance transfer reflection kernel. ' +
-                'Generated using {:.0f} points per square meter and {:d} rays per hemisphere.'.format(points_per_square_meter, rays_per_hemisphere))
+                'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
+                'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
         mmwrite(os.path.join(folder_path, 'path_indexing.mtx'),
                 path_indexing, field='integer', symmetry='general',
                 comment='Relates each pair of surface patch indices to the index of a propagation path. ' +
                 'Zero elements denote invalid paths; patch and path indices both start from 1.')
         np.savetxt(os.path.join(folder_path, 'path_lengths.csv'), path_lengths, fmt='%.18f', delimiter=', ')
-        np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), path_etendues, fmt='%.18f', delimiter=', ')
+        np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
 
         if profile_runtime:
             end = time.time()
@@ -500,7 +516,7 @@ def compute_ART(folder_path: str,
 
         # Add air absorption energy losses (based on path lengths).
         air_absorption_pressure_gains = np.array([
-            air_absorption_in_band(fc=center_frequency, fd=np.sqrt(2),  # Using octave bands, the half-band factor is sqrt(2).
+            air_absorption_in_band(fc=center_frequency, fd=np.sqrt(2),  # Using full octave bands, the half-band factor is sqrt(2).
                                    distance=propagation_distance,
                                    humidity=humidity, temperature=temperature, pressure=pressure)
             for propagation_distance in path_lengths
@@ -517,7 +533,7 @@ def compute_ART(folder_path: str,
         mmwrite(os.path.join(folder_path, 'ART_kernel_{}.mtx'.format(band_idx+1)),
                 reflection_kernel, field='real', symmetry='general',
                 comment='Complete acoustic radiance transfer reflection kernel, '
-                'w.r.t. the {}th octave band (center freq. {:.2f}Hz). '.format(band_idx+1, center_frequency) +
+                'w.r.t. frequency band #{} (center freq. {:.2f}Hz). '.format(band_idx+1, center_frequency) +
                 'Includes energy losses due to surface materials and air absorption over propagation paths. ' +
                 'Generated using {:.0f} points per square meter and {:d} rays per hemisphere.'.format(points_per_square_meter, rays_per_hemisphere))
 

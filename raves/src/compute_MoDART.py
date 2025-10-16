@@ -46,8 +46,8 @@ def t60_to_eig(t60: float, fs: float) -> float:
 
 
 def compute_MoDART(folder_path: str,
-                   t60_threshold: float = 1e-1,
-                   max_slopes_per_band: int = 10,
+                   t60_threshold: float = 2e-1,
+                   max_slopes_per_band: int = 20,
                    echogram_sample_rate: float = 5e3,
                    temperature: float = 20.,
                    plot_t60s: bool = True
@@ -112,7 +112,7 @@ def compute_MoDART(folder_path: str,
             else:
                 break
 
-        print('\nAnalyzing {}th frequency band.'.format(band_idx))
+        print('\nAnalyzing frequency band #{}.'.format(band_idx))
 
         # Load the kernel for this frequency band.
         kernel = mmread(os.path.join(folder_path, 'ART_kernel_{}.mtx'.format(band_idx)), spmatrix=True)
@@ -176,8 +176,8 @@ def compute_MoDART(folder_path: str,
         with open(os.path.join(folder_path, 'MoD-ART.csv'), mode='a') as file:
             for p in range(len(poles)):
                 file.write(str(band_idx) + ', ' + str(eig_to_t60(poles[p], echogram_sample_rate)) + '\n')
-                file.write(', '.join([str(v) for v in V_hat[p]]) + '\n')
-                file.write(', '.join([str(v) for v in W_hat[p]]) + '\n')
+                file.write(', '.join([str(v) for v in V_hat[:, p]]) + '\n')
+                file.write(', '.join([str(v) for v in W_hat[:, p]]) + '\n')
 
         all_pole_t60s[band_idx] = [eig_to_t60(p, echogram_sample_rate) for p in poles]
 
@@ -197,6 +197,7 @@ def compute_MoDART(folder_path: str,
         ax.yaxis.set_major_formatter(mtpl.ticker.ScalarFormatter())
         ax.yaxis.set_minor_locator(mtpl.ticker.LogLocator(subs=np.arange(0.01, 1, 0.01)))
         ax.yaxis.set_minor_formatter(mtpl.ticker.NullFormatter())
+        plt.ylim(t60_threshold, None)
         plt.ylabel('T60 [s]')
         plt.grid(True, axis='y')
 

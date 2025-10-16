@@ -177,13 +177,13 @@ def load_materials(file_path: str, expected_names: Set[str]) -> Dict[str, np.nda
             mat_name = first_row.pop(0)
             band_centers = np.array(first_row, dtype=float)
             if mat_name != 'Frequencies':
-                raise ValueError('The first row of material.csv should start with the word "Frequencies" and contain the octave band center frequencies.')
+                raise ValueError('The first row of material.csv should start with the word "Frequencies" and contain the band center frequencies.')
             if len(first_row) == 0:
-                warnings.warn('No octave band center frequencies are reported in material.csv. Using broadband mode (one band centered at 0).')
+                warnings.warn('No band center frequencies are reported in material.csv. Using broadband mode (one band centered at 0).')
                 band_centers = np.zeros(1)
             material_coefficients[mat_name] = band_centers
         else:
-            raise ValueError('The first row of material.csv should start with the word "Frequencies" and contain the octave band center frequencies.')
+            raise ValueError('The first row of material.csv should start with the word "Frequencies" and contain the band center frequencies.')
 
         for row in reader:
             if row is None or len(row) == 0:
@@ -202,7 +202,7 @@ def load_materials(file_path: str, expected_names: Set[str]) -> Dict[str, np.nda
                 elif len(coeffs) == len(band_centers):
                     material_coefficients[mat_name][0] = coeffs
                 else:
-                    raise ValueError('Coefficient rows in material.csv should either contain a single value, or as many as there are octave bands.'
+                    raise ValueError('Coefficient rows in material.csv should either contain a single value, or as many as there are frequency bands.'
                                      + ' Bad material name: ' + mat_name + '; bad coefficients: ' + str(coeffs))
             elif mat_name in expecting_scattering:
                 # This is the second time the material name is encountered in the file. These are the scattering coefficients.
@@ -213,7 +213,7 @@ def load_materials(file_path: str, expected_names: Set[str]) -> Dict[str, np.nda
                 elif len(coeffs) == len(band_centers):
                     material_coefficients[mat_name][1] = coeffs
                 else:
-                    raise ValueError('Coefficient rows in material.csv should either contain a single value, or as many as there are octave bands.'
+                    raise ValueError('Coefficient rows in material.csv should either contain a single value, or as many as there are frequency bands.'
                                      + ' Bad material name: ' + mat_name + '; bad coefficients: ' + str(coeffs))
             else:
                 raise ValueError('Each material name should be encountered exactly twice in material.csv.'

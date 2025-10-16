@@ -1,0 +1,8 @@
+Frequency_independent, min, max
+Audience, 0.6, 0.7
+Bookshelf, 0.3, 0.3
+Brickwork_open, 0.1, 0.2
+Brickwork_filled, 0.05, 0.1
+Generic_rough, 0.4, 0.5
+Generic_smooth, 0.02, 0.05
+Smooth_painted_concrete, 0.005, 0.02

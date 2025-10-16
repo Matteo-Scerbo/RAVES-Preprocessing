@@ -184,9 +184,9 @@ def real_positive_search(ssm: csr_array,
         print('\t\t\tNumber found: ', len(right_vals))
         print('\t\t\tNumber sought:', num_thresh)
 
-        if np.min(right_vals) < mag_thresh:
+        if np.min(right_vals) <= mag_thresh:
             break
-        if len(right_vals) > num_thresh:
+        if len(right_vals) >= num_thresh:
             break
         if k == ssm.shape[0] - 2:
             break

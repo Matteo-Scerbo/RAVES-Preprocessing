@@ -169,7 +169,7 @@ Kd 0.0 0.5751 0.898
 
 ### materials.csv
 
-The first line of `materials.csv` should report the center frequencies of the desired octave bands.
+The first line of `materials.csv` should report the center frequencies of the desired bands.
 These must form a contiguous range of valid octave bands.
 
 Following lines report each material's absorption and scattering coefficients.
@@ -207,7 +207,7 @@ TODO: Make sure to specify the definition (power, not radiance).
     - TODO: Explanation will go here.
 - `ART_kernel_specular.mtx`
     - TODO: Explanation will go here.
-- `ART_kernel_<band_index>.mtx` for each octave band
+- `ART_kernel_<band_index>.mtx` for each frequency band
     - TODO: Explanation will go here.
 
 ### Propagation paths

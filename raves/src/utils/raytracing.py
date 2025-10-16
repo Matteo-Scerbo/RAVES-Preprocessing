@@ -6,11 +6,11 @@ import numpy as np
 from scipy.constants import golden
 from typing import Tuple
 
-EPS_EDGE = 1e-7         # edge-inclusive tolerance for ray hits
-EPS_FACING = 1e-7       # ray-plane test perpendicular tolerance
-EPS_PARALLEL = 1e-7     # ray-plane test parallel tolerance
+EPS_EDGE = 1e-5         # edge-inclusive tolerance for ray hits
+EPS_FACING = 1e-5       # ray-plane test perpendicular tolerance
+EPS_PARALLEL = 1e-5     # ray-plane test parallel tolerance
 EPS_ZFIGHT = 1e-5       # tie-breaker window for Z-fighting
-EPS_SELFHIT = 1e-3      # reject hits too close to the ray origin
+EPS_SELFHIT = 1e-7      # reject hits too close to the ray origin
 
 
 class TriangleMesh:
