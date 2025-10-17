@@ -349,38 +349,40 @@ f 55 56 52
 usemtl Patch_45_Mat_Cinema_North
 f 102 101 95
 f 95 96 102
+usemtl Patch_46_Mat_Cinema_NorthL
 f 76 75 73
 f 73 74 76
-usemtl Patch_46_Mat_Cinema_West
+usemtl Patch_47_Mat_Cinema_West
+f 75 69 73
+f 62 55 51
+f 51 61 62
+f 55 62 69
+f 69 75 55
+f 68 73 69
+usemtl Patch_48_Mat_Cinema_WestL
 f 101 76 74
 f 74 95 101
-f 55 62 69
-f 62 55 51
-f 75 69 73
-f 69 75 55
-f 51 61 62
-f 68 73 69
 
 ################################ Restroom
-usemtl Patch_47_Mat_Restroom_Floor
+usemtl Patch_49_Mat_Restroom_Floor
 f 95 94 73
 f 73 74 95
-usemtl Patch_48_Mat_Restroom_Ceiling
+usemtl Patch_50_Mat_Restroom_Ceiling
 f 76 75 100
 f 100 101 76
-usemtl Patch_49_Mat_Restroom_North
+usemtl Patch_51_Mat_Restroom_North
 f 101 100 94
 f 94 95 101
-usemtl Patch_50_Mat_Restroom_South
+usemtl Patch_52_Mat_Restroom_South
 f 74 73 75
 f 75 76 74
-usemtl Patch_51_Mat_Restroom_West
+usemtl Patch_53_Mat_Restroom_West
 f 75 82 90
 f 82 75 73
 f 100 90 94
 f 90 100 75
 f 73 80 82
 f 89 94 90
-usemtl Patch_52_Mat_Restroom_East
+usemtl Patch_54_Mat_Restroom_East
 f 95 74 76
 f 76 101 95

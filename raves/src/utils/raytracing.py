@@ -152,7 +152,11 @@ class TriangleMesh:
         for i, point in enumerate(lattice_2D):
             if within_edges[i]:
                 sample_points_2D.append(point)
-        sample_points_2D = np.array(sample_points_2D)
+        if len(sample_points_2D) == 0:
+            # No valid sample points: use the centroid.
+            sample_points_2D = (edge1_2D + edge2_2D)[None] / 3
+        else:
+            sample_points_2D = np.array(sample_points_2D)
 
         # Translate back to 3D cartesian coordinates
         sample_points_3D = self.v1[triangle_idx] \

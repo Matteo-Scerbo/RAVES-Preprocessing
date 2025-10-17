@@ -85,10 +85,14 @@ Cinema_Ceiling, 0.35, 0.55, 0.72, 0.7, 0.65, 0.65, 0.65
 Cinema_Ceiling, 0.5
 Cinema_West, 0.35, 0.55, 0.72, 0.7, 0.65, 0.65, 0.65
 Cinema_West, 0.5
+Cinema_WestL, 0.35, 0.55, 0.72, 0.7, 0.65, 0.65, 0.65
+Cinema_WestL, 0.5
 Cinema_East, 0.35, 0.55, 0.72, 0.7, 0.65, 0.65, 0.65
 Cinema_East, 0.5
 Cinema_North, 0.35, 0.55, 0.72, 0.7, 0.65, 0.65, 0.65
 Cinema_North, 0.5
+Cinema_NorthL, 0.35, 0.55, 0.72, 0.7, 0.65, 0.65, 0.65
+Cinema_NorthL, 0.5
 Cinema_South, 0.35, 0.55, 0.72, 0.7, 0.65, 0.65, 0.65
 Cinema_South, 0.5
 Restroom_Floor, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02

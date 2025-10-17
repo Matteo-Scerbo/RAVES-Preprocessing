@@ -1,7 +1,10 @@
 # Lets you run: python -m raves "C:/your/environment/folder/path"
 import os
 import sys
-from .src import compute_ART
+
+import numpy as np
+
+from .src import compute_ART, assess_ART
 from .src import compute_MoDART
 
 
@@ -19,8 +22,15 @@ def main(folder_path: str) -> None:
     if not os.path.isdir(folder_path):
         raise ValueError('Not a valid folder path:\n\t' + folder_path)
 
-    compute_ART(folder_path)
-    compute_MoDART(folder_path)
+    # compute_ART(folder_path)
+    # compute_MoDART(folder_path)
+
+    for rays in np.logspace(2, 3, 3, dtype=int):
+        assess_ART(folder_path, points_per_square_meter=1., rays_per_hemisphere=int(rays))
+
+    for ppsm in np.arange(5, 55, 5):
+        for rays in np.logspace(2, 4, 5, dtype=int):
+            assess_ART(folder_path, points_per_square_meter=float(ppsm), rays_per_hemisphere=int(rays))
 
 
 if __name__ == "__main__":

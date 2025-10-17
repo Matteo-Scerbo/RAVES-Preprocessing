@@ -39,6 +39,8 @@ with open('./materials.csv', 'w') as file:
         all_walls = ['Floor', 'Ceiling', 'West', 'East', 'North', 'South']
         if room == 'Meeting_room':
             all_walls += ['SouthEast', 'NorthEast', 'NorthWest', 'SouthWest']
+        elif room == 'Cinema':
+            all_walls += ['Cinema_WestL', 'Cinema_NorthL']
 
         for wall in all_walls:
             raves_material = room + '_' + wall

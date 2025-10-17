@@ -9,10 +9,234 @@ from scipy.io import mmread, mmwrite
 from .utils import load_all_inputs, RayBundle, air_absorption_in_band
 
 
+def assess_ART(folder_path: str,
+               points_per_square_meter: float,
+               rays_per_hemisphere: int
+               ) -> np.ndarray:
+    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path)
+
+    num_patches = len(patch_materials)
+
+    # dict of lists: indices of the triangles forming each patch.
+    patch_triangles = dict()
+    # Patch areas, as sum of triangle areas.
+    patch_areas = np.zeros(num_patches)
+    for triangle_index, triangle_patch_ID in enumerate(mesh.ID):
+        if triangle_patch_ID not in patch_triangles.keys():
+            # This is the first triangle found for this patch. Create the list with one element.
+            patch_triangles[triangle_patch_ID] = [triangle_index]
+        else:
+            # This is not the first triangle found for this patch. Add element to the existing list.
+            patch_triangles[triangle_patch_ID].append(triangle_index)
+
+        patch_areas[triangle_patch_ID] += mesh.area[triangle_index]
+
+    # This is defined here in order to bake `num_patches` into it.
+    def path_index(i: int, j: int) -> int:
+        return i + (j * num_patches)
+
+    # Initialize `path_lengths`, `path_etendues`, `diffuse_kernel`, and `specular_kernel`.
+    # The path etendues are used to assess the integration accuracy, and are also needed to scale MoD-ART eigenvectors.
+    num_paths = num_patches ** 2
+    path_lengths = np.zeros(num_paths)
+    path_etendues = np.zeros(num_paths)
+    diffuse_kernel = lil_array((num_paths, num_paths))
+    specular_kernel = lil_array((num_paths, num_paths))
+    path_indexing = lil_array((num_patches, num_patches), dtype=int)
+
+    for i in tqdm(range(num_patches), desc='ART surface integral (# patches)', leave=False):
+        # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
+        patch_normal = mesh.n[patch_triangles[i][0]]
+
+        # Prepare a pencil of rays uniformly sampling the hemisphere.
+        # This pencil's origin will be moved to different sample points, to avoid re-instantiating the class.
+        hemisphere_pencil = RayBundle.sample_sphere(rays_per_hemisphere, hemisphere_only=True, north_pole=patch_normal)
+        # We need to keep track of the surface sample points used to integrate this patch.
+        num_points = 0
+
+        # Prepare a pencil formed by the specular reflection of `hemisphere_pencil` across the surface normal.
+        # This pencil will be moved and traced in conjunction with `hemisphere_pencil` to obtain the specular reflection kernel.
+        hemisphere_directions = hemisphere_pencil.getDirections()
+        hemisphere_cosines = np.einsum('ij,j->i', hemisphere_directions, patch_normal)
+        specular_directions = 2 * hemisphere_cosines[:, np.newaxis] * patch_normal[np.newaxis] - hemisphere_directions
+        specular_pencil = RayBundle.from_shared_origin(origin=np.zeros(3), directions=specular_directions)
+
+        # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
+        # Refer to "ART_theory.md" for more info on this process.
+        accumulated_num_hits = np.zeros(num_patches)
+        accumulated_distances = np.zeros(num_patches)
+        accumulated_cosines = np.zeros(num_patches)
+        accumulated_specular_kernel = np.zeros((num_patches, num_patches))
+
+        for triangle_idx in patch_triangles[i]:
+            # Uniformly sample the triangle's surface.
+            sample_points = mesh.sample_triangle(triangle_idx, points_per_square_meter)
+            # We need to keep track of the surface sample points used to integrate this patch.
+            num_points += sample_points.shape[0]
+
+            for sample_point in sample_points:
+                hemisphere_pencil.moveOrigins(sample_point)
+                specular_pencil.moveOrigins(sample_point)
+
+                hemisphere_pencil.traceAll(mesh)
+                specular_pencil.traceAll(mesh)
+
+                hemisphere_patch_ids, _ = hemisphere_pencil.getIndices(copy=False)
+                specular_patch_ids, _ = specular_pencil.getIndices(copy=False)
+                hemisphere_distances, _ = hemisphere_pencil.getDistances(copy=False)
+                specular_distances, _ = specular_pencil.getDistances(copy=False)
+                # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
+                # specular_cosines, _ = specular_pencil.getCosines(copy=False)
+
+                hemisphere_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
+                specular_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
+                num_hemisphere_hits_per_patch = np.zeros(num_patches)
+                num_specular_hits_per_patch = np.zeros(num_patches)
+                for j in range(num_patches):
+                    hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
+                    specular_hits_per_patch[j] = (specular_patch_ids == j)
+                    num_hemisphere_hits_per_patch[j] = np.count_nonzero(hemisphere_patch_ids == j)
+                    num_specular_hits_per_patch[j] = np.count_nonzero(specular_patch_ids == j)
+
+                for j in range(num_patches):
+                    # Combine the two bundles to ensure symmetry.
+                    # Each ray appears once as "main" and once as specular; both count as hits.
+                    accumulated_num_hits[j] += num_hemisphere_hits_per_patch[j]
+                    accumulated_num_hits[j] += num_specular_hits_per_patch[j]
+
+                    accumulated_distances[j] += np.sum(hemisphere_distances[hemisphere_hits_per_patch[j]])
+                    accumulated_distances[j] += np.sum(specular_distances[specular_hits_per_patch[j]])
+
+                    # The departure cosine of each ray is the same as the departure cosine of its specular ray.
+                    accumulated_cosines[j] += np.sum(hemisphere_cosines[hemisphere_hits_per_patch[j]])
+                    accumulated_cosines[j] += np.sum(hemisphere_cosines[specular_hits_per_patch[j]])
+
+                    for h in range(num_patches):
+                        accumulated_specular_kernel[h, j] += 2 * np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
+                        # The multiplication by 2 makes this equivalent to:
+                        # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
+                        # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[h] & specular_hits_per_patch[j])
+
+        # Normalize accumulators and add to global trackers.
+        for j in range(num_patches):
+            if accumulated_num_hits[j] == 0:
+                # No visibility between any point in j and any point in i.
+                continue
+
+            ij = path_index(i, j)
+
+            path_lengths[ij] = accumulated_distances[j] / accumulated_num_hits[j]
+
+            # Etendue is equal to form factor times surface area times pi.
+            path_etendues[ij] = np.pi * patch_areas[i] * accumulated_cosines[j] / (rays_per_hemisphere * num_points)
+
+            for h in range(num_patches):
+                if accumulated_num_hits[h] == 0:
+                    # No visibility between any point in h and any point in i.
+                    continue
+
+                hi = path_index(h, i)
+
+                # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
+                # In practice, we do not need it because each ray is counted once as "main" and once as specular.
+                diffuse_kernel[hi, ij] = accumulated_cosines[j] / (rays_per_hemisphere * num_points)
+                specular_kernel[hi, ij] = accumulated_specular_kernel[h, j] / accumulated_num_hits[h]
+
+    # These should theoretically be identical, but may not be due to the discretized integration.
+    # Nevertheless, they should be close enough.
+    path_visibility = (path_lengths != 0)
+    reverse_path_visibility = np.zeros_like(path_visibility)
+    for i in range(num_patches):
+        for j in range(num_patches):
+            reverse_path_visibility[path_index(i, j)] = path_visibility[path_index(j, i)]
+    num_mismatches = np.count_nonzero(path_visibility & ~reverse_path_visibility)
+    if num_mismatches != 0:
+        path_visibility = path_visibility & reverse_path_visibility
+        path_etendues[~path_visibility] = 0.
+
+    # Assess numerical precision by comparing etendue symmetricity.
+    reverse_path_etendues = np.zeros_like(path_etendues)
+    for i in range(num_patches):
+        for j in range(num_patches):
+            reverse_path_etendues[path_index(i, j)] = path_etendues[path_index(j, i)]
+    # Symmetric absolute percentage error. Note: etendues are guaranteed non-negative.
+    mean_etendues = (path_etendues + reverse_path_etendues) / 2
+    etendue_SAPE = 100 * np.divide(np.abs(path_etendues - reverse_path_etendues),
+                                   mean_etendues,
+                                   out=np.zeros_like(mean_etendues),
+                                   where=(mean_etendues != 0))
+
+    # Drop all non-visible paths from the ART model.
+    num_valid_paths = np.count_nonzero(path_visibility)
+    path_lengths = path_lengths[path_visibility]
+    etendue_SAPE = etendue_SAPE[path_visibility]
+    mean_etendues = mean_etendues[path_visibility]
+    diffuse_kernel = lil_array(diffuse_kernel[path_visibility][:, path_visibility])
+    specular_kernel = lil_array(specular_kernel[path_visibility][:, path_visibility])
+
+    np.savetxt(os.path.join(folder_path, 'etendue_SAPE_{:.0f}pnts_{:d}rays.csv'.format(points_per_square_meter, rays_per_hemisphere)),
+               etendue_SAPE, fmt='%.18f', delimiter=', ')
+    print('Etendue SAPE with {:.0f} points/m2, {:d} rays:'.format(points_per_square_meter, rays_per_hemisphere))
+    print('\t Median: {:.2f}%'.format(np.median(etendue_SAPE)))
+    print('\t Average: {:.2f}%'.format(np.mean(etendue_SAPE)))
+    print('\t Valid paths: {}'.format(num_valid_paths))
+
+    # Evaluate the row sums of both kernels. All rows should sum to 1; any divergence is an artefact of numerical integration.
+    # As such, we can use these to assess the accuracy of the integration.
+    diffuse_row_sums = diffuse_kernel.sum(axis=1)
+    specular_row_sums = specular_kernel.sum(axis=1)
+
+    # Apply the normalization safely w.r.t. zero rows.
+    # Also, switch to Compressed Sparse Row (CSR) format to make later operations more efficient.
+    diffuse_row_normalization = np.divide(1., diffuse_row_sums,
+                                          out=np.zeros(num_valid_paths),
+                                          where=(diffuse_row_sums != 0))
+    diffuse_kernel = csr_array(diags(diffuse_row_normalization) @ diffuse_kernel)
+    specular_row_normalization = np.divide(1., specular_row_sums,
+                                           out=np.zeros(num_valid_paths),
+                                           where=(specular_row_sums != 0))
+    specular_kernel = csr_array(diags(specular_row_normalization) @ specular_kernel)
+
+    # Prepare the path indexing matrix. Note that:
+    #   the indices in this matrix refer to the reduced list, after having removed paths with no visibility.
+    #   the indices in this matrix start from 1 and go up to num_visible_paths.
+    #   0 elements in this matrix denote invalid paths.
+    # This will be used at runtime to relate a pair of patch indices to a propagation path index.
+    num_registered_paths = 0
+    for i in range(num_patches):
+        for j in range(num_patches):
+            if path_visibility[path_index(i, j)]:
+                num_registered_paths += 1
+                path_indexing[i, j] = num_registered_paths
+    assert num_registered_paths == num_valid_paths
+    # We'll need this to be in Compressed Sparse Row (CSR) format.
+    path_indexing = csr_array(path_indexing)
+
+    # Write the core ART parameters.
+    mmwrite(os.path.join(folder_path, 'ART_kernel_diffuse.mtx'),
+            diffuse_kernel, field='real', symmetry='general',
+            comment='Diffuse (Lambertian) component of the acoustic radiance transfer reflection kernel. ' +
+                    'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
+                    'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+    mmwrite(os.path.join(folder_path, 'ART_kernel_specular.mtx'),
+            specular_kernel, field='real', symmetry='general',
+            comment='Specular component of the acoustic radiance transfer reflection kernel. ' +
+                    'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
+                    'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+    mmwrite(os.path.join(folder_path, 'path_indexing.mtx'),
+            path_indexing, field='integer', symmetry='general',
+            comment='Relates each pair of surface patch indices to the index of a propagation path. ' +
+                    'Zero elements denote invalid paths; patch and path indices both start from 1.')
+    np.savetxt(os.path.join(folder_path, 'path_lengths.csv'), path_lengths, fmt='%.18f', delimiter=', ')
+    np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
+
+    return etendue_SAPE
+
+
 def compute_ART(folder_path: str,
                 overwrite: bool = False,
                 points_per_square_meter: float = 10.,
-                rays_per_hemisphere: int = 100,
+                rays_per_hemisphere: int = 3000,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.,
                 detect_open_surface: bool = True,
                 profile_runtime: bool = False
