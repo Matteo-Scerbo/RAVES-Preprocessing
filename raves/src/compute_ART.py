@@ -12,23 +12,28 @@ from .utils import load_all_inputs, RayBundle, air_absorption_in_band
 
 def assess_ART_on_grid(folder_path: str,
                        points_per_square_meter: List[float],
-                       rays_per_hemisphere: List[int]
+                       rays_per_hemisphere: List[int],
+                       area_threshold: float = 0.
                        ) -> None:
-    means = np.zeros((len(points_per_square_meter), len(rays_per_hemisphere)))
+    # TODO: Fill out documentation properly.
+    """
+
+    """
+
+    weights = np.zeros((len(points_per_square_meter), len(rays_per_hemisphere)))
     medians = np.zeros((len(points_per_square_meter), len(rays_per_hemisphere)))
 
     for p_i, ppsm in enumerate(points_per_square_meter):
         for r_i, rays in enumerate(rays_per_hemisphere):
-            file_name = 'etendue_SAPE_{}pnts_{}rays.csv'.format(ppsm, rays)
+            file_name = 'etendue_SAPE_{:.0f}pnts_{:d}rays.csv'.format(int(ppsm), rays)
 
             if not os.path.isfile(os.path.join(folder_path, file_name)):
-                continue  # assess_ART(folder_path, points_per_square_meter=ppsm, rays_per_hemisphere=rays)
+                continue  # assess_ART(folder_path, area_threshold=area_threshold, points_per_square_meter=ppsm, rays_per_hemisphere=rays)
 
             etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
-            mean_SAPE = np.mean(etendue_SAPE)
             median_SAPE = np.median(etendue_SAPE)
 
-            means[p_i, r_i] = mean_SAPE
+            weights[p_i, r_i] = ppsm * rays
             medians[p_i, r_i] = median_SAPE
 
     # https://stackoverflow.com/q/71119762
@@ -38,42 +43,64 @@ def assess_ART_on_grid(folder_path: str,
     fig = plt.figure(layout="constrained")
     subfigs = fig.subfigures(1, 2)
 
-    my_data = [means, medians]
-    for sub_i in range(2):
+    weighted_medians = np.log10(np.multiply(medians, weights,
+                                            where=(medians != 0),
+                                            out=np.ones_like(medians)))
+
+    # Do not show missing entries in the plots.
+    medians = np.ma.masked_where(medians == 0, medians)
+    weighted_medians = np.ma.masked_where(medians == 0, weighted_medians)
+
+    for sub_i, sub_data in enumerate([medians, weighted_medians]):
         axs = subfigs[sub_i].subplots(2, 2, sharex="col", sharey="row",
-                                      gridspec_kw=dict(height_ratios=[2, my_data[sub_i].shape[0]],
-                                                       width_ratios=[my_data[sub_i].shape[1], 2]))
+                                      gridspec_kw=dict(height_ratios=[2, sub_data.shape[0]],
+                                                       width_ratios=[sub_data.shape[1], 2]))
         subfigs[sub_i].delaxes(axs[0, 1])
 
-        axs[1, 0].imshow(my_data[sub_i], aspect="auto", origin="lower")
-        axs[1, 0].set_xticks(range(my_data[sub_i].shape[1]), rays_per_hemisphere)
+        axs[1, 0].imshow(sub_data, aspect="auto", origin="lower")
+        axs[1, 0].set_xticks(range(sub_data.shape[1]), rays_per_hemisphere)
         axs[1, 0].set_xlabel('Rays per hemisphere')
-        axs[1, 0].set_yticks(range(my_data[sub_i].shape[0]), points_per_square_meter)
-        axs[1, 0].set_ylabel('Points per square meter')
+        if sub_i == 0:
+            axs[1, 0].set_yticks(range(sub_data.shape[0]), points_per_square_meter)
+            axs[1, 0].set_ylabel('Points per square meter')
+        else:
+            axs[1, 0].set_yticks(range(sub_data.shape[0]), [])
 
-        for i in range(my_data[sub_i].shape[0]):
-            for j in range(my_data[sub_i].shape[1]):
-                axs[1, 0].text(j, i, np.round(my_data[sub_i][i, j], 2),
+        for i in range(sub_data.shape[0]):
+            for j in range(sub_data.shape[1]):
+                axs[1, 0].text(j, i, np.round(sub_data[i, j], 2),
                                ha="center", va="center", color="w")
 
-        axs[0, 0].plot(range(my_data[sub_i].shape[1]), my_data[sub_i].mean(axis=0))
-        axs[1, 1].plot(my_data[sub_i].mean(axis=1), range(my_data[sub_i].shape[0]))
-
+        axs[0, 0].plot(range(sub_data.shape[1]), sub_data.mean(axis=0))
+        axs[0, 0].set_ylabel('Averaged over points')
+        axs[0, 0].set_ylim(0, None)
         axs[0, 0].grid()
+
+        axs[1, 1].plot(sub_data.mean(axis=1), range(sub_data.shape[0]))
+        axs[1, 1].set_xlim(0, None)
+        axs[1, 1].set_xlabel('Averaged over rays')
         axs[1, 1].grid()
 
-    subfigs[0].suptitle('Mean')
-    subfigs[1].suptitle('Median')
-    plt.suptitle('Etendue SAPE over number of rays and samples per square meter.')
+    # subfigs[0].suptitle('Median')
+    # subfigs[1].suptitle('Median $\\times$ thousands of tests per m2')
+    plt.suptitle('Etendue SAPE over number of rays and samples per square meter.'
+                 '\nThe left figure shows the median.'
+                 '\nThe right figure shows $\\log_{10}$(median $\\cdot$ traced_rays_per_square_meter).'
+                 '\nIn other words, the right figure is weighted by the processing runtime.')
 
     plt.show()
 
 
 def assess_ART(folder_path: str,
-               points_per_square_meter: float,
-               rays_per_hemisphere: int
+               area_threshold: float = 0.,
+               points_per_square_meter: float = 10.,
+               rays_per_hemisphere: int = 1000,
                ) -> np.ndarray:
-    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path)
+    # TODO: Fill out documentation properly.
+    """
+
+    """
+    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold)
 
     num_patches = len(patch_materials)
 
@@ -295,8 +322,9 @@ def assess_ART(folder_path: str,
 
 def compute_ART(folder_path: str,
                 overwrite: bool = False,
+                area_threshold: float = 0.,
                 points_per_square_meter: float = 10.,
-                rays_per_hemisphere: int = 3000,
+                rays_per_hemisphere: int = 1000,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.,
                 detect_open_surface: bool = True,
                 profile_runtime: bool = False
@@ -307,6 +335,7 @@ def compute_ART(folder_path: str,
     Args:
         folder_path:
         overwrite:
+        area_threshold:
         points_per_square_meter:
         rays_per_hemisphere:
         humidity:
@@ -334,7 +363,7 @@ def compute_ART(folder_path: str,
 
     print('Running `compute_ART` in the environment "' + os.path.split(folder_path)[-1] + '"')
 
-    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path)
+    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold)
 
     num_patches = len(patch_materials)
 

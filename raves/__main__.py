@@ -4,8 +4,8 @@ import sys
 
 import numpy as np
 
-from .src import compute_ART, assess_ART_on_grid
-from .src import compute_MoDART
+from .src.utils import visualize_mesh
+from .src import compute_ART, assess_ART_on_grid, compute_MoDART
 
 
 # Project-wide TODOs
@@ -22,12 +22,14 @@ def main(folder_path: str) -> None:
     if not os.path.isdir(folder_path):
         raise ValueError('Not a valid folder path:\n\t' + folder_path)
 
-    # compute_ART(folder_path)
+    # visualize_mesh(folder_path)
+
+    compute_ART(folder_path, area_threshold=1.0)
     # compute_MoDART(folder_path)
 
-    assess_ART_on_grid(folder_path,
-                       points_per_square_meter=[1., 5., 10., 15.],
-                       rays_per_hemisphere=[100, 316, 1000, 3162, 10000])
+    # assess_ART_on_grid(folder_path,
+    #                    points_per_square_meter=[5., 10., 15., 20.],
+    #                    rays_per_hemisphere=[100, 316, 1000, 3162, 10000])
 
 
 if __name__ == "__main__":
