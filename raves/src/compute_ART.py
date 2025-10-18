@@ -5,8 +5,68 @@ import numpy as np
 from tqdm import tqdm
 from scipy.sparse import lil_array, csr_array, diags
 from scipy.io import mmread, mmwrite
+from typing import List
 
 from .utils import load_all_inputs, RayBundle, air_absorption_in_band
+
+
+def assess_ART_on_grid(folder_path: str,
+                       points_per_square_meter: List[float],
+                       rays_per_hemisphere: List[int]
+                       ) -> None:
+    means = np.zeros((len(points_per_square_meter), len(rays_per_hemisphere)))
+    medians = np.zeros((len(points_per_square_meter), len(rays_per_hemisphere)))
+
+    for p_i, ppsm in enumerate(points_per_square_meter):
+        for r_i, rays in enumerate(rays_per_hemisphere):
+            file_name = 'etendue_SAPE_{}pnts_{}rays.csv'.format(ppsm, rays)
+
+            if not os.path.isfile(os.path.join(folder_path, file_name)):
+                continue  # assess_ART(folder_path, points_per_square_meter=ppsm, rays_per_hemisphere=rays)
+
+            etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
+            mean_SAPE = np.mean(etendue_SAPE)
+            median_SAPE = np.median(etendue_SAPE)
+
+            means[p_i, r_i] = mean_SAPE
+            medians[p_i, r_i] = median_SAPE
+
+    # https://stackoverflow.com/q/71119762
+    # https://matplotlib.org/stable/users/explain/axes/arranging_axes.html
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure(layout="constrained")
+    subfigs = fig.subfigures(1, 2)
+
+    my_data = [means, medians]
+    for sub_i in range(2):
+        axs = subfigs[sub_i].subplots(2, 2, sharex="col", sharey="row",
+                                      gridspec_kw=dict(height_ratios=[2, my_data[sub_i].shape[0]],
+                                                       width_ratios=[my_data[sub_i].shape[1], 2]))
+        subfigs[sub_i].delaxes(axs[0, 1])
+
+        axs[1, 0].imshow(my_data[sub_i], aspect="auto", origin="lower")
+        axs[1, 0].set_xticks(range(my_data[sub_i].shape[1]), rays_per_hemisphere)
+        axs[1, 0].set_xlabel('Rays per hemisphere')
+        axs[1, 0].set_yticks(range(my_data[sub_i].shape[0]), points_per_square_meter)
+        axs[1, 0].set_ylabel('Points per square meter')
+
+        for i in range(my_data[sub_i].shape[0]):
+            for j in range(my_data[sub_i].shape[1]):
+                axs[1, 0].text(j, i, np.round(my_data[sub_i][i, j], 2),
+                               ha="center", va="center", color="w")
+
+        axs[0, 0].plot(range(my_data[sub_i].shape[1]), my_data[sub_i].mean(axis=0))
+        axs[1, 1].plot(my_data[sub_i].mean(axis=1), range(my_data[sub_i].shape[0]))
+
+        axs[0, 0].grid()
+        axs[1, 1].grid()
+
+    subfigs[0].suptitle('Mean')
+    subfigs[1].suptitle('Median')
+    plt.suptitle('Etendue SAPE over number of rays and samples per square meter.')
+
+    plt.show()
 
 
 def assess_ART(folder_path: str,
