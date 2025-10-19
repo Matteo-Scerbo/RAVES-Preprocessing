@@ -99,7 +99,7 @@ def assess_ART_on_grid(folder_path: str,
                        area_threshold: float = 0.,
                        thoroughness: float = 0.,
                        pool_size: int = 1
-                       ) -> None:
+                       ) -> str:
     # TODO: Fill out documentation properly.
     """
 
@@ -116,8 +116,8 @@ def assess_ART_on_grid(folder_path: str,
 
             if not os.path.isfile(os.path.join(folder_path, file_name)):
                 # continue
-                assess_ART(folder_path, area_threshold=area_threshold, thoroughness=thoroughness,
-                           points_per_square_meter=ppsm, rays_per_hemisphere=rays, pool_size=pool_size)
+                folder_path = assess_ART(folder_path, area_threshold=area_threshold, thoroughness=thoroughness,
+                                         points_per_square_meter=ppsm, rays_per_hemisphere=rays, pool_size=pool_size)
 
             etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
             median_SAPE = np.median(etendue_SAPE)
@@ -178,6 +178,8 @@ def assess_ART_on_grid(folder_path: str,
 
     plt.show()
 
+    return folder_path
+
 
 def assess_ART(folder_path: str,
                area_threshold: float = 0.,
@@ -185,7 +187,7 @@ def assess_ART(folder_path: str,
                points_per_square_meter: float = 10.,
                rays_per_hemisphere: int = 1000,
                pool_size: int = 1
-               ) -> np.ndarray:
+               ) -> str:
     # TODO: Fill out documentation properly.
     """
 
@@ -393,7 +395,7 @@ def assess_ART(folder_path: str,
     np.savetxt(os.path.join(folder_path, 'path_lengths.csv'), path_lengths, fmt='%.18f', delimiter=', ')
     np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
 
-    return etendue_SAPE
+    return folder_path
 
 
 def compute_ART(folder_path: str,
@@ -404,7 +406,7 @@ def compute_ART(folder_path: str,
                 rays_per_hemisphere: int = 1000,
                 pool_size: int = 1,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.
-                ) -> None:
+                ) -> str:
     # TODO: Fill out documentation properly.
     """
 
@@ -811,6 +813,7 @@ def compute_ART(folder_path: str,
 
     print('\n')
 
+    return folder_path
 
 if __name__ == "__main__":
     # TODO: If the argument `--overwrite` is given, perform the integration even if files exist.

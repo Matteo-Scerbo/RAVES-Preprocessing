@@ -29,7 +29,7 @@ def main(folder_path: str) -> None:
                        rays_per_hemisphere=[100, 316, 1000],
                        pool_size=4)
 
-    # compute_ART(folder_path, area_threshold=20., thoroughness=0.1)
+    # folder_path = compute_ART(folder_path, area_threshold=20., thoroughness=0.1)
     # compute_MoDART(folder_path)
 
 
