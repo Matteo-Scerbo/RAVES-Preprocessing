@@ -4,7 +4,6 @@ import csv
 import warnings
 import numpy as np
 import networkx as nx
-from queue import PriorityQueue
 from itertools import combinations
 from collections import defaultdict
 from typing import Tuple, List, Dict, Set
@@ -27,16 +26,19 @@ def sanitize_ascii(s: str) -> str:
     return re.sub(r'[\W_]+', '_', s, flags=re.ASCII).strip('_')
 
 
-def merge_small_patches(vert_triplets: np.ndarray,
+def merge_small_patches(vertices: np.ndarray,
+                        vert_triplets: np.ndarray,
                         mesh: TriangleMesh,
                         patch_materials: List[str],
                         area_threshold: float,
+                        thoroughness: float
                         ) -> None:
     # TODO: Fill out documentation properly.
     """
     patch_materials is modified in-place (elements are removed).
     Patch IDs are modified in-place inside "mesh".
     """
+    thoroughness = np.clip(thoroughness, 0., 1.)
 
     # Compute patch_areas
     patch_areas = np.zeros(len(patch_materials))
@@ -60,21 +62,33 @@ def merge_small_patches(vert_triplets: np.ndarray,
             group_partitions.append(trivial_partition)
             continue
 
-        # Build patch adjacency graph based on shared edges and co-planarity.
+        # Prepared dicts of shared edges.
         edge_to_patches = defaultdict(set)
+        patch_edge_use = defaultdict(int)
+        edge_lengths = dict()
+
         child_triangles = np.where(np.isin(mesh.ID, child_patches))[0]
         for t_idx in child_triangles:
+            patch = mesh.ID[t_idx]
             a, b, c = (int(x) for x in vert_triplets[t_idx])
             for u, v in ((a, b), (b, c), (c, a)):
-                if v > u:
-                    edge_to_patches[(u, v)].add(mesh.ID[t_idx])
-                else:
-                    edge_to_patches[(v, u)].add(mesh.ID[t_idx])
+                edge = (u, v) if v > u else (v, u)
 
+                edge_to_patches[edge].add(patch)
+                patch_edge_use[(patch, edge)] += 1
+                edge_lengths[edge] = np.linalg.norm(vertices[u] - vertices[v])
+
+        # Keep only boundary edges for each patch: used by exactly one triangle of that patch
+        patch_to_edges = defaultdict(set)
+        for (patch, edge), count in patch_edge_use.items():
+            if count == 1:
+                patch_to_edges[patch].add(edge)
+
+        # Build patch adjacency graph based on shared edges and co-planarity.
         G = nx.Graph()
         G.add_nodes_from(child_patches)
         for patches in edge_to_patches.values():
-            assert len(patches.difference(child_patches)) == 0
+            assert len(patches.difference(set(child_patches))) == 0
             if len(patches) == 1:
                 # This edge only pertains to one patch.
                 continue
@@ -129,18 +143,70 @@ def merge_small_patches(vert_triplets: np.ndarray,
                 if len(candidate_pairs) == 0:
                     break
 
-                # Priority queue of (new_area_range, new_max_area, merger_i, merger_j):
-                # Upon "get()", returns entry with the lowest new_area_range
-                pq = PriorityQueue()
+                # Priority queue of (new_area_range, new_max_area, compactness, merger_i, merger_j).
+                # We make our own priority queue instead of using a package, because we want to implement multi-element retrieval.
+                priority_queue = list()
                 for i, j in candidate_pairs:
+                    # Consider what happens to areas
                     merged_area = areas[i] + areas[j]
                     after = [areas[k] for k in active if k not in (i, j)] + [merged_area]
                     new_min = min(after)
                     new_max = max(after)
-                    pq.put((new_max - new_min, new_max, i, j))
+                    new_range = new_max - new_min
 
-                # Take the best candidate and merge
-                _, _, i, j = pq.get()
+                    # Consider what happens to compactness (area-perimeter ratios):
+                    # First, find all edges pertaining to the cluster.
+                    merged_members = clusters[i].union(clusters[j])
+                    merged_edges = set()
+                    for p in merged_members:
+                        merged_edges = merged_edges.union(patch_to_edges[p])
+                    # Count the number of polygons which include each edge.
+                    # Edges which are only included by one polygon are on the perimeter.
+                    merged_perimeter = 0.
+                    for edge in merged_edges:
+                        owners_in_cluster = 0
+                        for q in edge_to_patches[edge]:
+                            if q in merged_members:
+                                owners_in_cluster += 1
+                        if owners_in_cluster == 1:
+                            merged_perimeter += edge_lengths[edge]
+
+                    compactness = (merged_area / merged_perimeter) if merged_perimeter > 0. else 0.
+
+                    # Push into the priority queue.
+                    priority_queue.append((new_range, new_max, compactness, i, j))
+
+                # If nothing was scored, there is nothing to merge
+                if len(priority_queue) == 0:
+                    break
+
+                # Stage 1: soft selection on new_range.
+                r_vals = [x[0] for x in priority_queue]
+                r_min, r_max = min(r_vals), max(r_vals)
+                r_cut = r_min + thoroughness * (r_max - r_min)
+                # 1e-3 guards from numerical errors.
+                priority_queue = [x for x in priority_queue
+                                  if x[0] <= r_cut + 1e-3]
+
+                # Stage 2: soft selection on new_max.
+                m_vals = [x[1] for x in priority_queue]
+                m_min, m_max = min(m_vals), max(m_vals)
+                m_cut = m_min + thoroughness * (m_max - m_min)
+                # 1e-3 guards from numerical errors.
+                priority_queue = [x for x in priority_queue
+                                  if x[1] <= m_cut + 1e-3]
+
+                # Stage 3: soft selection on compactness.
+                c_vals = [x[2] for x in priority_queue]
+                c_min, c_max = min(c_vals), max(c_vals)
+                # Note: we want to maximize compactness; selection range is flipped
+                c_cut = c_max - thoroughness * (c_max - c_min)
+                # 1e-3 guards from numerical errors.
+                priority_queue = [x for x in priority_queue
+                                  if x[2] >= c_cut - 1e-3]
+
+                # Take the best candidate and merge.
+                _, _, _, i, j = min(priority_queue, key=lambda x: (x[3], x[4]))
 
                 new_members = clusters[i].union(clusters[j])
                 new_area = areas[i] + areas[j]
@@ -184,30 +250,38 @@ def merge_small_patches(vert_triplets: np.ndarray,
     patch_materials[:] = [patch_materials[i] for i in kept_patch_ids]
 
 
-def load_all_inputs(folder_path: str, area_threshold: float = 0.) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray]]:
+def load_all_inputs(folder_path: str,
+                    area_threshold: float = 0.,
+                    thoroughness: float = 0.
+                    ) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray]]:
     # TODO: Fill out documentation properly.
     """
 
     Args:
         folder_path:
         area_threshold:
+        thoroughness:
 
     Returns:
 
     """
-    mesh, patch_materials = load_mesh(folder_path, area_threshold)
+    mesh, patch_materials = load_mesh(folder_path, area_threshold, thoroughness)
     material_coefficients = load_materials(folder_path, set(patch_materials))
 
     return mesh, patch_materials, material_coefficients
 
 
-def load_mesh(folder_path: str, area_threshold: float = 0.) -> Tuple[TriangleMesh, List[str]]:
+def load_mesh(folder_path: str,
+              area_threshold: float = 0.,
+              thoroughness: float = 0.
+              ) -> Tuple[TriangleMesh, List[str]]:
     # TODO: Fill out documentation properly.
     """
 
     Args:
         folder_path:
         area_threshold:
+        thoroughness:
 
     Returns:
 
@@ -336,12 +410,16 @@ def load_mesh(folder_path: str, area_threshold: float = 0.) -> Tuple[TriangleMes
     if area_threshold > 0:
         old_num_patches = len(patch_materials)
 
-        merge_small_patches(vert_triplets, mesh, patch_materials, area_threshold)
+        merge_small_patches(vertices, vert_triplets,
+                            mesh, patch_materials,
+                            area_threshold, thoroughness)
+        # This was changed in-place: retrieve the new values to avoid mix-ups
+        patch_ids = mesh.ID
 
         # Check that all triangles in each patch are still coplanar.
-        for patch_id in np.unique(mesh.ID):
-            for triangle_a in np.where(mesh.ID == patch_id)[0]:
-                for triangle_b in np.where(mesh.ID == patch_id)[0]:
+        for patch_id in np.unique(patch_ids):
+            for triangle_a in np.where(patch_ids == patch_id)[0]:
+                for triangle_b in np.where(patch_ids == patch_id)[0]:
                     if triangle_a == triangle_b:
                         continue
 

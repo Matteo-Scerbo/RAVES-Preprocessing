@@ -13,7 +13,8 @@ from .utils import load_all_inputs, RayBundle, air_absorption_in_band
 def assess_ART_on_grid(folder_path: str,
                        points_per_square_meter: List[float],
                        rays_per_hemisphere: List[int],
-                       area_threshold: float = 0.
+                       area_threshold: float = 0.,
+                       thoroughness: float = 0.
                        ) -> None:
     # TODO: Fill out documentation properly.
     """
@@ -28,7 +29,7 @@ def assess_ART_on_grid(folder_path: str,
             file_name = 'etendue_SAPE_{:.0f}pnts_{:d}rays.csv'.format(int(ppsm), rays)
 
             if not os.path.isfile(os.path.join(folder_path, file_name)):
-                continue  # assess_ART(folder_path, area_threshold=area_threshold, points_per_square_meter=ppsm, rays_per_hemisphere=rays)
+                continue  # assess_ART(folder_path, area_threshold=area_threshold, thoroughness=thoroughness, points_per_square_meter=ppsm, rays_per_hemisphere=rays)
 
             etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
             median_SAPE = np.median(etendue_SAPE)
@@ -93,6 +94,7 @@ def assess_ART_on_grid(folder_path: str,
 
 def assess_ART(folder_path: str,
                area_threshold: float = 0.,
+               thoroughness: float = 0.,
                points_per_square_meter: float = 10.,
                rays_per_hemisphere: int = 1000,
                ) -> np.ndarray:
@@ -100,7 +102,7 @@ def assess_ART(folder_path: str,
     """
 
     """
-    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold)
+    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold, thoroughness)
 
     num_patches = len(patch_materials)
 
@@ -323,6 +325,7 @@ def assess_ART(folder_path: str,
 def compute_ART(folder_path: str,
                 overwrite: bool = False,
                 area_threshold: float = 0.,
+                thoroughness: float = 0.,
                 points_per_square_meter: float = 10.,
                 rays_per_hemisphere: int = 1000,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.,
@@ -336,6 +339,7 @@ def compute_ART(folder_path: str,
         folder_path:
         overwrite:
         area_threshold:
+        thoroughness:
         points_per_square_meter:
         rays_per_hemisphere:
         humidity:
@@ -363,7 +367,7 @@ def compute_ART(folder_path: str,
 
     print('Running `compute_ART` in the environment "' + os.path.split(folder_path)[-1] + '"')
 
-    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold)
+    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold, thoroughness)
 
     num_patches = len(patch_materials)
 
