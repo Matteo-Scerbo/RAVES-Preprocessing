@@ -24,7 +24,7 @@ def main(folder_path: str) -> None:
 
     # visualize_mesh(folder_path)
 
-    compute_ART(folder_path, area_threshold=1.0)
+    compute_ART(folder_path, area_threshold=15.)
     # compute_MoDART(folder_path)
 
     # assess_ART_on_grid(folder_path,

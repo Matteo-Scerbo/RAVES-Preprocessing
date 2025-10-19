@@ -4,6 +4,7 @@ import csv
 import warnings
 import numpy as np
 import networkx as nx
+from queue import PriorityQueue
 from itertools import combinations
 from collections import defaultdict
 from typing import Tuple, List, Dict, Set
@@ -44,21 +45,24 @@ def merge_small_patches(vert_triplets: np.ndarray,
 
     group_partitions = list()
     for material in set(patch_materials):
-        child_patches = set(p for p, m in enumerate(patch_materials) if m == material)
+        child_patches = [p for p, m in enumerate(patch_materials)
+                         if m == material]
 
-        # if len(child_patches) < 2:
-        #     # Nothing to merge in this patch.
-        #     # TODO: Add the default partition to group_partitions.
-        #     continue
-        #
-        # if np.all([patch_areas[p] >= area_threshold for p in child_patches]):
-        #     # Nothing to merge in this patch.
-        #     # TODO: Add the default partition to group_partitions.
-        #     continue
+        trivial_partition = [set([p]) for p in child_patches]
+
+        if len(child_patches) < 2:
+            # Nothing to merge in this material (single child or empty material).
+            group_partitions.append(trivial_partition)
+            continue
+
+        if np.all([patch_areas[p] >= area_threshold for p in child_patches]):
+            # Nothing to merge in this material (all children are large).
+            group_partitions.append(trivial_partition)
+            continue
 
         # Build patch adjacency graph based on shared edges and co-planarity.
         edge_to_patches = defaultdict(set)
-        child_triangles = np.where(np.isin(mesh.ID, list(child_patches)))[0]
+        child_triangles = np.where(np.isin(mesh.ID, child_patches))[0]
         for t_idx in child_triangles:
             a, b, c = (int(x) for x in vert_triplets[t_idx])
             for u, v in ((a, b), (b, c), (c, a)):
@@ -87,96 +91,73 @@ def merge_small_patches(vert_triplets: np.ndarray,
                 if parallel_normals and same_offset:
                     G.add_edge(i, j)
 
-        # if nx.number_connected_components(G) == len(child_patches):
-        #     # Nothing to merge in this patch.
-        #     # TODO: Add the default partition to group_partitions.
-        #     continue
+        if nx.number_connected_components(G) == len(child_patches):
+            # Nothing can be merged in this material (all children are disconnected).
+            group_partitions.append(trivial_partition)
+            continue
 
         for comp_nodes in nx.connected_components(G):
             subG = G.subgraph(comp_nodes).copy()
 
-            # Trivial partition: each patch alone (as frozensets, so the partition is hashable).
-            trivial_partition = frozenset(frozenset([p]) for p in subG.nodes())
+            clusters = [set([p]) for p in subG.nodes()]
+            areas = [patch_areas[p] for p in subG.nodes()]
+            active = set(range(len(clusters)))
+            owner = {p: i for i, p in enumerate(subG.nodes())}
 
-            # Build the full set of all legal partitions by iterative merging (only merge clusters that are adjacent in subG).
-            legal_partitions = {trivial_partition}
-            frontier = [trivial_partition]
+            while True:
+                if all(areas[i] >= area_threshold for i in active):
+                    break
 
-            while len(frontier) > 0:
-                clusters = list(frontier.pop())
-                cluster_areas = [np.sum([patch_areas[a] for a in A]) for A in clusters]
+                # Build adjacent cluster pairs from adjacency graph
+                adjacent_pairs = set()
+                for u, v in subG.edges():
+                    iu, iv = owner[u], owner[v]
+                    if iu == iv:
+                        continue
+                    a, b = (iu, iv) if iu < iv else (iv, iu)
+                    if a in active and b in active:
+                        adjacent_pairs.add((a, b))
+                if len(adjacent_pairs) == 0:
+                    break
 
-                # Try all unordered pairs (A, B) once.
-                for A_i in range(len(clusters)):
-                    for B_i in range(len(clusters)):
-                        if A_i == B_i:
-                            continue
+                # Select merge candidates: small–small merges first, then small–big merges if no small-small are possible
+                candidate_pairs = [(i, j) for i, j in adjacent_pairs
+                                   if (areas[i] < area_threshold) and (areas[j] < area_threshold)]
+                if len(candidate_pairs) == 0:
+                    candidate_pairs = [(i, j) for i, j in adjacent_pairs
+                                       if (areas[i] < area_threshold) or (areas[j] < area_threshold)]
+                if len(candidate_pairs) == 0:
+                    break
 
-                        A = clusters[A_i]
-                        B = clusters[B_i]
+                # Priority queue of (new_area_range, new_max_area, merger_i, merger_j):
+                # Upon "get()", returns entry with the lowest new_area_range
+                pq = PriorityQueue()
+                for i, j in candidate_pairs:
+                    merged_area = areas[i] + areas[j]
+                    after = [areas[k] for k in active if k not in (i, j)] + [merged_area]
+                    new_min = min(after)
+                    new_max = max(after)
+                    pq.put((new_max - new_min, new_max, i, j))
 
-                        # If both clusters are already large, do not consider merging them.
-                        if (cluster_areas[A_i] >= area_threshold) and (cluster_areas[B_i] >= area_threshold):
-                            continue
+                # Take the best candidate and merge
+                _, _, i, j = pq.get()
 
-                        # Check if the pair of clusters can be merged.
-                        any_adjacent = False
-                        for a in A:
-                            if any((b in B) for b in subG.neighbors(a)):
-                                any_adjacent = True
-                                break
-                        if not any_adjacent:
-                            continue
+                new_members = clusters[i].union(clusters[j])
+                new_area = areas[i] + areas[j]
+                new_idx = len(clusters)
 
-                        new_part = {A.union(B)}.union(clusters[k]
-                                                      for k in range(len(clusters))
-                                                      if k not in (A_i, B_i))
-                        new_part = frozenset(new_part)
-                        if new_part not in legal_partitions:
-                            legal_partitions.add(new_part)
-                            frontier.append(new_part)
+                clusters.append(new_members)
+                areas.append(new_area)
+                for p in new_members:
+                    owner[p] = new_idx
 
-            if len(legal_partitions) == 1:
-                group_partitions.append(list(legal_partitions)[0])
-                continue
+                active.add(new_idx)
+                active.discard(i)
+                active.discard(j)
+                clusters[i] = None
+                clusters[j] = None
 
-            # If at least one partition has A_min >= threshold:
-            #    keep only partitions with A_min >= threshold
-            # else:
-            #    keep the partition(s) with the greatest A_min
-            A_min = {partition:
-                     np.min([np.sum([patch_areas[p] for p in cluster])
-                             for cluster in partition])
-                     for partition in legal_partitions}
-
-            if np.any([a >= area_threshold for a in A_min.values()]):
-                legal_partitions = [p for p, a in A_min.items()
-                                    if a >= area_threshold]
-            else:
-                max_A_min = np.max([a for a in A_min.values()])
-                legal_partitions = [p for p, a in A_min.items()
-                                    if np.isclose(a, max_A_min)]
-
-            if len(legal_partitions) == 1:
-                group_partitions.append(legal_partitions[0])
-                continue
-
-            # If there is still more than one legal partition, choose one with the lowest maximum area.
-            A_max = {partition:
-                     np.max([np.sum([patch_areas[p] for p in cluster])
-                             for cluster in partition])
-                     for partition in legal_partitions}
-            min_A_max = np.min([a for a in A_max.values()])
-            legal_partitions = [p for p, a in A_max.items()
-                                if np.isclose(a, min_A_max)]
-
-            group_partitions.append(legal_partitions[0])
-
-            # TODO: Choose one which maximizes the ratio of area over perimeter.
-            #  R_min = {partition:
-            #           np.min([subset_area(cluster) / subset_perimeter(cluster)
-            #                   for cluster in partition])
-            #           for partition in legal_partitions}
+            group_partitions.append([clusters[i] for i in active])
 
     full_cover = list()
     for partition in group_partitions:
@@ -201,11 +182,6 @@ def merge_small_patches(vert_triplets: np.ndarray,
     # Remap materials (the [:] is what makes this in-place)
     mesh.ID[:] = inverse_mapping[mesh.ID]
     patch_materials[:] = [patch_materials[i] for i in kept_patch_ids]
-
-    # Confirm patch_areas
-    new_patch_areas = np.zeros(len(patch_materials))
-    for p, a in zip(mesh.ID, mesh.area):
-        new_patch_areas[p] += a
 
 
 def load_all_inputs(folder_path: str, area_threshold: float = 0.) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray]]:
@@ -436,6 +412,8 @@ def load_mesh(folder_path: str, area_threshold: float = 0.) -> Tuple[TriangleMes
                     file.write('newmtl ' + patch_ID_str + '\n')
                     # TODO: Get appropriate color from original MTL.
                     c = float(patch_id+1) / new_num_patches
+                    cycle = 7
+                    c = (c + (patch_id % cycle)) / cycle
                     file.write('Kd {} {} {}\n'.format(c, c, c))
                     file.write('Ka {} {} {}\n'.format(c, c, c))
                     file.write('Ks {} {} {}\n'.format(c, c, c))
