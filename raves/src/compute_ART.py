@@ -1,20 +1,104 @@
 import os
 import sys
-import time
 import numpy as np
 from tqdm import tqdm
+import multiprocessing
 from scipy.sparse import lil_array, csr_array, diags
 from scipy.io import mmread, mmwrite
-from typing import List
+from typing import List, Tuple
 
-from .utils import load_all_inputs, RayBundle, air_absorption_in_band
+from .utils import RayBundle, TriangleMesh, load_all_inputs, air_absorption_in_band
+
+# https://stackoverflow.com/a/21130146
+def integrate_patch(args: Tuple[TriangleMesh, int, List[int], int, float]
+                    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int]:
+    # TODO: Fill out documentation properly.
+    """
+
+    """
+    mesh, num_patches, patch_triangles, rays_per_hemisphere, points_per_square_meter = args
+
+    # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
+    patch_normal = mesh.n[patch_triangles[0]]
+
+    # Prepare a pencil of rays uniformly sampling the hemisphere.
+    # This pencil's origin will be moved to different sample points, to avoid re-instantiating the class.
+    hemisphere_pencil = RayBundle.sample_sphere(rays_per_hemisphere, hemisphere_only=True, north_pole=patch_normal)
+    # We need to keep track of the surface sample points used to integrate this patch.
+    num_points = 0
+
+    # Prepare a pencil formed by the specular reflection of `hemisphere_pencil` across the surface normal.
+    # This pencil will be moved and traced in conjunction with `hemisphere_pencil` to obtain the specular reflection kernel.
+    hemisphere_directions = hemisphere_pencil.getDirections()
+    hemisphere_cosines = np.einsum('ij,j->i', hemisphere_directions, patch_normal)
+    specular_directions = 2 * hemisphere_cosines[:, np.newaxis] * patch_normal[np.newaxis] - hemisphere_directions
+    specular_pencil = RayBundle.from_shared_origin(origin=np.zeros(3), directions=specular_directions)
+
+    # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
+    # Refer to "ART_theory.md" for more info on this process.
+    cum_num_hits = np.zeros(num_patches)
+    cum_distances = np.zeros(num_patches)
+    cum_cosines = np.zeros(num_patches)
+    cum_specular_kernel = np.zeros((num_patches, num_patches))
+
+    for triangle_idx in patch_triangles:
+        # Uniformly sample the triangle's surface.
+        sample_points = mesh.sample_triangle(triangle_idx, points_per_square_meter)
+        # We need to keep track of the surface sample points used to integrate this patch.
+        num_points += sample_points.shape[0]
+
+        for sample_point in sample_points:
+            hemisphere_pencil.moveOrigins(sample_point)
+            specular_pencil.moveOrigins(sample_point)
+
+            hemisphere_pencil.traceAll(mesh)
+            specular_pencil.traceAll(mesh)
+
+            hemisphere_patch_ids, _ = hemisphere_pencil.getIndices(copy=False)
+            specular_patch_ids, _ = specular_pencil.getIndices(copy=False)
+            hemisphere_distances, _ = hemisphere_pencil.getDistances(copy=False)
+            specular_distances, _ = specular_pencil.getDistances(copy=False)
+            # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
+            # specular_cosines, _ = specular_pencil.getCosines(copy=False)
+
+            hemisphere_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
+            specular_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
+            num_hemisphere_hits_per_patch = np.zeros(num_patches)
+            num_specular_hits_per_patch = np.zeros(num_patches)
+            for j in range(num_patches):
+                hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
+                specular_hits_per_patch[j] = (specular_patch_ids == j)
+                num_hemisphere_hits_per_patch[j] = np.count_nonzero(hemisphere_patch_ids == j)
+                num_specular_hits_per_patch[j] = np.count_nonzero(specular_patch_ids == j)
+
+            for j in range(num_patches):
+                # Combine the two bundles to ensure symmetry.
+                # Each ray appears once as "main" and once as specular; both count as hits.
+                cum_num_hits[j] += num_hemisphere_hits_per_patch[j]
+                cum_num_hits[j] += num_specular_hits_per_patch[j]
+
+                cum_distances[j] += np.sum(hemisphere_distances[hemisphere_hits_per_patch[j]])
+                cum_distances[j] += np.sum(specular_distances[specular_hits_per_patch[j]])
+
+                # The departure cosine of each ray is the same as the departure cosine of its specular ray.
+                cum_cosines[j] += np.sum(hemisphere_cosines[hemisphere_hits_per_patch[j]])
+                cum_cosines[j] += np.sum(hemisphere_cosines[specular_hits_per_patch[j]])
+
+                for h in range(num_patches):
+                    cum_specular_kernel[h, j] += 2 * np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
+                    # The multiplication by 2 makes this equivalent to:
+                    # cum_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
+                    # cum_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[h] & specular_hits_per_patch[j])
+
+    return cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points
 
 
 def assess_ART_on_grid(folder_path: str,
                        points_per_square_meter: List[float],
                        rays_per_hemisphere: List[int],
                        area_threshold: float = 0.,
-                       thoroughness: float = 0.
+                       thoroughness: float = 0.,
+                       pool_size: int = 1
                        ) -> None:
     # TODO: Fill out documentation properly.
     """
@@ -28,13 +112,15 @@ def assess_ART_on_grid(folder_path: str,
         for r_i, rays in enumerate(rays_per_hemisphere):
             file_name = 'etendue_SAPE_{:.0f}pnts_{:d}rays.csv'.format(int(ppsm), rays)
 
+            weights[p_i, r_i] = ppsm * rays
+
             if not os.path.isfile(os.path.join(folder_path, file_name)):
-                continue  # assess_ART(folder_path, area_threshold=area_threshold, thoroughness=thoroughness, points_per_square_meter=ppsm, rays_per_hemisphere=rays)
+                # continue
+                assess_ART(folder_path, area_threshold=area_threshold, thoroughness=thoroughness,
+                           points_per_square_meter=ppsm, rays_per_hemisphere=rays, pool_size=pool_size)
 
             etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
             median_SAPE = np.median(etendue_SAPE)
-
-            weights[p_i, r_i] = ppsm * rays
             medians[p_i, r_i] = median_SAPE
 
     # https://stackoverflow.com/q/71119762
@@ -44,9 +130,10 @@ def assess_ART_on_grid(folder_path: str,
     fig = plt.figure(layout="constrained")
     subfigs = fig.subfigures(1, 2)
 
-    weighted_medians = np.log10(np.multiply(medians, weights,
-                                            where=(medians != 0),
-                                            out=np.ones_like(medians)))
+    # weighted_medians = np.log10(np.multiply(medians, weights,
+    #                                         where=(medians != 0),
+    #                                         out=np.ones_like(medians)))
+    weighted_medians = medians * np.log10(weights)
 
     # Do not show missing entries in the plots.
     medians = np.ma.masked_where(medians == 0, medians)
@@ -86,7 +173,7 @@ def assess_ART_on_grid(folder_path: str,
     # subfigs[1].suptitle('Median $\\times$ thousands of tests per m2')
     plt.suptitle('Etendue SAPE over number of rays and samples per square meter.'
                  '\nThe left figure shows the median.'
-                 '\nThe right figure shows $\\log_{10}$(median $\\cdot$ traced_rays_per_square_meter).'
+                 '\nThe right figure shows (median $\\cdot$ $\\log_{10}$ traced_rays_per_square_meter).'
                  '\nIn other words, the right figure is weighted by the processing runtime.')
 
     plt.show()
@@ -97,12 +184,20 @@ def assess_ART(folder_path: str,
                thoroughness: float = 0.,
                points_per_square_meter: float = 10.,
                rays_per_hemisphere: int = 1000,
+               pool_size: int = 1
                ) -> np.ndarray:
     # TODO: Fill out documentation properly.
     """
 
     """
-    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold, thoroughness)
+    pool_size = min(pool_size, os.cpu_count() - 1)
+    num_processes = max(1, pool_size)
+    if num_processes == 1:
+        print('Will use a single process.')
+    else:
+        print(os.cpu_count(), 'cores available. Pool will use', num_processes, 'SUB-processes.')
+
+    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness)
 
     num_patches = len(patch_materials)
 
@@ -133,103 +228,82 @@ def assess_ART(folder_path: str,
     specular_kernel = lil_array((num_paths, num_paths))
     path_indexing = lil_array((num_patches, num_patches), dtype=int)
 
-    for i in tqdm(range(num_patches), desc='ART surface integral (# patches)', leave=False):
-        # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
-        patch_normal = mesh.n[patch_triangles[i][0]]
+    # Parallelize integration across patches
+    if pool_size == 1:
+        for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
+            # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
+            # Refer to "ART_theory.md" for more info on this process.
+            returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
+                                             rays_per_hemisphere, points_per_square_meter)
+            cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
 
-        # Prepare a pencil of rays uniformly sampling the hemisphere.
-        # This pencil's origin will be moved to different sample points, to avoid re-instantiating the class.
-        hemisphere_pencil = RayBundle.sample_sphere(rays_per_hemisphere, hemisphere_only=True, north_pole=patch_normal)
-        # We need to keep track of the surface sample points used to integrate this patch.
-        num_points = 0
-
-        # Prepare a pencil formed by the specular reflection of `hemisphere_pencil` across the surface normal.
-        # This pencil will be moved and traced in conjunction with `hemisphere_pencil` to obtain the specular reflection kernel.
-        hemisphere_directions = hemisphere_pencil.getDirections()
-        hemisphere_cosines = np.einsum('ij,j->i', hemisphere_directions, patch_normal)
-        specular_directions = 2 * hemisphere_cosines[:, np.newaxis] * patch_normal[np.newaxis] - hemisphere_directions
-        specular_pencil = RayBundle.from_shared_origin(origin=np.zeros(3), directions=specular_directions)
-
-        # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
-        # Refer to "ART_theory.md" for more info on this process.
-        accumulated_num_hits = np.zeros(num_patches)
-        accumulated_distances = np.zeros(num_patches)
-        accumulated_cosines = np.zeros(num_patches)
-        accumulated_specular_kernel = np.zeros((num_patches, num_patches))
-
-        for triangle_idx in patch_triangles[i]:
-            # Uniformly sample the triangle's surface.
-            sample_points = mesh.sample_triangle(triangle_idx, points_per_square_meter)
-            # We need to keep track of the surface sample points used to integrate this patch.
-            num_points += sample_points.shape[0]
-
-            for sample_point in sample_points:
-                hemisphere_pencil.moveOrigins(sample_point)
-                specular_pencil.moveOrigins(sample_point)
-
-                hemisphere_pencil.traceAll(mesh)
-                specular_pencil.traceAll(mesh)
-
-                hemisphere_patch_ids, _ = hemisphere_pencil.getIndices(copy=False)
-                specular_patch_ids, _ = specular_pencil.getIndices(copy=False)
-                hemisphere_distances, _ = hemisphere_pencil.getDistances(copy=False)
-                specular_distances, _ = specular_pencil.getDistances(copy=False)
-                # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
-                # specular_cosines, _ = specular_pencil.getCosines(copy=False)
-
-                hemisphere_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
-                specular_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
-                num_hemisphere_hits_per_patch = np.zeros(num_patches)
-                num_specular_hits_per_patch = np.zeros(num_patches)
-                for j in range(num_patches):
-                    hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
-                    specular_hits_per_patch[j] = (specular_patch_ids == j)
-                    num_hemisphere_hits_per_patch[j] = np.count_nonzero(hemisphere_patch_ids == j)
-                    num_specular_hits_per_patch[j] = np.count_nonzero(specular_patch_ids == j)
-
-                for j in range(num_patches):
-                    # Combine the two bundles to ensure symmetry.
-                    # Each ray appears once as "main" and once as specular; both count as hits.
-                    accumulated_num_hits[j] += num_hemisphere_hits_per_patch[j]
-                    accumulated_num_hits[j] += num_specular_hits_per_patch[j]
-
-                    accumulated_distances[j] += np.sum(hemisphere_distances[hemisphere_hits_per_patch[j]])
-                    accumulated_distances[j] += np.sum(specular_distances[specular_hits_per_patch[j]])
-
-                    # The departure cosine of each ray is the same as the departure cosine of its specular ray.
-                    accumulated_cosines[j] += np.sum(hemisphere_cosines[hemisphere_hits_per_patch[j]])
-                    accumulated_cosines[j] += np.sum(hemisphere_cosines[specular_hits_per_patch[j]])
-
-                    for h in range(num_patches):
-                        accumulated_specular_kernel[h, j] += 2 * np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
-                        # The multiplication by 2 makes this equivalent to:
-                        # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
-                        # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[h] & specular_hits_per_patch[j])
-
-        # Normalize accumulators and add to global trackers.
-        for j in range(num_patches):
-            if accumulated_num_hits[j] == 0:
-                # No visibility between any point in j and any point in i.
-                continue
-
-            ij = path_index(i, j)
-
-            path_lengths[ij] = accumulated_distances[j] / accumulated_num_hits[j]
-
-            # Etendue is equal to form factor times surface area times pi.
-            path_etendues[ij] = np.pi * patch_areas[i] * accumulated_cosines[j] / (rays_per_hemisphere * num_points)
-
-            for h in range(num_patches):
-                if accumulated_num_hits[h] == 0:
-                    # No visibility between any point in h and any point in i.
+            # Normalize accumulators and add to global trackers.
+            for j in range(num_patches):
+                if cum_num_hits[j] == 0:
+                    # No visibility between any point in j and any point in i.
                     continue
 
-                hi = path_index(h, i)
+                ij = path_index(i, j)
 
-                # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
-                # In practice, we do not need it because each ray is counted once as "main" and once as specular.
-                diffuse_kernel[hi, ij] = accumulated_cosines[j] / (rays_per_hemisphere * num_points)
-                specular_kernel[hi, ij] = accumulated_specular_kernel[h, j] / accumulated_num_hits[h]
+                path_lengths[ij] = cum_distances[j] / cum_num_hits[j]
+
+                # Etendue is equal to form factor times surface area times pi.
+                path_etendues[ij] = np.pi * patch_areas[i] * cum_cosines[j] / (rays_per_hemisphere * num_points)
+
+                for h in range(num_patches):
+                    if cum_num_hits[h] == 0:
+                        # No visibility between any point in h and any point in i.
+                        continue
+
+                    hi = path_index(h, i)
+
+                    # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
+                    # In practice, we do not need it because each ray is counted once as "main" and once as specular.
+                    diffuse_kernel[hi, ij] = cum_cosines[j] / (rays_per_hemisphere * num_points)
+                    specular_kernel[hi, ij] = cum_specular_kernel[h, j] / cum_num_hits[h]
+    else:
+        task_list = list()
+        for i in range(num_patches):
+            task = (mesh, num_patches, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
+            task_list.append(task)
+
+        with multiprocessing.Pool(pool_size) as pool:
+            patch_contributions = pool.imap_unordered(integrate_patch, task_list)
+
+            # https://stackoverflow.com/a/41921948
+            # https://stackoverflow.com/a/72514814
+            with tqdm(total=num_patches, desc='ART surface integral (# patches)',
+                      miniters=min(int(num_patches / 10), pool_size * 10), maxinterval=3600) as progress_bar:
+                for returned_tuple in patch_contributions:
+                    cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
+
+                    # Normalize accumulators and add to global trackers.
+                    for j in range(num_patches):
+                        if cum_num_hits[j] == 0:
+                            # No visibility between any point in j and any point in i.
+                            continue
+
+                        ij = path_index(i, j)
+
+                        path_lengths[ij] = cum_distances[j] / cum_num_hits[j]
+
+                        # Etendue is equal to form factor times surface area times pi.
+                        path_etendues[ij] = np.pi * patch_areas[i] * cum_cosines[j] / (rays_per_hemisphere * num_points)
+
+                        for h in range(num_patches):
+                            if cum_num_hits[h] == 0:
+                                # No visibility between any point in h and any point in i.
+                                continue
+
+                            hi = path_index(h, i)
+
+                            # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
+                            # In practice, we do not need it because each ray is counted once as "main" and once as specular.
+                            diffuse_kernel[hi, ij] = cum_cosines[j] / (rays_per_hemisphere * num_points)
+                            specular_kernel[hi, ij] = cum_specular_kernel[h, j] / cum_num_hits[h]
+
+                    # Advance the progress bar.
+                    progress_bar.update()
 
     # These should theoretically be identical, but may not be due to the discretized integration.
     # Nevertheless, they should be close enough.
@@ -328,9 +402,8 @@ def compute_ART(folder_path: str,
                 thoroughness: float = 0.,
                 points_per_square_meter: float = 10.,
                 rays_per_hemisphere: int = 1000,
-                humidity: float = 50., temperature: float = 20., pressure: float = 100.,
-                detect_open_surface: bool = True,
-                profile_runtime: bool = False
+                pool_size: int = 1,
+                humidity: float = 50., temperature: float = 20., pressure: float = 100.
                 ) -> None:
     # TODO: Fill out documentation properly.
     """
@@ -342,11 +415,10 @@ def compute_ART(folder_path: str,
         thoroughness:
         points_per_square_meter:
         rays_per_hemisphere:
+        pool_size:
         humidity:
         temperature:
         pressure:
-        detect_open_surface:
-        profile_runtime:
 
     Returns:
 
@@ -357,9 +429,7 @@ def compute_ART(folder_path: str,
             or type(rays_per_hemisphere) != int
             or type(humidity) != float
             or type(temperature) != float
-            or type(pressure) != float
-            or type(detect_open_surface) != bool
-            or type(profile_runtime) != bool):
+            or type(pressure) != float):
         raise ValueError('Please respect the type hints.')
 
     if not os.path.isdir(folder_path):
@@ -367,7 +437,14 @@ def compute_ART(folder_path: str,
 
     print('Running `compute_ART` in the environment "' + os.path.split(folder_path)[-1] + '"')
 
-    mesh, patch_materials, material_coefficients = load_all_inputs(folder_path, area_threshold, thoroughness)
+    pool_size = min(pool_size, os.cpu_count() - 1)
+    num_processes = max(1, pool_size)
+    if num_processes == 1:
+        print('Will use a single process.')
+    else:
+        print(os.cpu_count(), 'cores available. Pool will use', num_processes, 'SUB-processes.')
+
+    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness)
 
     num_patches = len(patch_materials)
 
@@ -450,26 +527,12 @@ def compute_ART(folder_path: str,
             plt.show()
     """
 
-    if profile_runtime:
-        profiling = {'Build ray pencils ': 0.,
-                     'Sample surface    ': 0.,
-                     'Move ray pencils  ': 0.,
-                     'Trace ray pencils ': 0.,
-                     'Bundle rays       ': 0.,
-                     'Sum contributions ': 0.,
-                     'Normalize and log ': 0.,
-                     'Assess accuracy   ': 0.
-        }
-
     if (not overwrite
             and os.path.isfile(os.path.join(folder_path, 'ART_kernel_diffuse.mtx'))
             and os.path.isfile(os.path.join(folder_path, 'ART_kernel_specular.mtx'))
             and os.path.isfile(os.path.join(folder_path, 'path_indexing.mtx'))
             and os.path.isfile(os.path.join(folder_path, 'path_lengths.csv'))
             and os.path.isfile(os.path.join(folder_path, 'path_etendues.csv'))):
-        if profile_runtime:
-            start = time.time()
-
         print('\nCore ART files already exist. They will be read and re-used.')
         print('Current material data will be read and used to make new frequency-band kernels.')
         print('If you want to overwrite the existing core files, pass the argument `--overwrite` to the script.')
@@ -481,11 +544,6 @@ def compute_ART(folder_path: str,
         path_indexing = mmread(os.path.join(folder_path, 'path_indexing.mtx'), spmatrix=True).tocsr()
 
         num_valid_paths = len(path_lengths)
-
-        if profile_runtime:
-            end = time.time()
-            profiling['Read core files   '] += end - start
-            start = time.time()
     else:
         # Initialize `path_lengths`, `path_etendues`, `diffuse_kernel`, and `specular_kernel`.
         # The path etendues are used to assess the integration accuracy, and are also needed to scale MoD-ART eigenvectors.
@@ -496,175 +554,82 @@ def compute_ART(folder_path: str,
         specular_kernel = lil_array((num_paths, num_paths))
         path_indexing = lil_array((num_patches, num_patches), dtype=int)
 
-        if detect_open_surface:
-            miss_percentages = np.zeros(num_patches)
+        # Parallelize integration across patches
+        if pool_size == 1:
+            for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
+                # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
+                # Refer to "ART_theory.md" for more info on this process.
+                returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
+                                                 rays_per_hemisphere, points_per_square_meter)
+                cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
 
-        # TODO: Wrap each patch computation in a function call, for legibility
-        # TODO: Wrap each surface point computation in a function call, for legibility
-        # TODO: Parallelize tasks across patches and/or surface points
-        for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
-            # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
-            patch_normal = mesh.n[patch_triangles[i][0]]
-
-            if profile_runtime:
-                start = time.time()
-
-            # Prepare a pencil of rays uniformly sampling the hemisphere.
-            # This pencil's origin will be moved to different sample points, to avoid re-instantiating the class.
-            hemisphere_pencil = RayBundle.sample_sphere(rays_per_hemisphere, hemisphere_only=True, north_pole=patch_normal)
-            # We need to keep track of the surface sample points used to integrate this patch.
-            num_points = 0
-
-            # Prepare a pencil formed by the specular reflection of `hemisphere_pencil` across the surface normal.
-            # This pencil will be moved and traced in conjunction with `hemisphere_pencil` to obtain the specular reflection kernel.
-            hemisphere_directions = hemisphere_pencil.getDirections()
-            hemisphere_cosines = np.einsum('ij,j->i', hemisphere_directions, patch_normal)
-            specular_directions = 2 * hemisphere_cosines[:, np.newaxis] * patch_normal[np.newaxis] - hemisphere_directions
-            specular_pencil = RayBundle.from_shared_origin(origin=np.zeros(3), directions=specular_directions)
-
-            # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
-            # Refer to "ART_theory.md" for more info on this process.
-            accumulated_num_hits = np.zeros(num_patches)
-            accumulated_distances = np.zeros(num_patches)
-            accumulated_cosines = np.zeros(num_patches)
-            accumulated_specular_kernel = np.zeros((num_patches, num_patches))
-
-            if detect_open_surface:
-                accumulated_num_misses = 0
-
-            if profile_runtime:
-                end = time.time()
-                profiling['Build ray pencils '] += end - start
-
-            for triangle_idx in patch_triangles[i]:
-                if profile_runtime:
-                    start = time.time()
-
-                # Uniformly sample the triangle's surface.
-                sample_points = mesh.sample_triangle(triangle_idx, points_per_square_meter)
-                # We need to keep track of the surface sample points used to integrate this patch.
-                num_points += sample_points.shape[0]
-
-                if profile_runtime:
-                    end = time.time()
-                    profiling['Sample surface    '] += end - start
-
-                for sample_point in sample_points:
-                    if profile_runtime:
-                        start = time.time()
-
-                    hemisphere_pencil.moveOrigins(sample_point)
-                    specular_pencil.moveOrigins(sample_point)
-
-                    if profile_runtime:
-                        end = time.time()
-                        profiling['Move ray pencils  '] += end - start
-                        start = time.time()
-
-                    hemisphere_pencil.traceAll(mesh)
-                    specular_pencil.traceAll(mesh)
-
-                    if profile_runtime:
-                        end = time.time()
-                        profiling['Trace ray pencils '] += end - start
-                        start = time.time()
-
-                    hemisphere_patch_ids, _ = hemisphere_pencil.getIndices(copy=False)
-                    specular_patch_ids, _ = specular_pencil.getIndices(copy=False)
-                    hemisphere_distances, _ = hemisphere_pencil.getDistances(copy=False)
-                    specular_distances, _ = specular_pencil.getDistances(copy=False)
-                    # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
-                    # specular_cosines, _ = specular_pencil.getCosines(copy=False)
-
-                    hemisphere_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
-                    specular_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
-                    num_hemisphere_hits_per_patch = np.zeros(num_patches)
-                    num_specular_hits_per_patch = np.zeros(num_patches)
-                    for j in range(num_patches):
-                        hemisphere_hits_per_patch[j] = (hemisphere_patch_ids == j)
-                        specular_hits_per_patch[j] = (specular_patch_ids == j)
-                        num_hemisphere_hits_per_patch[j] = np.count_nonzero(hemisphere_patch_ids == j)
-                        num_specular_hits_per_patch[j] = np.count_nonzero(specular_patch_ids == j)
-
-                    if detect_open_surface:
-                        # An index of -1 indicates that the ray has no valid intersections.
-                        accumulated_num_misses += np.count_nonzero(hemisphere_patch_ids == -1)
-                        accumulated_num_misses += np.count_nonzero(specular_patch_ids == -1)
-
-                    if profile_runtime:
-                        end = time.time()
-                        profiling['Bundle rays       '] += end - start
-                        start = time.time()
-
-                    for j in range(num_patches):
-                        # Combine the two bundles to ensure symmetry.
-                        # Each ray appears once as "main" and once as specular; both count as hits.
-                        accumulated_num_hits[j] += num_hemisphere_hits_per_patch[j]
-                        accumulated_num_hits[j] += num_specular_hits_per_patch[j]
-
-                        accumulated_distances[j] += np.sum(hemisphere_distances[hemisphere_hits_per_patch[j]])
-                        accumulated_distances[j] += np.sum(specular_distances[specular_hits_per_patch[j]])
-
-                        # The departure cosine of each ray is the same as the departure cosine of its specular ray.
-                        accumulated_cosines[j] += np.sum(hemisphere_cosines[hemisphere_hits_per_patch[j]])
-                        accumulated_cosines[j] += np.sum(hemisphere_cosines[specular_hits_per_patch[j]])
-
-                        for h in range(num_patches):
-                            accumulated_specular_kernel[h, j] += 2 * np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
-                            # The multiplication by 2 makes this equivalent to:
-                            # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
-                            # accumulated_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[h] & specular_hits_per_patch[j])
-
-                    if profile_runtime:
-                        end = time.time()
-                        profiling['Sum contributions '] += end - start
-
-            if profile_runtime:
-                start = time.time()
-
-            # Normalize accumulators and add to global trackers.
-            for j in range(num_patches):
-                if accumulated_num_hits[j] == 0:
-                    # No visibility between any point in j and any point in i.
-                    continue
-
-                ij = path_index(i, j)
-
-                path_lengths[ij] = accumulated_distances[j] / accumulated_num_hits[j]
-
-                # Etendue is equal to form factor times surface area times pi.
-                path_etendues[ij] = np.pi * patch_areas[i] * accumulated_cosines[j] / (rays_per_hemisphere * num_points)
-
-                for h in range(num_patches):
-                    if accumulated_num_hits[h] == 0:
-                        # No visibility between any point in h and any point in i.
+                # Normalize accumulators and add to global trackers.
+                for j in range(num_patches):
+                    if cum_num_hits[j] == 0:
+                        # No visibility between any point in j and any point in i.
                         continue
 
-                    hi = path_index(h, i)
+                    ij = path_index(i, j)
 
-                    # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
-                    # In practice, we do not need it because each ray is counted once as "main" and once as specular.
-                    diffuse_kernel[hi, ij] = accumulated_cosines[j] / (rays_per_hemisphere * num_points)
-                    specular_kernel[hi, ij] = accumulated_specular_kernel[h, j] / accumulated_num_hits[h]
+                    path_lengths[ij] = cum_distances[j] / cum_num_hits[j]
 
-            if detect_open_surface:
-                # Note: again, we multiply by 50 instead of 100 because we accumulated both ray pencils.
-                miss_percentages[i] = 50 * accumulated_num_misses / (rays_per_hemisphere * num_points)
+                    # Etendue is equal to form factor times surface area times pi.
+                    path_etendues[ij] = np.pi * patch_areas[i] * cum_cosines[j] / (rays_per_hemisphere * num_points)
 
-            if profile_runtime:
-                end = time.time()
-                profiling['Normalize and log '] += end - start
+                    for h in range(num_patches):
+                        if cum_num_hits[h] == 0:
+                            # No visibility between any point in h and any point in i.
+                            continue
 
-        if profile_runtime:
-            start = time.time()
+                        hi = path_index(h, i)
 
-        if detect_open_surface:
-            print('\nPercentage of invalid rays from each patch:')
-            print('\t Maximum (patch {}): {:.2f}%'.format(np.argmax(miss_percentages)+1, np.max(miss_percentages)))
-            print('\t Average: {:.2f}%'.format(np.mean(miss_percentages)))
-            print('\t Median: {:.2f}%'.format(np.median(miss_percentages)))
-            print('A high percentage of missed rays indicates the surface is not closed.')
-            print('If the average is above 50%, check the orientation of normal vectors.')
+                        # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
+                        # In practice, we do not need it because each ray is counted once as "main" and once as specular.
+                        diffuse_kernel[hi, ij] = cum_cosines[j] / (rays_per_hemisphere * num_points)
+                        specular_kernel[hi, ij] = cum_specular_kernel[h, j] / cum_num_hits[h]
+        else:
+            task_list = list()
+            for i in range(num_patches):
+                task = (mesh, num_patches, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
+                task_list.append(task)
+
+            with multiprocessing.Pool(pool_size) as pool:
+                patch_contributions = pool.imap_unordered(integrate_patch, task_list)
+
+                # https://stackoverflow.com/a/41921948
+                # https://stackoverflow.com/a/72514814
+                with tqdm(total=num_patches, desc='ART surface integral (# patches)',
+                          miniters=min(int(num_patches/10), pool_size*10), maxinterval=3600) as progress_bar:
+                    for returned_tuple in patch_contributions:
+                        cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
+
+                        # Normalize accumulators and add to global trackers.
+                        for j in range(num_patches):
+                            if cum_num_hits[j] == 0:
+                                # No visibility between any point in j and any point in i.
+                                continue
+
+                            ij = path_index(i, j)
+
+                            path_lengths[ij] = cum_distances[j] / cum_num_hits[j]
+
+                            # Etendue is equal to form factor times surface area times pi.
+                            path_etendues[ij] = np.pi * patch_areas[i] * cum_cosines[j] / (rays_per_hemisphere * num_points)
+
+                            for h in range(num_patches):
+                                if cum_num_hits[h] == 0:
+                                    # No visibility between any point in h and any point in i.
+                                    continue
+
+                                hi = path_index(h, i)
+
+                                # Note: in theory, the diffuse kernel integral involves a multiplication by 2.
+                                # In practice, we do not need it because each ray is counted once as "main" and once as specular.
+                                diffuse_kernel[hi, ij] = cum_cosines[j] / (rays_per_hemisphere * num_points)
+                                specular_kernel[hi, ij] = cum_specular_kernel[h, j] / cum_num_hits[h]
+
+                        # Advance the progress bar.
+                        progress_bar.update()
 
         # These should theoretically be identical, but may not be due to the discretized integration.
         # Nevertheless, they should be close enough.
@@ -763,11 +728,6 @@ def compute_ART(folder_path: str,
         plt.show()
         """
 
-        if profile_runtime:
-            end = time.time()
-            profiling['Assess accuracy   '] += end - start
-            start = time.time()
-
         # Prepare the path indexing matrix. Note that:
         #   the indices in this matrix refer to the reduced list, after having removed paths with no visibility.
         #   the indices in this matrix start from 1 and go up to num_visible_paths.
@@ -800,11 +760,6 @@ def compute_ART(folder_path: str,
                 'Zero elements denote invalid paths; patch and path indices both start from 1.')
         np.savetxt(os.path.join(folder_path, 'path_lengths.csv'), path_lengths, fmt='%.18f', delimiter=', ')
         np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
-
-        if profile_runtime:
-            end = time.time()
-            profiling['Write core files  '] += end - start
-            start = time.time()
 
     # Construct the full ART reflection kernel for each frequency band.
     for band_idx, center_frequency in enumerate(material_coefficients['Frequencies']):
@@ -853,14 +808,6 @@ def compute_ART(folder_path: str,
                 'w.r.t. frequency band #{} (center freq. {:.2f}Hz). '.format(band_idx+1, center_frequency) +
                 'Includes energy losses due to surface materials and air absorption over propagation paths. ' +
                 'Generated using {:.0f} points per square meter and {:d} rays per hemisphere.'.format(points_per_square_meter, rays_per_hemisphere))
-
-    if profile_runtime:
-        end = time.time()
-        profiling['Write freq. files '] += end - start
-
-        print('\nTime elapsed for different tasks (seconds):')
-        for k, i in profiling.items():
-            print('\t', k, i)
 
     print('\n')
 

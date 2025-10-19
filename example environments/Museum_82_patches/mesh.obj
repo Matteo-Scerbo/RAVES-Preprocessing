@@ -655,7 +655,7 @@ v 21.0 26.0 3.0                # Vertex 650
 
 ################################ Faces
 
-usemtl Patch_1_Mat_Small_exhibit_South
+usemtl Patch_1_Mat_Small_exhibit_Ceiling
 f 3 6 71
 f 3 71 69
 f 69 71 105
@@ -672,7 +672,7 @@ f 12 15 77
 f 12 77 75
 f 75 77 111
 f 75 111 109
-usemtl Patch_2_Mat_Ballroom_North
+usemtl Patch_2_Mat_Meeting_room_SouthWest
 f 103 105 151
 f 103 151 149
 f 149 151 307
@@ -689,7 +689,7 @@ f 109 111 157
 f 109 157 155
 f 155 157 313
 f 155 313 311
-usemtl Patch_3_Mat_Ballroom_North
+usemtl Patch_3_Mat_Ballroom_Ceiling
 f 305 307 353
 f 305 353 351
 f 351 353 489
@@ -706,7 +706,7 @@ f 311 313 359
 f 311 359 357
 f 357 359 495
 f 357 495 493
-usemtl Patch_4_Mat_Ballroom_South
+usemtl Patch_4_Mat_Ballroom_Ceiling
 f 487 489 532
 f 487 532 530
 f 530 532 570
@@ -731,7 +731,7 @@ f 536 538 576
 f 536 576 574
 f 574 576 618
 f 574 618 615
-usemtl Patch_5_Mat_Cinema_North
+usemtl Patch_5_Mat_Large_exhibit_West
 f 13 46 47
 f 13 47 14
 f 14 47 48
@@ -742,7 +742,7 @@ f 47 79 80
 f 47 80 48
 f 79 113 114
 f 79 114 80
-usemtl Patch_6_Mat_Meeting_room_SouthWest
+usemtl Patch_6_Mat_Large_exhibit_West
 f 112 166 167
 f 112 167 113
 f 113 167 168
@@ -751,7 +751,7 @@ f 166 314 315
 f 166 315 167
 f 167 315 316
 f 167 316 168
-usemtl Patch_7_Mat_Large_exhibit_Floor
+usemtl Patch_7_Mat_Restroom_Ceiling
 f 314 346 347
 f 314 347 315
 f 315 347 348
@@ -760,7 +760,7 @@ f 346 482 483
 f 346 483 347
 f 347 483 484
 f 347 484 348
-usemtl Patch_8_Mat_Large_exhibit_Floor
+usemtl Patch_8_Mat_Meeting_room_SouthEast
 f 482 525 526
 f 482 526 483
 f 483 526 527
@@ -775,7 +775,7 @@ f 601 616 617
 f 601 617 602
 f 602 617 618
 f 602 618 603
-usemtl Patch_9_Mat_Restroom_South
+usemtl Patch_9_Mat_Large_exhibit_North
 f 1 4 5
 f 1 5 2
 f 2 5 6
@@ -784,7 +784,7 @@ f 4 7 8
 f 4 8 5
 f 5 8 9
 f 5 9 6
-usemtl Patch_10_Mat_Outdoors_Floor
+usemtl Patch_10_Mat_Large_exhibit_North
 f 7 10 11
 f 7 11 8
 f 8 11 12
@@ -793,7 +793,7 @@ f 10 13 14
 f 10 14 11
 f 11 14 15
 f 11 15 12
-usemtl Patch_11_Mat_Outdoors_Floor
+usemtl Patch_11_Mat_Cinema_WestL
 f 13 10 74
 f 13 74 76
 f 76 74 108
@@ -810,7 +810,7 @@ f 4 1 67
 f 4 67 70
 f 70 67 101
 f 70 101 104
-usemtl Patch_12_Mat_Outdoors_Floor
+usemtl Patch_12_Mat_Meeting_room_South
 f 110 108 154
 f 110 154 156
 f 156 154 310
@@ -827,7 +827,7 @@ f 104 101 147
 f 104 147 150
 f 150 147 303
 f 150 303 306
-usemtl Patch_13_Mat_Outdoors_Floor
+usemtl Patch_13_Mat_Meeting_room_NorthWest
 f 312 310 356
 f 312 356 358
 f 358 356 492
@@ -844,7 +844,7 @@ f 306 303 349
 f 306 349 352
 f 352 349 485
 f 352 485 488
-usemtl Patch_14_Mat_Restroom_North
+usemtl Patch_14_Mat_Cinema_South
 f 494 492 535
 f 494 535 537
 f 537 535 573
@@ -869,7 +869,7 @@ f 531 528 566
 f 531 566 569
 f 569 566 604
 f 569 604 607
-usemtl Patch_15_Mat_Meeting_room_Ceiling
+usemtl Patch_15_Mat_Small_exhibit_North
 f 616 613 614
 f 616 614 617
 f 617 614 615
@@ -878,7 +878,7 @@ f 613 610 611
 f 613 611 614
 f 614 611 612
 f 614 612 615
-usemtl Patch_16_Mat_Meeting_room_Ceiling
+usemtl Patch_16_Mat_Ballroom_South
 f 610 607 608
 f 610 608 611
 f 611 608 609
@@ -887,7 +887,7 @@ f 607 604 605
 f 607 605 608
 f 608 605 606
 f 608 606 609
-usemtl Patch_17_Mat_Hallway_East
+usemtl Patch_17_Mat_Cinema_North
 f 604 566 567
 f 604 567 605
 f 605 567 568
@@ -896,7 +896,7 @@ f 566 528 529
 f 566 529 567
 f 567 529 530
 f 567 530 568
-usemtl Patch_18_Mat_Meeting_room_North
+usemtl Patch_18_Mat_Hallway_North
 f 528 485 486
 f 528 486 529
 f 529 486 487
@@ -905,7 +905,7 @@ f 485 349 350
 f 485 350 486
 f 486 350 351
 f 486 351 487
-usemtl Patch_19_Mat_Outdoors_South
+usemtl Patch_19_Mat_Cinema_Ceiling
 f 349 303 304
 f 349 304 350
 f 350 304 305
@@ -914,7 +914,7 @@ f 303 147 148
 f 303 148 304
 f 304 148 149
 f 304 149 305
-usemtl Patch_20_Mat_Outdoors_South
+usemtl Patch_20_Mat_Cinema_Ceiling
 f 147 101 102
 f 147 102 148
 f 148 102 103
@@ -927,7 +927,7 @@ f 67 1 2
 f 67 2 68
 f 68 2 3
 f 68 3 69
-usemtl Patch_21_Mat_Outdoors_South
+usemtl Patch_21_Mat_Restroom_South
 f 15 18 52
 f 15 52 50
 f 50 52 84
@@ -944,7 +944,7 @@ f 84 86 120
 f 84 120 118
 f 118 120 204
 f 118 204 191
-usemtl Patch_22_Mat_Outdoors_South
+usemtl Patch_22_Mat_Restroom_West
 f 21 24 56
 f 21 56 54
 f 54 56 88
@@ -969,7 +969,7 @@ f 90 95 130
 f 90 130 124
 f 124 130 249
 f 124 249 233
-usemtl Patch_23_Mat_Restroom_Ceiling
+usemtl Patch_23_Mat_Meeting_room_Ceiling
 f 13 16 17
 f 13 17 14
 f 14 17 18
@@ -978,7 +978,7 @@ f 16 19 20
 f 16 20 17
 f 17 20 21
 f 17 21 18
-usemtl Patch_24_Mat_Small_exhibit_North
+usemtl Patch_24_Mat_Meeting_room_Ceiling
 f 19 22 23
 f 19 23 20
 f 20 23 24
@@ -991,7 +991,7 @@ f 25 28 29
 f 25 29 26
 f 26 29 30
 f 26 30 27
-usemtl Patch_25_Mat_Hallway_North
+usemtl Patch_25_Mat_Cinema_Floor
 f 28 25 57
 f 28 57 59
 f 59 57 89
@@ -1008,7 +1008,7 @@ f 89 87 121
 f 89 121 123
 f 123 121 221
 f 123 221 232
-usemtl Patch_26_Mat_Hallway_South
+usemtl Patch_26_Mat_Cinema_Floor
 f 22 19 53
 f 22 53 55
 f 55 53 85
@@ -1033,7 +1033,7 @@ f 83 81 115
 f 83 115 117
 f 117 115 177
 f 117 177 190
-usemtl Patch_27_Mat_Cinema_Ceiling
+usemtl Patch_27_Mat_Large_exhibit_East
 f 28 59 61
 f 28 61 29
 f 29 61 63
@@ -1042,7 +1042,7 @@ f 59 91 93
 f 59 93 61
 f 61 93 95
 f 61 95 63
-usemtl Patch_28_Mat_Cinema_Ceiling
+usemtl Patch_28_Mat_Outdoors_South
 f 91 125 128
 f 91 128 93
 f 93 128 130
@@ -1051,7 +1051,7 @@ f 125 247 248
 f 125 248 128
 f 128 248 249
 f 128 249 130
-usemtl Patch_29_Mat_Small_exhibit_Floor
+usemtl Patch_29_Mat_Outdoors_South
 f 177 136 137
 f 177 137 180
 f 180 137 138
@@ -1070,7 +1070,7 @@ f 46 13 14
 f 46 14 47
 f 47 14 15
 f 47 15 48
-usemtl Patch_30_Mat_Restroom_West
+usemtl Patch_30_Mat_Outdoors_South
 f 247 238 240
 f 247 240 248
 f 248 240 242
@@ -1095,7 +1095,7 @@ f 183 177 180
 f 183 180 185
 f 185 180 182
 f 185 182 187
-usemtl Patch_31_Mat_Restroom_Floor
+usemtl Patch_31_Mat_Outdoors_South
 f 223 208 326
 f 223 326 328
 f 328 326 395
@@ -1108,7 +1108,7 @@ f 192 177 321
 f 192 321 324
 f 324 321 364
 f 324 364 379
-usemtl Patch_32_Mat_Small_exhibit_East
+usemtl Patch_32_Mat_Ballroom_West
 f 364 321 322
 f 364 322 366
 f 366 322 323
@@ -1117,7 +1117,7 @@ f 321 177 179
 f 321 179 322
 f 322 179 181
 f 322 181 323
-usemtl Patch_33_Mat_Cinema_South
+usemtl Patch_33_Mat_Meeting_room_East
 f 410 401 402
 f 410 402 411
 f 411 402 403
@@ -1152,7 +1152,7 @@ f 371 365 367
 f 371 367 372
 f 372 367 368
 f 372 368 373
-usemtl Patch_34_Mat_Hallway_Ceiling
+usemtl Patch_34_Mat_Restroom_Floor
 f 177 183 184
 f 177 184 178
 f 178 184 185
@@ -1187,7 +1187,7 @@ f 215 224 225
 f 215 225 216
 f 216 225 226
 f 216 226 217
-usemtl Patch_35_Mat_Hallway_Ceiling
+usemtl Patch_35_Mat_Small_exhibit_East
 f 181 193 325
 f 181 325 323
 f 323 325 380
@@ -1200,7 +1200,7 @@ f 209 226 330
 f 209 330 327
 f 327 330 413
 f 327 413 396
-usemtl Patch_36_Mat_Large_exhibit_Ceiling
+usemtl Patch_36_Mat_Outdoors_East
 f 223 299 300
 f 223 300 224
 f 224 300 301
@@ -1229,7 +1229,7 @@ f 361 411 412
 f 361 412 362
 f 362 412 413
 f 362 413 363
-usemtl Patch_37_Mat_Large_exhibit_Ceiling
+usemtl Patch_37_Mat_Outdoors_East
 f 369 378 502
 f 369 502 500
 f 500 502 542
@@ -1246,7 +1246,7 @@ f 542 544 582
 f 542 582 580
 f 580 582 624
 f 580 624 621
-usemtl Patch_38_Mat_Restroom_East
+usemtl Patch_38_Mat_Ballroom_East
 f 391 409 506
 f 391 506 504
 f 504 506 546
@@ -1271,7 +1271,7 @@ f 548 553 591
 f 548 591 586
 f 586 591 635
 f 586 635 630
-usemtl Patch_39_Mat_Small_exhibit_West
+usemtl Patch_39_Mat_Ballroom_East
 f 434 419 507
 f 434 507 509
 f 509 507 547
@@ -1288,7 +1288,7 @@ f 547 545 583
 f 547 583 585
 f 585 583 625
 f 585 625 628
-usemtl Patch_40_Mat_Ballroom_Ceiling
+usemtl Patch_40_Mat_Small_exhibit_South
 f 408 390 503
 f 408 503 505
 f 505 503 543
@@ -1313,7 +1313,7 @@ f 541 539 577
 f 541 577 579
 f 579 577 616
 f 579 616 619
-usemtl Patch_41_Mat_Ballroom_Ceiling
+usemtl Patch_41_Mat_Outdoors_Ceiling
 f 434 509 511
 f 434 511 437
 f 437 511 513
@@ -1322,7 +1322,7 @@ f 509 549 551
 f 509 551 511
 f 511 551 553
 f 511 553 513
-usemtl Patch_42_Mat_Meeting_room_East
+usemtl Patch_42_Mat_Outdoors_Ceiling
 f 549 587 589
 f 549 589 551
 f 551 589 591
@@ -1331,7 +1331,7 @@ f 587 631 633
 f 587 633 589
 f 589 633 635
 f 589 635 591
-usemtl Patch_43_Mat_Ballroom_West
+usemtl Patch_43_Mat_Outdoors_Ceiling
 f 616 601 602
 f 616 602 617
 f 617 602 603
@@ -1350,7 +1350,7 @@ f 496 364 367
 f 496 367 497
 f 497 367 369
 f 497 369 498
-usemtl Patch_44_Mat_Meeting_room_SouthEast
+usemtl Patch_44_Mat_Outdoors_Ceiling
 f 631 628 629
 f 631 629 633
 f 633 629 630
@@ -1359,7 +1359,7 @@ f 628 625 626
 f 628 626 629
 f 629 626 627
 f 629 627 630
-usemtl Patch_45_Mat_Meeting_room_NorthWest
+usemtl Patch_45_Mat_Meeting_room_Floor
 f 625 622 623
 f 625 623 626
 f 626 623 624
@@ -1372,7 +1372,7 @@ f 619 616 617
 f 619 617 620
 f 620 617 618
 f 620 618 621
-usemtl Patch_46_Mat_Hallway_West
+usemtl Patch_46_Mat_Meeting_room_Floor
 f 364 370 372
 f 364 372 367
 f 367 372 374
@@ -1397,7 +1397,7 @@ f 425 434 437
 f 425 437 427
 f 427 437 439
 f 427 439 429
-usemtl Patch_47_Mat_Hallway_Floor
+usemtl Patch_47_Mat_Ballroom_Floor
 f 294 276 337
 f 294 337 339
 f 339 337 468
@@ -1406,7 +1406,7 @@ f 276 264 335
 f 276 335 337
 f 337 335 453
 f 337 453 468
-usemtl Patch_48_Mat_Hallway_Floor
+usemtl Patch_48_Mat_Ballroom_Floor
 f 264 250 333
 f 264 333 335
 f 335 333 440
@@ -1419,7 +1419,7 @@ f 236 223 328
 f 236 328 331
 f 331 328 410
 f 331 410 423
-usemtl Patch_49_Mat_Outdoors_Ceiling
+usemtl Patch_49_Mat_Cinema_NorthL
 f 477 473 474
 f 477 474 478
 f 478 474 475
@@ -1468,7 +1468,7 @@ f 415 411 412
 f 415 412 416
 f 416 412 413
 f 416 413 417
-usemtl Patch_50_Mat_Outdoors_Ceiling
+usemtl Patch_50_Mat_Hallway_West
 f 223 227 228
 f 223 228 224
 f 224 228 229
@@ -1531,7 +1531,7 @@ f 291 295 297
 f 291 297 292
 f 292 297 298
 f 292 298 293
-usemtl Patch_51_Mat_Outdoors_Ceiling
+usemtl Patch_51_Mat_Hallway_Floor
 f 226 237 332
 f 226 332 330
 f 330 332 424
@@ -1540,7 +1540,7 @@ f 237 251 334
 f 237 334 332
 f 332 334 441
 f 332 441 424
-usemtl Patch_52_Mat_Outdoors_Ceiling
+usemtl Patch_52_Mat_Hallway_Floor
 f 251 265 336
 f 251 336 334
 f 334 336 454
@@ -1553,7 +1553,7 @@ f 277 298 341
 f 277 341 338
 f 338 341 481
 f 338 481 469
-usemtl Patch_53_Mat_Large_exhibit_West
+usemtl Patch_53_Mat_Restroom_North
 f 294 339 340
 f 294 340 296
 f 296 340 341
@@ -1562,7 +1562,7 @@ f 339 477 479
 f 339 479 340
 f 340 479 481
 f 340 481 341
-usemtl Patch_54_Mat_Large_exhibit_West
+usemtl Patch_54_Mat_Outdoors_West
 f 410 360 361
 f 410 361 411
 f 411 361 362
@@ -1591,27 +1591,27 @@ f 300 224 225
 f 300 225 301
 f 301 225 226
 f 301 226 302
-usemtl Patch_55_Mat_Meeting_room_South
+usemtl Patch_55_Mat_Outdoors_West
 f 125 96 59
 f 96 64 37
 f 96 37 31
 f 96 31 59
-usemtl Patch_56_Mat_Meeting_room_NorthEast
+usemtl Patch_56_Mat_Small_exhibit_West
 f 260 96 125
 f 260 282 96
 f 282 131 96
 f 131 64 96
-usemtl Patch_57_Mat_Outdoors_East
+usemtl Patch_57_Mat_Restroom_East
 f 129 62 97
 f 97 39 66
 f 97 33 39
 f 97 62 33
-usemtl Patch_58_Mat_Outdoors_East
+usemtl Patch_58_Mat_Cinema_West
 f 263 129 97
 f 285 97 135
 f 135 97 66
 f 285 263 97
-usemtl Patch_59_Mat_Ballroom_Floor
+usemtl Patch_59_Mat_Meeting_room_North
 f 125 91 92
 f 125 92 127
 f 127 92 94
@@ -1620,7 +1620,7 @@ f 91 59 60
 f 91 60 92
 f 92 60 62
 f 92 62 94
-usemtl Patch_60_Mat_Ballroom_Floor
+usemtl Patch_60_Mat_Cinema_East
 f 131 143 144
 f 131 144 132
 f 132 144 145
@@ -1645,7 +1645,7 @@ f 174 283 284
 f 174 284 175
 f 175 284 285
 f 175 285 176
-usemtl Patch_61_Mat_Cinema_East
+usemtl Patch_61_Mat_Meeting_room_NorthEast
 f 282 272 273
 f 282 273 283
 f 283 273 274
@@ -1662,7 +1662,7 @@ f 267 261 262
 f 267 262 268
 f 268 262 263
 f 268 263 269
-usemtl Patch_62_Mat_Meeting_room_West
+usemtl Patch_62_Mat_Small_exhibit_Floor
 f 260 169 170
 f 260 170 261
 f 261 170 171
@@ -1687,7 +1687,7 @@ f 140 126 128
 f 140 128 141
 f 141 128 129
 f 141 129 142
-usemtl Patch_63_Mat_Cinema_NorthL
+usemtl Patch_63_Mat_Outdoors_Floor
 f 64 98 99
 f 64 99 65
 f 65 99 100
@@ -1696,7 +1696,7 @@ f 98 131 133
 f 98 133 99
 f 99 133 135
 f 99 135 100
-usemtl Patch_64_Mat_Large_exhibit_South
+usemtl Patch_64_Mat_Outdoors_Floor
 f 59 40 41
 f 59 41 60
 f 60 41 42
@@ -1705,7 +1705,7 @@ f 40 31 32
 f 40 32 41
 f 41 32 33
 f 41 33 42
-usemtl Patch_65_Mat_Outdoors_North
+usemtl Patch_65_Mat_Outdoors_Floor
 f 31 34 35
 f 31 35 32
 f 32 35 36
@@ -1714,7 +1714,7 @@ f 34 37 38
 f 34 38 35
 f 35 38 39
 f 35 39 36
-usemtl Patch_66_Mat_Outdoors_North
+usemtl Patch_66_Mat_Outdoors_Floor
 f 37 43 44
 f 37 44 38
 f 38 44 45
@@ -1723,7 +1723,7 @@ f 43 64 65
 f 43 65 44
 f 44 65 66
 f 44 66 45
-usemtl Patch_67_Mat_Outdoors_North
+usemtl Patch_67_Mat_Large_exhibit_Floor
 f 522 519 558
 f 522 558 560
 f 560 558 596
@@ -1740,7 +1740,7 @@ f 446 434 509
 f 446 509 514
 f 514 509 549
 f 514 549 554
-usemtl Patch_68_Mat_Outdoors_North
+usemtl Patch_68_Mat_Large_exhibit_Floor
 f 598 596 646
 f 598 646 648
 f 596 594 641
@@ -1753,7 +1753,7 @@ f 554 549 587
 f 554 587 592
 f 592 587 631
 f 592 631 636
-usemtl Patch_69_Mat_Large_exhibit_North
+usemtl Patch_69_Mat_Outdoors_North
 f 648 643 644
 f 648 644 649
 f 649 644 645
@@ -1766,7 +1766,7 @@ f 638 631 632
 f 638 632 639
 f 639 632 634
 f 639 634 640
-usemtl Patch_70_Mat_Large_exhibit_North
+usemtl Patch_70_Mat_Outdoors_North
 f 438 448 515
 f 438 515 512
 f 512 515 555
@@ -1783,7 +1783,7 @@ f 521 524 562
 f 521 562 559
 f 559 562 600
 f 559 600 597
-usemtl Patch_71_Mat_Cinema_WestL
+usemtl Patch_71_Mat_Outdoors_North
 f 552 555 593
 f 552 593 590
 f 590 593 637
@@ -1796,7 +1796,7 @@ f 595 597 647
 f 595 647 642
 f 597 600 650
 f 597 650 647
-usemtl Patch_72_Mat_Ballroom_East
+usemtl Patch_72_Mat_Outdoors_North
 f 631 587 588
 f 631 588 632
 f 632 588 590
@@ -1813,12 +1813,12 @@ f 509 434 436
 f 509 436 510
 f 510 436 438
 f 510 438 512
-usemtl Patch_73_Mat_Ballroom_East
+usemtl Patch_73_Mat_Large_exhibit_Ceiling
 f 455 516 517
 f 455 517 457
 f 457 517 518
 f 457 518 459
-usemtl Patch_74_Mat_Cinema_Floor
+usemtl Patch_74_Mat_Large_exhibit_Ceiling
 f 434 442 443
 f 434 443 435
 f 435 443 444
@@ -1835,7 +1835,7 @@ f 450 456 458
 f 450 458 451
 f 451 458 459
 f 451 459 452
-usemtl Patch_75_Mat_Cinema_Floor
+usemtl Patch_75_Mat_Hallway_East
 f 516 519 520
 f 516 520 517
 f 517 520 521
@@ -1844,7 +1844,7 @@ f 519 522 523
 f 519 523 520
 f 520 523 524
 f 520 524 521
-usemtl Patch_76_Mat_Outdoors_West
+usemtl Patch_76_Mat_Large_exhibit_South
 f 522 560 561
 f 522 561 523
 f 523 561 562
@@ -1857,27 +1857,27 @@ f 598 648 649
 f 598 649 599
 f 599 649 650
 f 599 650 600
-usemtl Patch_77_Mat_Outdoors_West
+usemtl Patch_77_Mat_Hallway_South
 f 477 470 519
 f 477 519 522
 f 470 455 516
 f 470 516 519
-usemtl Patch_78_Mat_Meeting_room_Floor
+usemtl Patch_78_Mat_Hallway_Ceiling
 f 459 472 521
 f 459 521 518
 f 472 481 524
 f 472 524 521
-usemtl Patch_79_Mat_Meeting_room_Floor
+usemtl Patch_79_Mat_Hallway_Ceiling
 f 477 522 523
 f 477 523 479
 f 479 523 524
 f 479 524 481
-usemtl Patch_80_Mat_Large_exhibit_East
+usemtl Patch_80_Mat_Ballroom_North
 f 516 455 457
 f 516 457 517
 f 517 457 459
 f 517 459 518
-usemtl Patch_81_Mat_Small_exhibit_Ceiling
+usemtl Patch_81_Mat_Ballroom_North
 f 455 464 465
 f 455 465 456
 f 456 465 466
@@ -1894,7 +1894,7 @@ f 474 478 480
 f 474 480 475
 f 475 480 481
 f 475 481 476
-usemtl Patch_82_Mat_Cinema_West
+usemtl Patch_82_Mat_Meeting_room_West
 f 522 519 520
 f 522 520 523
 f 523 520 521

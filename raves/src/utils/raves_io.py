@@ -88,7 +88,8 @@ def merge_small_patches(vertices: np.ndarray,
         G = nx.Graph()
         G.add_nodes_from(child_patches)
         for patches in edge_to_patches.values():
-            assert len(patches.difference(set(child_patches))) == 0
+            # For debugging:
+            # assert len(patches.difference(set(child_patches))) == 0
             if len(patches) == 1:
                 # This edge only pertains to one patch.
                 continue
@@ -229,7 +230,8 @@ def merge_small_patches(vertices: np.ndarray,
     for partition in group_partitions:
         for merged_ids in partition:
             full_cover.extend(merged_ids)
-    assert len(full_cover) == len(patch_materials), str((len(full_cover), len(patch_materials)))
+    # For debugging:
+    # assert len(full_cover) == len(patch_materials), str((len(full_cover), len(patch_materials)))
 
     # Perform the chosen merging.
     kept_patch_ids = list()
@@ -241,7 +243,8 @@ def merge_small_patches(vertices: np.ndarray,
 
             id_mapping[merged_ids] = merged_ids[0]
 
-    assert np.all(id_mapping >= 0), str(np.argwhere(id_mapping < 0))
+    # For debugging:
+    # assert np.all(id_mapping >= 0), str(np.argwhere(id_mapping < 0))
 
     _, inverse_mapping = np.unique(id_mapping, return_inverse=True)
 
@@ -253,7 +256,7 @@ def merge_small_patches(vertices: np.ndarray,
 def load_all_inputs(folder_path: str,
                     area_threshold: float = 0.,
                     thoroughness: float = 0.
-                    ) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray]]:
+                    ) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray], str]:
     # TODO: Fill out documentation properly.
     """
 
@@ -265,16 +268,16 @@ def load_all_inputs(folder_path: str,
     Returns:
 
     """
-    mesh, patch_materials = load_mesh(folder_path, area_threshold, thoroughness)
+    mesh, patch_materials, folder_path = load_mesh(folder_path, area_threshold, thoroughness)
     material_coefficients = load_materials(folder_path, set(patch_materials))
 
-    return mesh, patch_materials, material_coefficients
+    return mesh, patch_materials, material_coefficients, folder_path
 
 
 def load_mesh(folder_path: str,
               area_threshold: float = 0.,
               thoroughness: float = 0.
-              ) -> Tuple[TriangleMesh, List[str]]:
+              ) -> Tuple[TriangleMesh, List[str], str]:
     # TODO: Fill out documentation properly.
     """
 
@@ -407,6 +410,7 @@ def load_mesh(folder_path: str,
                                      + ' Bad triangle ID A: ' + str(triangle_a)
                                      + ' Bad triangle ID B: ' + str(triangle_b))
 
+    new_folder_path = None
     if area_threshold > 0:
         old_num_patches = len(patch_materials)
 
@@ -416,7 +420,8 @@ def load_mesh(folder_path: str,
         # This was changed in-place: retrieve the new values to avoid mix-ups
         patch_ids = mesh.ID
 
-        # Check that all triangles in each patch are still coplanar.
+        # For debugging: Check that all triangles in each patch are still coplanar.
+        """
         for patch_id in np.unique(patch_ids):
             for triangle_a in np.where(patch_ids == patch_id)[0]:
                 for triangle_b in np.where(patch_ids == patch_id)[0]:
@@ -434,6 +439,7 @@ def load_mesh(folder_path: str,
                                          + ' Bad patch ID: ' + str(patch_id)
                                          + ' Bad triangle ID A: ' + str(triangle_a)
                                          + ' Bad triangle ID B: ' + str(triangle_b))
+         """
 
         new_num_patches = len(patch_materials)
 
@@ -503,14 +509,16 @@ def load_mesh(folder_path: str,
             with open(os.path.join(new_folder_path, 'materials.csv'), mode='w') as new_file:
                 new_file.write(content)
 
-            visualize_mesh(new_folder_path)
+            # For debugging:
+            # visualize_mesh(new_folder_path)
 
-    exit()
+    if new_folder_path is not None:
+        folder_path = new_folder_path
 
     # TODO: Validate `mesh.mtl`.
     # TODO: Cross-validate OBJ-MTL.
 
-    return mesh, patch_materials
+    return mesh, patch_materials, folder_path
 
 
 def load_materials(folder_path: str, expected_names: Set[str]) -> Dict[str, np.ndarray]:

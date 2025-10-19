@@ -224,7 +224,7 @@ def platonic_vertices(n):
 
 class PlaneTests(unittest.TestCase):
     def test_plane_parameters_consistency(self):
-        mesh, _ = load_mesh('../../example environments/AudioForGames_20_patches')
+        mesh, _, _ = load_mesh('../../example environments/AudioForGames_20_patches')
 
         # For any triangle, the plane identity dot(n, v1) - d0 must be ~0 if (n, d0) are consistent.
         residual = np.einsum("ij,ij->i", mesh.n, mesh.v1) - mesh.d0
@@ -386,7 +386,7 @@ class TracingClassesTests(unittest.TestCase):
         Load a triangle mesh which is known to be closed, trace rays (uniform sphere) from points inside it,
         and assert that all rays find valid intersections in the front and back.
         """
-        mesh, _ = load_mesh('../../example environments/AudioForGames_20_patches')
+        mesh, _, _ = load_mesh('../../example environments/AudioForGames_20_patches')
 
         num_rays = 1000
         sphere_pencil = RayBundle.sample_sphere(num_rays)
@@ -413,7 +413,7 @@ class TracingClassesTests(unittest.TestCase):
         Back intersections are ignored. In theory, back rays should all hit the triangle itself;
          in practice, the origin triangle will be ignored because it's too close to the ray origin (below EPS_SELFHIT).
         """
-        mesh, _ = load_mesh('../../example environments/AudioForGames_20_patches')
+        mesh, _, _ = load_mesh('../../example environments/AudioForGames_20_patches')
 
         num_rays = 1000
 

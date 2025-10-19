@@ -24,12 +24,13 @@ def main(folder_path: str) -> None:
 
     # visualize_mesh(folder_path)
 
-    compute_ART(folder_path, area_threshold=20., thoroughness=0.1)
-    # compute_MoDART(folder_path)
+    assess_ART_on_grid(folder_path, area_threshold=20., thoroughness=0.1,
+                       points_per_square_meter=[10., 20., 30., 40., 50.],
+                       rays_per_hemisphere=[100, 316, 1000],
+                       pool_size=4)
 
-    # assess_ART_on_grid(folder_path,
-    #                    points_per_square_meter=[5., 10., 15., 20.],
-    #                    rays_per_hemisphere=[100, 316, 1000, 3162, 10000])
+    # compute_ART(folder_path, area_threshold=20., thoroughness=0.1)
+    # compute_MoDART(folder_path)
 
 
 if __name__ == "__main__":
