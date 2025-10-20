@@ -10,13 +10,15 @@ from typing import List, Tuple
 from .utils import RayBundle, TriangleMesh, load_all_inputs, air_absorption_in_band
 
 # https://stackoverflow.com/a/21130146
-def integrate_patch(args: Tuple[TriangleMesh, int, List[int], int, float]
-                    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int]:
+def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
+                    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int, int]:
     # TODO: Fill out documentation properly.
     """
-
+    The argument "this_patch" is only taken in order to return it;
+     when using multiprocessing, the outputs are obtained in unordered fashion,
+     and need to be reconnected to the patch they relate to.
     """
-    mesh, num_patches, patch_triangles, rays_per_hemisphere, points_per_square_meter = args
+    mesh, num_patches, this_patch, patch_triangles, rays_per_hemisphere, points_per_square_meter = args
 
     # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
     patch_normal = mesh.n[patch_triangles[0]]
@@ -90,7 +92,7 @@ def integrate_patch(args: Tuple[TriangleMesh, int, List[int], int, float]
                     # cum_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
                     # cum_specular_kernel[h, j] += np.count_nonzero(hemisphere_hits_per_patch[h] & specular_hits_per_patch[j])
 
-    return cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points
+    return cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, this_patch
 
 
 def assess_ART_on_grid(folder_path: str,
@@ -98,6 +100,7 @@ def assess_ART_on_grid(folder_path: str,
                        rays_per_hemisphere: List[int],
                        area_threshold: float = 0.,
                        thoroughness: float = 0.,
+                       save_kernels: bool = True,
                        pool_size: int = 1
                        ) -> str:
     # TODO: Fill out documentation properly.
@@ -115,9 +118,10 @@ def assess_ART_on_grid(folder_path: str,
             weights[p_i, r_i] = ppsm * rays
 
             if not os.path.isfile(os.path.join(folder_path, file_name)):
-                # continue
-                folder_path = assess_ART(folder_path, area_threshold=area_threshold, thoroughness=thoroughness,
-                                         points_per_square_meter=ppsm, rays_per_hemisphere=rays, pool_size=pool_size)
+                folder_path = assess_ART(folder_path=folder_path,
+                                         points_per_square_meter=ppsm, rays_per_hemisphere=rays,
+                                         area_threshold=area_threshold, thoroughness=thoroughness,
+                                         save_kernels=save_kernels, pool_size=pool_size)
 
             etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
             median_SAPE = np.median(etendue_SAPE)
@@ -182,10 +186,11 @@ def assess_ART_on_grid(folder_path: str,
 
 
 def assess_ART(folder_path: str,
-               area_threshold: float = 0.,
-               thoroughness: float = 0.,
                points_per_square_meter: float = 10.,
                rays_per_hemisphere: int = 1000,
+               area_threshold: float = 0.,
+               thoroughness: float = 0.,
+               save_kernels: bool = True,
                pool_size: int = 1
                ) -> str:
     # TODO: Fill out documentation properly.
@@ -235,9 +240,9 @@ def assess_ART(folder_path: str,
         for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
             # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
             # Refer to "ART_theory.md" for more info on this process.
-            returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
-                                             rays_per_hemisphere, points_per_square_meter)
-            cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
+            returned_tuple = integrate_patch((mesh, num_patches, i, patch_triangles[i],
+                                              rays_per_hemisphere, points_per_square_meter))
+            cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
             # Normalize accumulators and add to global trackers.
             for j in range(num_patches):
@@ -266,7 +271,7 @@ def assess_ART(folder_path: str,
     else:
         task_list = list()
         for i in range(num_patches):
-            task = (mesh, num_patches, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
+            task = (mesh, num_patches, i, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
             task_list.append(task)
 
         with multiprocessing.Pool(pool_size) as pool:
@@ -277,7 +282,7 @@ def assess_ART(folder_path: str,
             with tqdm(total=num_patches, desc='ART surface integral (# patches)',
                       miniters=min(int(num_patches / 10), pool_size * 10), maxinterval=3600) as progress_bar:
                 for returned_tuple in patch_contributions:
-                    cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
+                    cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
                     # Normalize accumulators and add to global trackers.
                     for j in range(num_patches):
@@ -331,10 +336,17 @@ def assess_ART(folder_path: str,
                                    out=np.zeros_like(mean_etendues),
                                    where=(mean_etendues != 0))
 
+    # Average the path lengths as well, to aid accuracy.
+    reverse_path_lengths = np.zeros_like(path_lengths)
+    for i in range(num_patches):
+        for j in range(num_patches):
+            reverse_path_lengths[path_index(i, j)] = path_lengths[path_index(j, i)]
+    mean_lengths = (path_lengths + reverse_path_lengths) / 2
+
     # Drop all non-visible paths from the ART model.
     num_valid_paths = np.count_nonzero(path_visibility)
-    path_lengths = path_lengths[path_visibility]
     etendue_SAPE = etendue_SAPE[path_visibility]
+    path_lengths = mean_lengths[path_visibility]
     mean_etendues = mean_etendues[path_visibility]
     diffuse_kernel = lil_array(diffuse_kernel[path_visibility][:, path_visibility])
     specular_kernel = lil_array(specular_kernel[path_visibility][:, path_visibility])
@@ -377,23 +389,24 @@ def assess_ART(folder_path: str,
     # We'll need this to be in Compressed Sparse Row (CSR) format.
     path_indexing = csr_array(path_indexing)
 
-    # Write the core ART parameters.
-    mmwrite(os.path.join(folder_path, 'ART_kernel_diffuse.mtx'),
-            diffuse_kernel, field='real', symmetry='general',
-            comment='Diffuse (Lambertian) component of the acoustic radiance transfer reflection kernel. ' +
-                    'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
-                    'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
-    mmwrite(os.path.join(folder_path, 'ART_kernel_specular.mtx'),
-            specular_kernel, field='real', symmetry='general',
-            comment='Specular component of the acoustic radiance transfer reflection kernel. ' +
-                    'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
-                    'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
-    mmwrite(os.path.join(folder_path, 'path_indexing.mtx'),
-            path_indexing, field='integer', symmetry='general',
-            comment='Relates each pair of surface patch indices to the index of a propagation path. ' +
-                    'Zero elements denote invalid paths; patch and path indices both start from 1.')
-    np.savetxt(os.path.join(folder_path, 'path_lengths.csv'), path_lengths, fmt='%.18f', delimiter=', ')
-    np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
+    if save_kernels:
+        # Write the core ART parameters.
+        mmwrite(os.path.join(folder_path, 'ART_kernel_diffuse.mtx'),
+                diffuse_kernel, field='real', symmetry='general',
+                comment='Diffuse (Lambertian) component of the acoustic radiance transfer reflection kernel. ' +
+                        'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
+                        'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+        mmwrite(os.path.join(folder_path, 'ART_kernel_specular.mtx'),
+                specular_kernel, field='real', symmetry='general',
+                comment='Specular component of the acoustic radiance transfer reflection kernel. ' +
+                        'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
+                        'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+        mmwrite(os.path.join(folder_path, 'path_indexing.mtx'),
+                path_indexing, field='integer', symmetry='general',
+                comment='Relates each pair of surface patch indices to the index of a propagation path. ' +
+                        'Zero elements denote invalid paths; patch and path indices both start from 1.')
+        np.savetxt(os.path.join(folder_path, 'path_lengths.csv'), path_lengths, fmt='%.18f', delimiter=', ')
+        np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
 
     return folder_path
 
@@ -561,9 +574,9 @@ def compute_ART(folder_path: str,
             for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
                 # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
                 # Refer to "ART_theory.md" for more info on this process.
-                returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
-                                                 rays_per_hemisphere, points_per_square_meter)
-                cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
+                returned_tuple = integrate_patch((mesh, num_patches, i, patch_triangles[i],
+                                                  rays_per_hemisphere, points_per_square_meter))
+                cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
                 # Normalize accumulators and add to global trackers.
                 for j in range(num_patches):
@@ -592,7 +605,7 @@ def compute_ART(folder_path: str,
         else:
             task_list = list()
             for i in range(num_patches):
-                task = (mesh, num_patches, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
+                task = (mesh, num_patches, i, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
                 task_list.append(task)
 
             with multiprocessing.Pool(pool_size) as pool:
@@ -603,7 +616,7 @@ def compute_ART(folder_path: str,
                 with tqdm(total=num_patches, desc='ART surface integral (# patches)',
                           miniters=min(int(num_patches/10), pool_size*10), maxinterval=3600) as progress_bar:
                     for returned_tuple in patch_contributions:
-                        cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
+                        cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
                         # Normalize accumulators and add to global trackers.
                         for j in range(num_patches):
@@ -681,9 +694,16 @@ def compute_ART(folder_path: str,
         plt.show()
         """
 
+        # Average the path lengths as well, to aid accuracy.
+        reverse_path_lengths = np.zeros_like(path_lengths)
+        for i in range(num_patches):
+            for j in range(num_patches):
+                reverse_path_lengths[path_index(i, j)] = path_lengths[path_index(j, i)]
+        mean_lengths = (path_lengths + reverse_path_lengths) / 2
+
         # Drop all non-visible paths from the ART model.
         num_valid_paths = np.count_nonzero(path_visibility)
-        path_lengths = path_lengths[path_visibility]
+        path_lengths = mean_lengths[path_visibility]
         mean_etendues = mean_etendues[path_visibility]
         diffuse_kernel = lil_array(diffuse_kernel[path_visibility][:, path_visibility])
         specular_kernel = lil_array(specular_kernel[path_visibility][:, path_visibility])

@@ -207,6 +207,13 @@ def merge_small_patches(vertices: np.ndarray,
                                   if x[2] >= c_cut - 1e-3]
 
                 # Take the best candidate and merge.
+                # TODO: Instead of selecting a single candidate here (greedy search), iterate over all of them.
+                #       With thoroughness == 1, that would make this a full search (NP-hard, combinatorial explosion, etc).
+                #       That can be alleviated, for starters, by using thoroughness < 1.
+                #       On top of that, there can be another parameter, "patience":
+                #           with patience == 0, it's the same as the greedy search.
+                #           with patience == 1, iterate over direct children of the decision tree's root, then get greedy from there.
+                #           with patience == n, full search of the first n layers of the decision tree, then get greedy from there.
                 _, _, _, i, j = min(priority_queue, key=lambda x: (x[3], x[4]))
 
                 new_members = clusters[i].union(clusters[j])
@@ -388,6 +395,9 @@ def load_mesh(folder_path: str,
     vertices = vertices[keep_idx]
     vert_triplets = old2new[vert_triplets]
 
+    # TODO: if area_threshold > 0: Re-mesh to INCREASE the number of triangles without changing the geometry.
+    # TODO: if area_threshold > 0: Make each triangle its own patch.
+
     # Create structure-of-arrays mesh (includes normal vectors, areas, etc).
     mesh = TriangleMesh(vertices, vert_triplets, patch_ids)
 
@@ -419,6 +429,8 @@ def load_mesh(folder_path: str,
                             area_threshold, thoroughness)
         # This was changed in-place: retrieve the new values to avoid mix-ups
         patch_ids = mesh.ID
+
+        # TODO: Re-mesh to reduce the number of triangles without changing the patch geometry.
 
         # For debugging: Check that all triangles in each patch are still coplanar.
         """
@@ -499,9 +511,9 @@ def load_mesh(folder_path: str,
                     cycle = 7
                     c = (c + (patch_id % cycle)) / cycle
                     file.write('Kd {} {} {}\n'.format(c, c, c))
-                    file.write('Ka {} {} {}\n'.format(c, c, c))
-                    file.write('Ks {} {} {}\n'.format(c, c, c))
-                    file.write('Ns 10\n')
+                    # file.write('Ka {} {} {}\n'.format(c, c, c))
+                    # file.write('Ks {} {} {}\n'.format(c, c, c))
+                    # file.write('Ns 10\n')
 
             # Copy the old CSV there as well (no change needed).
             with open(os.path.join(folder_path, 'materials.csv'), mode='r') as old_file:

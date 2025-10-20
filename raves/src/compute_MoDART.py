@@ -156,7 +156,7 @@ def compute_MoDART(folder_path: str,
         V_hat = kernel @ V
         W_hat = W.copy()
 
-        # Prefer pairs of positive vectors rather than pairs of negative vectors.
+        # Prefer pairs of mostly positive vectors rather than pairs of mostly negative vectors.
         V_signs = np.sign(np.mean(V_hat, axis=0))
         V_hat *= V_signs[np.newaxis]
         W_hat *= V_signs[np.newaxis]
@@ -177,7 +177,7 @@ def compute_MoDART(folder_path: str,
             for p in range(len(poles)):
                 file.write(str(band_idx) + ', ' + str(eig_to_t60(poles[p], echogram_sample_rate)) + '\n')
                 file.write(', '.join([str(v) for v in V_hat[:, p]]) + '\n')
-                file.write(', '.join([str(v) for v in W_hat[:, p]]) + '\n')
+                file.write(', '.join([str(w) for w in W_hat[:, p]]) + '\n')
 
         all_pole_t60s[band_idx] = [eig_to_t60(p, echogram_sample_rate) for p in poles]
 

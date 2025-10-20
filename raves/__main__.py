@@ -15,6 +15,7 @@ from .src import compute_ART, assess_ART_on_grid, compute_MoDART
 # TODO: Add complex-valued decomposition in `compute_MoDART.py`
 # TODO: In the theory notes, explain the difference between propagating power vs radiance. We do power here.
 # TODO: In the theory notes, explain why etendues are baked into the eigenvectors.
+# TODO: Double-check the accuracy of `<start patch idx> <end patch idx> <propagation path idx>`.
 
 
 def main(folder_path: str) -> None:
@@ -26,7 +27,7 @@ def main(folder_path: str) -> None:
 
     assess_ART_on_grid(folder_path, area_threshold=20., thoroughness=0.1,
                        points_per_square_meter=[10., 20., 30., 40., 50.],
-                       rays_per_hemisphere=[100, 316, 1000],
+                       rays_per_hemisphere=[1000],
                        pool_size=4)
 
     # folder_path = compute_ART(folder_path, area_threshold=20., thoroughness=0.1)
