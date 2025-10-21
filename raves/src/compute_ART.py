@@ -9,6 +9,7 @@ from typing import List, Tuple
 
 from .utils import RayBundle, TriangleMesh, load_all_inputs, air_absorption_in_band
 
+
 # https://stackoverflow.com/a/21130146
 def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
                     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int, int]:
@@ -100,6 +101,7 @@ def assess_ART_on_grid(folder_path: str,
                        rays_per_hemisphere: List[int],
                        area_threshold: float = 0.,
                        thoroughness: float = 0.,
+                       compute_missing: bool = True,
                        save_kernels: bool = True,
                        pool_size: int = 1
                        ) -> str:
@@ -118,10 +120,13 @@ def assess_ART_on_grid(folder_path: str,
             weights[p_i, r_i] = ppsm * rays
 
             if not os.path.isfile(os.path.join(folder_path, file_name)):
-                folder_path = assess_ART(folder_path=folder_path,
-                                         points_per_square_meter=ppsm, rays_per_hemisphere=rays,
-                                         area_threshold=area_threshold, thoroughness=thoroughness,
-                                         save_kernels=save_kernels, pool_size=pool_size)
+                if compute_missing:
+                    folder_path = assess_ART(folder_path=folder_path,
+                                             points_per_square_meter=ppsm, rays_per_hemisphere=rays,
+                                             area_threshold=area_threshold, thoroughness=thoroughness,
+                                             save_kernels=save_kernels, pool_size=pool_size)
+                else:
+                    continue
 
             etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
             median_SAPE = np.median(etendue_SAPE)
@@ -186,8 +191,8 @@ def assess_ART_on_grid(folder_path: str,
 
 
 def assess_ART(folder_path: str,
-               points_per_square_meter: float = 10.,
-               rays_per_hemisphere: int = 1000,
+               points_per_square_meter: float,
+               rays_per_hemisphere: int,
                area_threshold: float = 0.,
                thoroughness: float = 0.,
                save_kernels: bool = True,
@@ -415,7 +420,7 @@ def compute_ART(folder_path: str,
                 overwrite: bool = False,
                 area_threshold: float = 0.,
                 thoroughness: float = 0.,
-                points_per_square_meter: float = 10.,
+                points_per_square_meter: float = 30.,
                 rays_per_hemisphere: int = 1000,
                 pool_size: int = 1,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.
@@ -450,6 +455,10 @@ def compute_ART(folder_path: str,
     if not os.path.isdir(folder_path):
         raise ValueError('Not a valid folder path:\n\t' + folder_path)
 
+    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness)
+
+    num_patches = len(patch_materials)
+
     print('Running `compute_ART` in the environment "' + os.path.split(folder_path)[-1] + '"')
 
     pool_size = min(pool_size, os.cpu_count() - 1)
@@ -458,10 +467,6 @@ def compute_ART(folder_path: str,
         print('Will use a single process.')
     else:
         print(os.cpu_count(), 'cores available. Pool will use', num_processes, 'SUB-processes.')
-
-    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness)
-
-    num_patches = len(patch_materials)
 
     # dict of lists: indices of the triangles forming each patch.
     patch_triangles = dict()
@@ -834,6 +839,7 @@ def compute_ART(folder_path: str,
     print('\n')
 
     return folder_path
+
 
 if __name__ == "__main__":
     # TODO: If the argument `--overwrite` is given, perform the integration even if files exist.

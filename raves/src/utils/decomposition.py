@@ -133,8 +133,7 @@ def build_ssm(kernel: csr_array, m: np.ndarray,
 def real_positive_search(ssm: csr_array,
                          mag_thresh: float,
                          num_thresh: int,
-                         imaginary_part_thresh: float = 1e-7,
-                         initial_estimates: int = 2**3
+                         imaginary_part_thresh: float = 1e-7
                          ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # TODO: Fill out documentation properly.
     """
@@ -144,7 +143,6 @@ def real_positive_search(ssm: csr_array,
         mag_thresh:
         num_thresh:
         imaginary_part_thresh:
-        initial_estimates:
 
     Returns:
 
@@ -156,7 +154,7 @@ def real_positive_search(ssm: csr_array,
     #   d. the search fails to converge.
     print('\tEigenvalue search (right eigenvectors).')
     # https://stackoverflow.com/a/46902086
-    k = initial_estimates
+    k = num_thresh
     convergence_failed = False
     while True:
         print('\t\tSearching with', k, 'estimates.')
@@ -179,10 +177,8 @@ def real_positive_search(ssm: csr_array,
         right_vals = np.real(right_vals[valid_idxs])
         right_vecs = np.real(right_vecs[:, valid_idxs])
 
-        print('\t\t\tLowest found: ', np.min(right_vals))
-        print('\t\t\tLowest sought:', mag_thresh)
-        print('\t\t\tNumber found: ', len(right_vals))
-        print('\t\t\tNumber sought:', num_thresh)
+        print('\t\t\tLowest found / sought: ', np.min(right_vals), '/', mag_thresh, '(T60 ratio ', np.log10(np.min(right_vals)) / np.log10(mag_thresh), ')')
+        print('\t\t\tNumber found / sought: ', len(right_vals), '/', num_thresh)
 
         if np.min(right_vals) <= mag_thresh:
             break

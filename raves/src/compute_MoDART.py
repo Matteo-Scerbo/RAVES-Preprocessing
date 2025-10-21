@@ -23,7 +23,7 @@ def eig_to_t60(eigenvalue: float, fs: float) -> float:
     elif np.abs(eigenvalue) == 0:
         return 0.
     else:
-        return np.log(1e-6) / (np.log(np.abs(eigenvalue)) * fs)
+        return -6 / (np.log10(np.abs(eigenvalue)) * fs)
 
 
 def t60_to_eig(t60: float, fs: float) -> float:
@@ -40,15 +40,15 @@ def t60_to_eig(t60: float, fs: float) -> float:
     if t60 == 0:
         return 0.
     elif np.isfinite(t60):
-        return np.exp(np.log(1e-6) / (t60 * fs))
+        return 10**(-6 / (t60 * fs))
     else:
         return 1.
 
 
 def compute_MoDART(folder_path: str,
-                   t60_threshold: float = 2e-1,
-                   max_slopes_per_band: int = 20,
-                   echogram_sample_rate: float = 5e3,
+                   t60_threshold: float = 1e-1,
+                   max_slopes_per_band: int = 10,
+                   echogram_sample_rate: float = 1e3,
                    temperature: float = 20.,
                    plot_t60s: bool = True
                    ) -> None:
@@ -86,7 +86,7 @@ def compute_MoDART(folder_path: str,
     # Prepare integer propagation delays.
     integer_delays = (echogram_sample_rate * path_lengths / sound_speed(temperature)).astype(int)
     min_valid_rate = 3. / np.min(path_lengths / sound_speed(temperature))
-    min_recommended_rate = 10. / np.min(path_lengths / sound_speed(temperature))
+    min_recommended_rate = 10. / np.median(path_lengths / sound_speed(temperature))
     if np.min(integer_delays) < 3:
         raise ValueError('The echogram sample rate {:.0f} is too low for this environment. '.format(np.floor(echogram_sample_rate)) +
                          'It needs to be at least {:.0f} in order for all integer delays to be sufficient. '.format(np.ceil(min_valid_rate)) +
@@ -201,8 +201,8 @@ def compute_MoDART(folder_path: str,
         plt.ylabel('T60 [s]')
         plt.grid(True, axis='y')
 
-        plt.savefig(os.path.join(folder_path, 'MoD-ART T60 values.png'))
-        plt.show()
+        plt.savefig(os.path.join(folder_path, 'MoD-ART T60 values (rate {:.0f}).png'.format(echogram_sample_rate)))
+        # plt.show()
         plt.close()
 
     print('\n')
