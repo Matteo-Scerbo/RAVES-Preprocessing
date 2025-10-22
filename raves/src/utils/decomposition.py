@@ -148,7 +148,7 @@ def real_positive_search(ssm: csr_array,
 
     """
     # Start with a right eigenvector search, stopping when
-    #   a. we find a (real, positive) pole with T60 < t60_thresh, or
+    #   a. we find a (real, positive) pole with T60 < T60_thresh, or
     #   b. we find more than num_thresh (real, positive) poles, or
     #   c. we try looking for more poles than scipy.sparse.eigs() can look for, or
     #   d. the search fails to converge.
@@ -177,7 +177,7 @@ def real_positive_search(ssm: csr_array,
         right_vals = np.real(right_vals[valid_idxs])
         right_vecs = np.real(right_vecs[:, valid_idxs])
 
-        print('\t\t\tLowest found / sought: ', np.min(right_vals), '/', mag_thresh, '(T60 ratio ', np.log10(np.min(right_vals)) / np.log10(mag_thresh), ')')
+        print('\t\t\tT60 ratio (stopping when < 1): ', np.log10(mag_thresh) / np.log10(np.min(right_vals)))
         print('\t\t\tNumber found / sought: ', len(right_vals), '/', num_thresh)
 
         if np.min(right_vals) <= mag_thresh:

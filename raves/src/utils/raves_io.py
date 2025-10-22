@@ -618,7 +618,7 @@ def load_materials(folder_path: str, expected_names: Set[str]) -> Dict[str, np.n
     return material_coefficients
 
 
-def visualize_mesh(folder_path: str, cull_back_faces: bool = True):
+def visualize_mesh(folder_path: str, cull_back_faces: bool = True) -> None:
     # TODO: Fill out documentation properly.
     """
 

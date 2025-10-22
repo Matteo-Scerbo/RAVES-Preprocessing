@@ -239,6 +239,9 @@ The `compute_ART` script writes propagation path details in the following files:
       index of a propagation path. Zero elements (not reported in the file) denote invalid paths;
       patch and path indices both start from 1. This is one of the files which should be copied 
       in the Unity asset folder.
+- `path_delays.csv`
+    - Propagation path delays, in seconds. Given by the path lengths (see below) divided by the 
+      sound speed, which is computed based on the given temperature.
 - `path_lengths.csv`
     - Propagation path lengths, in meters. Defined as the average distance between pairs of 
       points in the double surface integral between the two surface patches at either end of the 

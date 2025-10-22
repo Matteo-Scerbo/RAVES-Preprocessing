@@ -1,5 +1,4 @@
 import os
-import sys
 import numpy as np
 from tqdm import tqdm
 import multiprocessing
@@ -7,7 +6,7 @@ from scipy.sparse import lil_array, csr_array, diags
 from scipy.io import mmread, mmwrite
 from typing import List, Tuple
 
-from .utils import RayBundle, TriangleMesh, load_all_inputs, air_absorption_in_band
+from .utils import RayBundle, TriangleMesh, load_all_inputs, air_absorption_in_band, sound_speed
 
 
 # https://stackoverflow.com/a/21130146
@@ -97,13 +96,10 @@ def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
 
 
 def assess_ART_on_grid(folder_path: str,
-                       points_per_square_meter: List[float],
-                       rays_per_hemisphere: List[int],
-                       area_threshold: float = 0.,
-                       thoroughness: float = 0.,
-                       compute_missing: bool = True,
-                       save_kernels: bool = True,
-                       pool_size: int = 1
+                       points_per_square_meter: List[float], rays_per_hemisphere: List[int],
+                       area_threshold: float = 0., thoroughness: float = 0.,
+                       compute_missing: bool = True, save_kernels: bool = True,
+                       multiprocess_pool_size: int = 1
                        ) -> str:
     # TODO: Fill out documentation properly.
     """
@@ -124,7 +120,7 @@ def assess_ART_on_grid(folder_path: str,
                     folder_path = assess_ART(folder_path=folder_path,
                                              points_per_square_meter=ppsm, rays_per_hemisphere=rays,
                                              area_threshold=area_threshold, thoroughness=thoroughness,
-                                             save_kernels=save_kernels, pool_size=pool_size)
+                                             save_kernels=save_kernels, multiprocess_pool_size=multiprocess_pool_size)
                 else:
                     continue
 
@@ -191,19 +187,17 @@ def assess_ART_on_grid(folder_path: str,
 
 
 def assess_ART(folder_path: str,
-               points_per_square_meter: float,
-               rays_per_hemisphere: int,
-               area_threshold: float = 0.,
-               thoroughness: float = 0.,
+               points_per_square_meter: float, rays_per_hemisphere: int,
+               area_threshold: float = 0., thoroughness: float = 0.,
                save_kernels: bool = True,
-               pool_size: int = 1
+               multiprocess_pool_size: int = 1
                ) -> str:
     # TODO: Fill out documentation properly.
     """
 
     """
-    pool_size = min(pool_size, os.cpu_count() - 1)
-    num_processes = max(1, pool_size)
+    multiprocess_pool_size = min(multiprocess_pool_size, os.cpu_count() - 1)
+    num_processes = max(1, multiprocess_pool_size)
     if num_processes == 1:
         print('Will use a single process.')
     else:
@@ -241,7 +235,7 @@ def assess_ART(folder_path: str,
     path_indexing = lil_array((num_patches, num_patches), dtype=int)
 
     # Parallelize integration across patches
-    if pool_size == 1:
+    if multiprocess_pool_size == 1:
         for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
             # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
             # Refer to "ART_theory.md" for more info on this process.
@@ -279,13 +273,13 @@ def assess_ART(folder_path: str,
             task = (mesh, num_patches, i, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
             task_list.append(task)
 
-        with multiprocessing.Pool(pool_size) as pool:
+        with multiprocessing.Pool(multiprocess_pool_size) as pool:
             patch_contributions = pool.imap_unordered(integrate_patch, task_list)
 
             # https://stackoverflow.com/a/41921948
             # https://stackoverflow.com/a/72514814
             with tqdm(total=num_patches, desc='ART surface integral (# patches)',
-                      miniters=min(int(num_patches / 10), pool_size * 10), maxinterval=3600) as progress_bar:
+                      miniters=min(int(num_patches / 10), multiprocess_pool_size * 10), maxinterval=600) as progress_bar:
                 for returned_tuple in patch_contributions:
                     cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
@@ -418,11 +412,9 @@ def assess_ART(folder_path: str,
 
 def compute_ART(folder_path: str,
                 overwrite: bool = False,
-                area_threshold: float = 0.,
-                thoroughness: float = 0.,
-                points_per_square_meter: float = 30.,
-                rays_per_hemisphere: int = 1000,
-                pool_size: int = 1,
+                area_threshold: float = 0., thoroughness: float = 0.,
+                points_per_square_meter: float = 30., rays_per_hemisphere: int = 1000,
+                multiprocess_pool_size: int = 1,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.
                 ) -> str:
     # TODO: Fill out documentation properly.
@@ -435,7 +427,7 @@ def compute_ART(folder_path: str,
         thoroughness:
         points_per_square_meter:
         rays_per_hemisphere:
-        pool_size:
+        multiprocess_pool_size:
         humidity:
         temperature:
         pressure:
@@ -461,8 +453,8 @@ def compute_ART(folder_path: str,
 
     print('Running `compute_ART` in the environment "' + os.path.split(folder_path)[-1] + '"')
 
-    pool_size = min(pool_size, os.cpu_count() - 1)
-    num_processes = max(1, pool_size)
+    multiprocess_pool_size = min(multiprocess_pool_size, os.cpu_count() - 1)
+    num_processes = max(1, multiprocess_pool_size)
     if num_processes == 1:
         print('Will use a single process.')
     else:
@@ -575,7 +567,7 @@ def compute_ART(folder_path: str,
         path_indexing = lil_array((num_patches, num_patches), dtype=int)
 
         # Parallelize integration across patches
-        if pool_size == 1:
+        if multiprocess_pool_size == 1:
             for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
                 # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
                 # Refer to "ART_theory.md" for more info on this process.
@@ -613,13 +605,13 @@ def compute_ART(folder_path: str,
                 task = (mesh, num_patches, i, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
                 task_list.append(task)
 
-            with multiprocessing.Pool(pool_size) as pool:
+            with multiprocessing.Pool(multiprocess_pool_size) as pool:
                 patch_contributions = pool.imap_unordered(integrate_patch, task_list)
 
                 # https://stackoverflow.com/a/41921948
                 # https://stackoverflow.com/a/72514814
                 with tqdm(total=num_patches, desc='ART surface integral (# patches)',
-                          miniters=min(int(num_patches/10), pool_size*10), maxinterval=3600) as progress_bar:
+                          miniters=min(int(num_patches/10), multiprocess_pool_size*10), maxinterval=600) as progress_bar:
                     for returned_tuple in patch_contributions:
                         cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
@@ -788,6 +780,11 @@ def compute_ART(folder_path: str,
         np.savetxt(os.path.join(folder_path, 'path_lengths.csv'), path_lengths, fmt='%.18f', delimiter=', ')
         np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
 
+    # Propagation delays in seconds, based on the path lengths in meters.
+    # N.B.: These are prepared and saved separately in case the temperature parameter has been modified.
+    path_delays = path_lengths / sound_speed(temperature)
+    np.savetxt(os.path.join(folder_path, 'path_delays.csv'), path_delays, fmt='%.18f', delimiter=', ')
+
     # Construct the full ART reflection kernel for each frequency band.
     for band_idx, center_frequency in enumerate(material_coefficients['Frequencies']):
         # This will be the final reflection kernel for this frequency band:
@@ -825,8 +822,8 @@ def compute_ART(folder_path: str,
         # Scale each column by the relative gain.
         reflection_kernel = reflection_kernel @ diags(air_absorption_energy_gains)
         # TODO: Air absorption, to be totally correct, should not be baked into the reflection kernel.
-        #       Doing so means that it's applied one too many times when MoD-ART is performed.
-        #       In the future, the air_absorption_energy_gains will be saved and applied separately.
+        #       Making it part of the matrix means that it's applied one too many times when MoD-ART is performed.
+        #       In the future, the air_absorption_energy_gains will be saved to a separate file and applied alongside delays.
 
         # Write complete reflection kernel to ART_kernel_<band_idx>.mtx, where band_idx starts from 1.
         mmwrite(os.path.join(folder_path, 'ART_kernel_{}.mtx'.format(band_idx+1)),
@@ -839,12 +836,3 @@ def compute_ART(folder_path: str,
     print('\n')
 
     return folder_path
-
-
-if __name__ == "__main__":
-    # TODO: If the argument `--overwrite` is given, perform the integration even if files exist.
-    # TODO: Accept optional arguments and pass them on.
-    if len(sys.argv) > 1:
-        compute_ART(sys.argv[1])
-    else:
-        print('No arguments provided. Please provide a valid folder path as argument.')
