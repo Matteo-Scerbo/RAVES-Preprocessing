@@ -177,8 +177,8 @@ def real_positive_search(ssm: csr_array,
         right_vals = np.real(right_vals[valid_idxs])
         right_vecs = np.real(right_vecs[:, valid_idxs])
 
-        print('\t\t\tT60 ratio (stopping when < 1): ', np.log10(mag_thresh) / np.log10(np.min(right_vals)))
         print('\t\t\tNumber found / sought: ', len(right_vals), '/', num_thresh)
+        print('\t\t\tLowest found T60 is {:.0f}% of stopping value.'.format(100. * np.log10(mag_thresh) / np.log10(np.min(right_vals))))
 
         if np.min(right_vals) <= mag_thresh:
             break

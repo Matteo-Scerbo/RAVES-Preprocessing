@@ -1,19 +1,34 @@
 # RAVES preprocessing
 
+## Usage
+
+You can either import the main functions into your own Python script, or run the preprocessing 
+from the command line. To import in a Python script, clone the repository somewhere that your 
+Python script can see, and use one or more of the following lines:
+```
+from raves import raves
+from raves import compute_ART
+from raves import compute_MoDART
+
+raves("path/to/your/environment/folder")
+```
+To launch from the command line, run
+```
+python -m raves "path/to/your/environment/folder"
+```
+from the root directory of the repository.
+
 ### Quick workflow
 
 - Prepare the environment description (input files `materials.csv`, `mesh.mtl`, `mesh.obj`) 
   following the file format outlined in the following section. Place all three files into the 
   same folder (the folder's name will be the name of your environment).
-- From the `RAVES_Preprocessing` root folder, run `python -m raves 
-  "path/to/your/environment/folder"`. For an example, try `python -m raves 
-  "./example environments/AudioForGames_fewest_patches"`.
-- Copy the files `materials.csv`, `mesh.mtl`, `mesh.obj`, `path_indexing.mtx`, and `MoD-ART.csv`
-  into your Unity project assets, matching the folder structure shown below. Follow the 
-  instructions of the `RAVES-Unity` repository to set up RAVES in the Unity project.
-
-Alternatively, you may run individual scripts like `compute_ART` and `compute_MoDART`, or import 
-them as you would a package, e.g. `from raves import compute_ART`.
+- Run the `raves` script, either from a command line console or from a Python script of your own,
+  as shown above. In either case, the first argument should be the path to your environment folder.
+- The files `path_indexing.mtx` and `MoD-ART.csv` (among others) will be created in your 
+  environment folder. Copy the five files `materials.csv`, `mesh.mtl`, `mesh.obj`,
+  `path_indexing.mtx`, and `MoD-ART.csv` into your Unity project assets, matching the folder 
+  structure shown below.
 
 ### Unity project folder structure
 
@@ -269,7 +284,9 @@ indices in `path_indexing.mtx`.
 
 ### MoD-ART.csv
 
-The `compute_MoDART` script writes energy decay mode details in the `MoD-ART.csv` file.
+The `compute_MoDART` script writes energy decay mode details in the `MoD-ART.csv` and
+`MoD-ART extra.csv` files. In the former, the number of modes in each frequency band is capped 
+at a given threshold, whereas the latter also includes any additional modes found above the limit.
 Each mode is characterized by three consecutive lines. The first line of each mode contains only 
 two elements: an integer and a floating point value. The integer value is the index of the 
 frequency band to which this mode pertains (starting from 1, same as `ART_kernel_<band_index>.mtx`).

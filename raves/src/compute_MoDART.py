@@ -90,8 +90,9 @@ def compute_MoDART(folder_path: str,
                       'Consider increasing it to avoid excessive rounding of propagation delays. ' +
                       'A value above {:.0f} is recommended. '.format(np.ceil(min_recommended_rate)))
 
-    # Create `MoD-ART.csv` (if it exists, its contents are emptied).
+    # Create `MoD-ART.csv` and `MoD-ART extra.csv` (if they exist, their contents are emptied).
     open(os.path.join(folder_path, 'MoD-ART.csv'), mode='w')
+    open(os.path.join(folder_path, 'MoD-ART extra.csv'), mode='w')
 
     # Save all found poles in a dictionary, for plotting.
     all_pole_T60s = dict()
@@ -164,8 +165,13 @@ def compute_MoDART(folder_path: str,
         V_hat *= 4 * np.pi
         W_hat *= 4 * np.pi
 
-        # Append results to `MoD-ART.csv`.
+        # Append results to `MoD-ART.csv` and `MoD-ART extra.csv` (the former limits the number of modes per band, the latter does not).
         with open(os.path.join(folder_path, 'MoD-ART.csv'), mode='a') as file:
+            for p in range(min(len(poles), max_slopes_per_band)):
+                file.write(str(band_idx) + ', ' + str(eig_to_T60(poles[p], echogram_sample_rate)) + '\n')
+                file.write(', '.join([str(v) for v in V_hat[:, p]]) + '\n')
+                file.write(', '.join([str(w) for w in W_hat[:, p]]) + '\n')
+        with open(os.path.join(folder_path, 'MoD-ART extra.csv'), mode='a') as file:
             for p in range(len(poles)):
                 file.write(str(band_idx) + ', ' + str(eig_to_T60(poles[p], echogram_sample_rate)) + '\n')
                 file.write(', '.join([str(v) for v in V_hat[:, p]]) + '\n')
@@ -182,7 +188,13 @@ def compute_MoDART(folder_path: str,
         fig, ax = plt.subplots(dpi=200, figsize=(8, 8))
 
         for band_idx, T60s in all_pole_T60s.items():
-            plt.scatter(np.full_like(T60s, band_idx), T60s, marker='+')
+            num_selected = min(len(T60s), max_slopes_per_band)
+            plt.scatter(np.full(num_selected, band_idx), T60s[:num_selected],
+                        marker='o', facecolors='none', edgecolors='black')
+            plt.scatter(np.full(len(T60s), band_idx), T60s,
+                        marker='+')
+
+        plt.title('The modes circled in black are reported in `MoD-ART.csv`.\nAll modes are reported in `MoD-ART extra.csv`.')
 
         plt.xlabel('Frequency band index')
 
@@ -193,7 +205,8 @@ def compute_MoDART(folder_path: str,
         plt.savefig(os.path.join(folder_path, 'MoD-ART (rate {:.0f}) T60 values, lin scale.png'.format(echogram_sample_rate)))
 
         plt.yscale('log')
-        plt.ylim(T60_threshold, None)
+        # plt.ylim(T60_threshold, None)
+        plt.ylim(None, None)
         ax.yaxis.set_major_locator(mtpl.ticker.LogLocator(subs=np.arange(0.1, 1, 0.1)))
         ax.yaxis.set_major_formatter(mtpl.ticker.ScalarFormatter())
         ax.yaxis.set_minor_locator(mtpl.ticker.LogLocator(subs=np.arange(0.01, 1, 0.01)))
@@ -201,7 +214,7 @@ def compute_MoDART(folder_path: str,
 
         plt.savefig(os.path.join(folder_path, 'MoD-ART (rate {:.0f}) T60 values, log scale.png'.format(echogram_sample_rate)))
 
-        plt.show()
+        # plt.show()
         plt.close()
 
     print('\n')
