@@ -12,7 +12,9 @@ def main(argv=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('folder_path', type=str,
-                        help='Path to your environment folder.')
+                        help='Path to your environment folder, or string "all_examples". '
+                             'In the latter case, process all subfolders in "example environments" using the given parameters for all of them. '
+                             'Avoid using "all_examples" with area_threshold > 0!')
 
     parser.add_argument('--overwrite', action='store_true', default=argparse.SUPPRESS,
                         help='Re-compute and overwrite existing ART kernels (they are re-used by default).')
@@ -39,7 +41,7 @@ def main(argv=None):
                              'is below this threshold (in seconds), for each each frequency band.')
     parser.add_argument('-slopes', '--max_slopes_per_band', type=int, default=10,
                         help='The MoD-ART eigenvalue search stops after finding at least this many modes, for each each frequency band.')
-    parser.add_argument('-f_e', '--echogram_sample_rate', type=float, default=1e3,
+    parser.add_argument('-f_e', '--echogram_sample_rate', type=float, default=5e3,
                         help='The sample rate used to discretize propagation path delays for MoD-ART. NOT RELATED TO AUDIO SAMPLE RATE.')
 
     # N.B. The repeated % sign is important, it's an escape character for the parser

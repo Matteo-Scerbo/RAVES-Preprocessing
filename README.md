@@ -235,7 +235,7 @@ The `compute_ART` script writes scattering matrices in the following files:
 - `ART_kernel_specular.mtx`
     - Specular component of the scattering matrix: no energy losses, all scattering 
       coefficients set to 0.
-- `ART_kernel_<band_index>.mtx` for each frequency band
+- `ART_kernel_band_<band_index>.mtx` for each frequency band
     - These are the actual scattering matrices, per frequency band. Frequency band incides start 
       from 1. The diffuse and specular components are weighted based on the scattering 
       coefficient of each patch in the specified frequency band, summed together, and then 
@@ -289,7 +289,7 @@ The `compute_MoDART` script writes energy decay mode details in the `MoD-ART.csv
 at a given threshold, whereas the latter also includes any additional modes found above the limit.
 Each mode is characterized by three consecutive lines. The first line of each mode contains only 
 two elements: an integer and a floating point value. The integer value is the index of the 
-frequency band to which this mode pertains (starting from 1, same as `ART_kernel_<band_index>.mtx`).
+frequency band to which this mode pertains (starting from 1, same as `ART_kernel_band_<band_index>.mtx`).
 The floating point value is the $T_{60}$ of this mode, in seconds. The second and third lines of 
 each mode contain the right and left eigenvectors, respectively.
 

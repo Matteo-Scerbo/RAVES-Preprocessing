@@ -3,11 +3,11 @@ from .src import compute_ART, compute_MoDART
 
 
 # Project-wide TODOs
-# TODO: Add `source_parameters.py`
-# TODO: Add `listener_parameters.py`
-# TODO: Add `run_ART.py`
-# TODO: Add `run_MoDART.py`
-# TODO: Add complex-valued decomposition in `compute_MoDART.py`
+# TODO: Add `source_parameters`: ray-tracing to find input weights and delays, replicating runtime code
+# TODO: Add `listener_parameters`: ray-tracing to find output weights and delays, replicating runtime code
+# TODO: Add `run_ART`: compute I/O parameters for a set of sources and listeners, run the ART model to produce echograms.
+# TODO: Add `run_MoDART`: compute I/O parameters for a set of sources and listeners, run the ART model to produce echograms.
+# TODO: Add complex-valued decomposition.
 
 
 def raves(folder_path: str,
@@ -18,7 +18,7 @@ def raves(folder_path: str,
           multiprocess_pool_size: int = 1,
           humidity: float = 50., temperature: float = 20., pressure: float = 100.,
           T60_threshold: float = 1e-1, max_slopes_per_band: int = 10,
-          echogram_sample_rate: float = 1e3, skip_T60_plots: bool = False
+          echogram_sample_rate: float = 5e3, skip_T60_plots: bool = False
           ) -> None:
     """
     Run the full RAVES pipeline in a given environment folder.
@@ -27,7 +27,9 @@ def raves(folder_path: str,
     Parameters
     ----------
     folder_path : str
-        Path to the environment folder.
+        Path to the environment folder, or string "all_examples". In the latter
+        case, process all subfolders in "example environments" using the given
+        parameters for all of them.
     overwrite : bool, default: False
         If True, any existing ART kernels are re-computed and overwritten.
         Otherwise, existing geometrical data is re-used, whereas material
@@ -60,7 +62,7 @@ def raves(folder_path: str,
     max_slopes_per_band : int, default: 10
         Threshold used during decomposition; the processing of each band
         halts if more than this many energy modes have been found.
-    echogram_sample_rate : float, default: 1e3
+    echogram_sample_rate : float, default: 5e3
         Sample rate (Hz) in the decomposed ART model.
         NOT TO BE CONFUSED WITH AN AUDIO RATE.
     skip_T60_plots : bool, default: False
@@ -77,28 +79,43 @@ def raves(folder_path: str,
     If `skip_ART` is False and `area_threshold > 0`, `compute_ART` may write
     a simplified mesh to a different folder and will return that new path;
     this function forwards that path to `compute_MoDART` to keep outputs consistent.
+    Avoid using `area_threshold > 0` and `folder_path == all_examples`!
 
     Examples
     --------
     >>> from raves import raves
-    >>> raves("/path/to/project", multiprocess_pool_size=4, echogram_sample_rate=1e4)
+    >>> raves("path/to/your/environment/folder", multiprocess_pool_size=4, echogram_sample_rate=1e4)
     """
-    if not os.path.isdir(folder_path):
-        raise ValueError('Not a valid folder path:\n\t' + folder_path)
+    if folder_path == 'all_examples':
+        example_root = './example environments'
+        if not os.path.isdir(example_root):
+            raise ValueError('Invalid relative path "./example environments". '
+                             'To use the "all_examples" argument, make sure the working directory is the repository root.')
 
-    if not skip_ART:
-        # N.B. The folder path is returned by compute_ART and passed on to compute_MoDART,
-        # because if `area_threshold > 0` the new mesh might be saved to a different folder.
-        folder_path = compute_ART(folder_path=folder_path, overwrite=overwrite,
-                                  area_threshold=area_threshold, thoroughness=thoroughness,
-                                  points_per_square_meter=points_per_square_meter,
-                                  rays_per_hemisphere=rays_per_hemisphere,
-                                  multiprocess_pool_size=multiprocess_pool_size,
-                                  humidity=humidity, temperature=temperature, pressure=pressure)
+        folders_to_try = [os.path.join(example_root, subfolder)
+                          for subfolder in os.listdir(example_root)
+                          # Do not list files, only directories:
+                          if os.path.isdir(os.path.join(example_root, subfolder))]
+    else:
+        folders_to_try = [folder_path]
 
-    if not skip_MoDART:
-        compute_MoDART(folder_path,
-                       T60_threshold=T60_threshold,
-                       max_slopes_per_band=max_slopes_per_band,
-                       echogram_sample_rate=echogram_sample_rate,
-                       skip_T60_plots=skip_T60_plots)
+    for folder in folders_to_try:
+        if not os.path.isdir(folder):
+            raise ValueError('Not a valid folder path:\n\t' + folder)
+
+        if not skip_ART:
+            # N.B. The folder path is returned by compute_ART and passed on to compute_MoDART,
+            # because if `area_threshold > 0` the new mesh might be saved to a different folder.
+            folder = compute_ART(folder_path=folder, overwrite=overwrite,
+                                 area_threshold=area_threshold, thoroughness=thoroughness,
+                                 points_per_square_meter=points_per_square_meter,
+                                 rays_per_hemisphere=rays_per_hemisphere,
+                                 multiprocess_pool_size=multiprocess_pool_size,
+                                 humidity=humidity, temperature=temperature, pressure=pressure)
+
+        if not skip_MoDART:
+            compute_MoDART(folder,
+                           T60_threshold=T60_threshold,
+                           max_slopes_per_band=max_slopes_per_band,
+                           echogram_sample_rate=echogram_sample_rate,
+                           skip_T60_plots=skip_T60_plots)

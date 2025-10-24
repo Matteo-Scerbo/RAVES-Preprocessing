@@ -776,9 +776,10 @@ def compute_ART(folder_path: str,
         num_mismatches = np.count_nonzero(path_visibility & ~reverse_path_visibility)
         if num_mismatches != 0:
             print('\n' + str(num_mismatches) + ' pairs of patches have mismatched visibility (one sees the other, but not vice versa).')
-            print('This makes up {:.2f}% of all possible propagation paths.'.format(num_mismatches / num_paths))
-            print('If this seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
-            print('The mismatched pairs will be dropped (i.e., we assume there is no visibility).')
+            print('This makes up {:.2f}% of all possible propagation paths ({} in total).'.format(num_mismatches / num_paths, num_paths))
+            print('If this seems a bit too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
+            print('If it seems way too high, check the environment geometry.')
+            print('The mismatched pairs will be dropped (i.e., we assume these paths have no visibility).')
             path_visibility = path_visibility & reverse_path_visibility
             # Delete etendues where visibility is not mutual.
             # Where visibility isn't mutual, the etendue is 0 from one side and tiny but nonzero from the other, which skews the upcoming assessment.
@@ -948,13 +949,12 @@ def compute_ART(folder_path: str,
         #       Making it part of the matrix means that it's applied one too many times when MoD-ART is performed.
         #       In the future, the air_absorption_energy_gains will be saved to a separate file and applied alongside delays.
 
-        # Write complete reflection kernel to ART_kernel_<band_idx>.mtx, where band_idx starts from 1.
-        mmwrite(os.path.join(folder_path, 'ART_kernel_{}.mtx'.format(band_idx+1)),
+        # Write complete reflection kernel to ART_kernel_band_<band_idx>.mtx, where band_idx starts from 1.
+        mmwrite(os.path.join(folder_path, 'ART_kernel_band_{}.mtx'.format(band_idx+1)),
                 reflection_kernel, field='real', symmetry='general',
                 comment='Complete acoustic radiance transfer reflection kernel, '
                 'w.r.t. frequency band #{} (center freq. {:.2f}Hz). '.format(band_idx+1, center_frequency) +
-                'Includes energy losses due to surface materials and air absorption over propagation paths. ' +
-                'Generated using {:.0f} points per square meter and {:d} rays per hemisphere.'.format(points_per_square_meter, rays_per_hemisphere))
+                'Includes energy losses due to surface materials and air absorption over propagation paths.')
 
     print('\n')
 

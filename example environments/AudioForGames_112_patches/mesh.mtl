@@ -1,0 +1,224 @@
+newmtl Patch_1_Mat_Carpet
+Kd 0.7287 0.5041 0.0
+newmtl Patch_2_Mat_Carpet
+Kd 0.782 0.541 0.0
+newmtl Patch_3_Mat_Carpet
+Kd 0.8353 0.5779 0.0
+newmtl Patch_4_Mat_Carpet
+Kd 0.8887 0.6148 0.0
+newmtl Patch_5_Mat_Carpet
+Kd 0.942 0.6517 0.0
+newmtl Patch_6_Mat_Carpet
+Kd 0.9953 0.6886 0.0
+newmtl Patch_7_Mat_Carpet
+Kd 1.0 0.7068 0.0487
+newmtl Patch_8_Mat_Carpet
+Kd 1.0 0.7232 0.102
+newmtl Patch_9_Mat_Bricks_open_joints
+Kd 0.9267 0.8683 0.0796
+newmtl Patch_10_Mat_Bricks_open_joints
+Kd 0.9277 0.87 0.0914
+newmtl Patch_11_Mat_Bricks_open_joints
+Kd 0.9286 0.8717 0.1032
+newmtl Patch_12_Mat_Bricks_open_joints
+Kd 0.9295 0.8734 0.1149
+newmtl Patch_13_Mat_Bricks_open_joints
+Kd 0.9305 0.8751 0.1267
+newmtl Patch_14_Mat_Bricks_open_joints
+Kd 0.9314 0.8768 0.1384
+newmtl Patch_15_Mat_Bricks_open_joints
+Kd 0.9323 0.8784 0.1502
+newmtl Patch_16_Mat_Bricks_open_joints
+Kd 0.9333 0.8801 0.162
+newmtl Patch_17_Mat_Bricks_open_joints
+Kd 0.9342 0.8818 0.1737
+newmtl Patch_18_Mat_Bricks_open_joints
+Kd 0.9351 0.8835 0.1855
+newmtl Patch_19_Mat_Bricks_open_joints
+Kd 0.9361 0.8852 0.1973
+newmtl Patch_20_Mat_Bricks_open_joints
+Kd 0.937 0.8868 0.209
+newmtl Patch_21_Mat_Bricks_open_joints
+Kd 0.938 0.8885 0.2208
+newmtl Patch_22_Mat_Bricks_open_joints
+Kd 0.9389 0.8902 0.2325
+newmtl Patch_23_Mat_Bricks_open_joints
+Kd 0.9398 0.8919 0.2443
+newmtl Patch_24_Mat_Bricks_open_joints
+Kd 0.9408 0.8936 0.2561
+newmtl Patch_25_Mat_Bricks_open_joints
+Kd 0.9417 0.8953 0.2678
+newmtl Patch_26_Mat_Bricks_open_joints
+Kd 0.9426 0.8969 0.2796
+newmtl Patch_27_Mat_Bricks_open_joints
+Kd 0.9436 0.8986 0.2913
+newmtl Patch_28_Mat_Bricks_open_joints
+Kd 0.9445 0.9003 0.3031
+newmtl Patch_29_Mat_Bricks_open_joints
+Kd 0.9454 0.902 0.3149
+newmtl Patch_30_Mat_Bricks_open_joints
+Kd 0.9464 0.9037 0.3266
+newmtl Patch_31_Mat_Bricks_open_joints
+Kd 0.9473 0.9054 0.3384
+newmtl Patch_32_Mat_Bricks_open_joints
+Kd 0.9483 0.907 0.3502
+newmtl Patch_33_Mat_Bricks_open_joints
+Kd 0.9492 0.9087 0.3619
+newmtl Patch_34_Mat_Bricks_open_joints
+Kd 0.9501 0.9104 0.3737
+newmtl Patch_35_Mat_Bricks_open_joints
+Kd 0.9511 0.9121 0.3854
+newmtl Patch_36_Mat_Bricks_open_joints
+Kd 0.952 0.9138 0.3972
+newmtl Patch_37_Mat_Bricks_open_joints
+Kd 0.9529 0.9155 0.409
+newmtl Patch_38_Mat_Bricks_open_joints
+Kd 0.9539 0.9171 0.4207
+newmtl Patch_39_Mat_Bricks_open_joints
+Kd 0.9548 0.9188 0.4325
+newmtl Patch_40_Mat_Bricks_open_joints
+Kd 0.9558 0.9205 0.4442
+newmtl Patch_41_Mat_Marble_or_tile
+Kd 0.7032 0.7032 0.7032
+newmtl Patch_42_Mat_Marble_or_tile
+Kd 0.7095 0.7095 0.7095
+newmtl Patch_43_Mat_Marble_or_tile
+Kd 0.7159 0.7159 0.7159
+newmtl Patch_44_Mat_Marble_or_tile
+Kd 0.7222 0.7222 0.7222
+newmtl Patch_45_Mat_Marble_or_tile
+Kd 0.7286 0.7286 0.7286
+newmtl Patch_46_Mat_Marble_or_tile
+Kd 0.7349 0.7349 0.7349
+newmtl Patch_47_Mat_Marble_or_tile
+Kd 0.7413 0.7413 0.7413
+newmtl Patch_48_Mat_Marble_or_tile
+Kd 0.7476 0.7476 0.7476
+newmtl Patch_49_Mat_Marble_or_tile
+Kd 0.754 0.754 0.754
+newmtl Patch_50_Mat_Marble_or_tile
+Kd 0.7603 0.7603 0.7603
+newmtl Patch_51_Mat_Marble_or_tile
+Kd 0.7667 0.7667 0.7667
+newmtl Patch_52_Mat_Marble_or_tile
+Kd 0.773 0.773 0.773
+newmtl Patch_53_Mat_Marble_or_tile
+Kd 0.7794 0.7794 0.7794
+newmtl Patch_54_Mat_Marble_or_tile
+Kd 0.7857 0.7857 0.7857
+newmtl Patch_55_Mat_Marble_or_tile
+Kd 0.7921 0.7921 0.7921
+newmtl Patch_56_Mat_Marble_or_tile
+Kd 0.7984 0.7984 0.7984
+newmtl Patch_57_Mat_Marble_or_tile
+Kd 0.8048 0.8048 0.8048
+newmtl Patch_58_Mat_Marble_or_tile
+Kd 0.8111 0.8111 0.8111
+newmtl Patch_59_Mat_Marble_or_tile
+Kd 0.8175 0.8175 0.8175
+newmtl Patch_60_Mat_Marble_or_tile
+Kd 0.8238 0.8238 0.8238
+newmtl Patch_61_Mat_Marble_or_tile
+Kd 0.8302 0.8302 0.8302
+newmtl Patch_62_Mat_Marble_or_tile
+Kd 0.8365 0.8365 0.8365
+newmtl Patch_63_Mat_Marble_or_tile
+Kd 0.8429 0.8429 0.8429
+newmtl Patch_64_Mat_Marble_or_tile
+Kd 0.8492 0.8492 0.8492
+newmtl Patch_65_Mat_Marble_or_tile
+Kd 0.8556 0.8556 0.8556
+newmtl Patch_66_Mat_Marble_or_tile
+Kd 0.8619 0.8619 0.8619
+newmtl Patch_67_Mat_Marble_or_tile
+Kd 0.8683 0.8683 0.8683
+newmtl Patch_68_Mat_Marble_or_tile
+Kd 0.8746 0.8746 0.8746
+newmtl Patch_69_Mat_Marble_or_tile
+Kd 0.881 0.881 0.881
+newmtl Patch_70_Mat_Marble_or_tile
+Kd 0.8873 0.8873 0.8873
+newmtl Patch_71_Mat_Marble_or_tile
+Kd 0.8937 0.8937 0.8937
+newmtl Patch_72_Mat_Marble_or_tile
+Kd 0.9 0.9 0.9
+newmtl Patch_73_Mat_Wood_flooring
+Kd 0.6617 0.2924 0.0
+newmtl Patch_74_Mat_Wood_flooring
+Kd 0.715 0.316 0.0
+newmtl Patch_75_Mat_Wood_flooring
+Kd 0.7683 0.3395 0.0
+newmtl Patch_76_Mat_Wood_flooring
+Kd 0.8217 0.3631 0.0
+newmtl Patch_77_Mat_Wood_flooring
+Kd 0.875 0.3867 0.0
+newmtl Patch_78_Mat_Wood_flooring
+Kd 0.9283 0.4102 0.0
+newmtl Patch_79_Mat_Wood_flooring
+Kd 0.9817 0.4338 0.0
+newmtl Patch_80_Mat_Wood_flooring
+Kd 1.0 0.4614 0.035
+newmtl Patch_81_Mat_Concrete_painted
+Kd 0.0 0.323 0.5043
+newmtl Patch_82_Mat_Concrete_painted
+Kd 0.0 0.3311 0.517
+newmtl Patch_83_Mat_Concrete_painted
+Kd 0.0 0.3392 0.5297
+newmtl Patch_84_Mat_Concrete_painted
+Kd 0.0 0.3474 0.5424
+newmtl Patch_85_Mat_Concrete_painted
+Kd 0.0 0.3555 0.5551
+newmtl Patch_86_Mat_Concrete_painted
+Kd 0.0 0.3636 0.5678
+newmtl Patch_87_Mat_Concrete_painted
+Kd 0.0 0.3718 0.5805
+newmtl Patch_88_Mat_Concrete_painted
+Kd 0.0 0.3799 0.5932
+newmtl Patch_89_Mat_Concrete_painted
+Kd 0.0 0.388 0.6059
+newmtl Patch_90_Mat_Concrete_painted
+Kd 0.0 0.3962 0.6186
+newmtl Patch_91_Mat_Concrete_painted
+Kd 0.0 0.4043 0.6313
+newmtl Patch_92_Mat_Concrete_painted
+Kd 0.0 0.4124 0.644
+newmtl Patch_93_Mat_Concrete_painted
+Kd 0.0 0.4206 0.6567
+newmtl Patch_94_Mat_Concrete_painted
+Kd 0.0 0.4287 0.6694
+newmtl Patch_95_Mat_Concrete_painted
+Kd 0.0 0.4368 0.6821
+newmtl Patch_96_Mat_Concrete_painted
+Kd 0.0 0.445 0.6948
+newmtl Patch_97_Mat_Concrete_painted
+Kd 0.0 0.4531 0.7075
+newmtl Patch_98_Mat_Concrete_painted
+Kd 0.0 0.4612 0.7202
+newmtl Patch_99_Mat_Concrete_painted
+Kd 0.0 0.4694 0.7329
+newmtl Patch_100_Mat_Concrete_painted
+Kd 0.0 0.4775 0.7456
+newmtl Patch_101_Mat_Concrete_painted
+Kd 0.0 0.4856 0.7583
+newmtl Patch_102_Mat_Concrete_painted
+Kd 0.0 0.4938 0.771
+newmtl Patch_103_Mat_Concrete_painted
+Kd 0.0 0.5019 0.7837
+newmtl Patch_104_Mat_Concrete_painted
+Kd 0.0 0.51 0.7964
+newmtl Patch_105_Mat_Concrete_painted
+Kd 0.0 0.5182 0.8091
+newmtl Patch_106_Mat_Concrete_painted
+Kd 0.0 0.5263 0.8218
+newmtl Patch_107_Mat_Concrete_painted
+Kd 0.0 0.5344 0.8345
+newmtl Patch_108_Mat_Concrete_painted
+Kd 0.0 0.5426 0.8472
+newmtl Patch_109_Mat_Concrete_painted
+Kd 0.0 0.5507 0.8599
+newmtl Patch_110_Mat_Concrete_painted
+Kd 0.0 0.5588 0.8726
+newmtl Patch_111_Mat_Concrete_painted
+Kd 0.0 0.5669 0.8853
+newmtl Patch_112_Mat_Concrete_painted
+Kd 0.0 0.5751 0.898

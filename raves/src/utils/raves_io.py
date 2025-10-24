@@ -105,6 +105,8 @@ def merge_small_patches(vertices: np.ndarray,
     - Coplanarity is checked using triangle normals and plane offsets from
       the provided ``mesh``.
     """
+    warnings.warn('This feature is experimental! It still needs some work.')
+
     thoroughness = np.clip(thoroughness, 0., 1.)
 
     # Compute patch_areas

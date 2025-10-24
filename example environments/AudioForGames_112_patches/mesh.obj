@@ -1,0 +1,469 @@
+mtllib mesh.mtl
+
+################################ Vertices
+
+v 0.0 0.0 0.0                  # Vertex 1
+v 0.0 0.0 1.5                  # Vertex 2
+v 0.0 0.0 3.0                  # Vertex 3
+v 0.0 2.0 0.0                  # Vertex 4
+v 0.0 2.0 1.5                  # Vertex 5
+v 0.0 2.0 3.0                  # Vertex 6
+v 0.0 4.0 0.0                  # Vertex 7
+v 0.0 4.0 1.5                  # Vertex 8
+v 0.0 4.0 3.0                  # Vertex 9
+v 0.0 6.0 0.0                  # Vertex 10
+v 0.0 6.0 1.5                  # Vertex 11
+v 0.0 6.0 3.0                  # Vertex 12
+v 0.0 8.0 0.0                  # Vertex 13
+v 0.0 8.0 1.5                  # Vertex 14
+v 0.0 8.0 3.0                  # Vertex 15
+v 2.0 0.0 0.0                  # Vertex 16
+v 2.0 0.0 1.5                  # Vertex 17
+v 2.0 0.0 3.0                  # Vertex 18
+v 2.0 2.0 0.0                  # Vertex 19
+v 2.0 2.0 3.0                  # Vertex 20
+v 2.0 4.0 0.0                  # Vertex 21
+v 2.0 4.0 3.0                  # Vertex 22
+v 2.0 6.0 0.0                  # Vertex 23
+v 2.0 6.0 3.0                  # Vertex 24
+v 2.0 8.0 0.0                  # Vertex 25
+v 2.0 8.0 1.5                  # Vertex 26
+v 2.0 8.0 3.0                  # Vertex 27
+v 4.0 0.0 0.0                  # Vertex 28
+v 4.0 0.0 1.5                  # Vertex 29
+v 4.0 0.0 3.0                  # Vertex 30
+v 4.0 1.375 0.0                # Vertex 31
+v 4.0 1.375 1.5                # Vertex 32
+v 4.0 1.375 3.0                # Vertex 33
+v 4.0 2.0 0.0                  # Vertex 34
+v 4.0 2.0 1.5                  # Vertex 35
+v 4.0 2.0 3.0                  # Vertex 36
+v 4.0 2.75 0.0                 # Vertex 37
+v 4.0 2.75 1.5                 # Vertex 38
+v 4.0 2.75 3.0                 # Vertex 39
+v 4.0 3.5 0.0                  # Vertex 40
+v 4.0 3.5 3.0                  # Vertex 41
+v 4.0 4.0 0.0                  # Vertex 42
+v 4.0 4.0 3.0                  # Vertex 43
+v 4.0 4.25 0.0                 # Vertex 44
+v 4.0 4.25 1.5                 # Vertex 45
+v 4.0 4.25 3.0                 # Vertex 46
+v 4.0 5.0 0.0                  # Vertex 47
+v 4.0 5.0 1.5                  # Vertex 48
+v 4.0 5.0 3.0                  # Vertex 49
+v 4.0 6.0 0.0                  # Vertex 50
+v 4.0 6.0 3.0                  # Vertex 51
+v 4.0 6.125 0.0                # Vertex 52
+v 4.0 6.125 1.5                # Vertex 53
+v 4.0 6.125 3.0                # Vertex 54
+v 4.0 8.0 0.0                  # Vertex 55
+v 4.0 8.0 1.5                  # Vertex 56
+v 4.0 8.0 3.0                  # Vertex 57
+v 5.5 5.0 0.0                  # Vertex 58
+v 5.5 5.0 1.5                  # Vertex 59
+v 5.5 5.0 3.0                  # Vertex 60
+v 6.0 2.0 0.0                  # Vertex 61
+v 6.0 2.0 1.5                  # Vertex 62
+v 6.0 2.0 3.0                  # Vertex 63
+v 6.0 3.5 0.0                  # Vertex 64
+v 6.0 3.5 3.0                  # Vertex 65
+v 6.0 5.0 0.0                  # Vertex 66
+v 6.0 5.0 1.5                  # Vertex 67
+v 6.0 5.0 3.0                  # Vertex 68
+v 6.0 7.0 0.0                  # Vertex 69
+v 6.0 7.0 1.5                  # Vertex 70
+v 6.0 7.0 3.0                  # Vertex 71
+v 6.0 9.0 0.0                  # Vertex 72
+v 6.0 9.0 1.5                  # Vertex 73
+v 6.0 9.0 3.0                  # Vertex 74
+v 6.0 11.0 0.0                 # Vertex 75
+v 6.0 11.0 1.5                 # Vertex 76
+v 6.0 11.0 3.0                 # Vertex 77
+v 6.0 13.0 0.0                 # Vertex 78
+v 6.0 13.0 1.5                 # Vertex 79
+v 6.0 13.0 3.0                 # Vertex 80
+v 7.0 5.0 0.0                  # Vertex 81
+v 7.0 5.0 1.5                  # Vertex 82
+v 7.0 5.0 3.0                  # Vertex 83
+v 7.25 5.0 0.0                 # Vertex 84
+v 7.25 5.0 1.5                 # Vertex 85
+v 7.25 5.0 3.0                 # Vertex 86
+v 8.0 2.0 0.0                  # Vertex 87
+v 8.0 2.0 1.5                  # Vertex 88
+v 8.0 2.0 3.0                  # Vertex 89
+v 8.0 3.5 0.0                  # Vertex 90
+v 8.0 3.5 3.0                  # Vertex 91
+v 8.0 5.0 0.0                  # Vertex 92
+v 8.0 5.0 3.0                  # Vertex 93
+v 8.0 7.0 0.0                  # Vertex 94
+v 8.0 7.0 3.0                  # Vertex 95
+v 8.0 9.0 0.0                  # Vertex 96
+v 8.0 9.0 3.0                  # Vertex 97
+v 8.0 11.0 0.0                 # Vertex 98
+v 8.0 11.0 3.0                 # Vertex 99
+v 8.0 13.0 0.0                 # Vertex 100
+v 8.0 13.0 1.5                 # Vertex 101
+v 8.0 13.0 3.0                 # Vertex 102
+v 8.5 5.0 0.0                  # Vertex 103
+v 8.5 5.0 1.5                  # Vertex 104
+v 8.5 5.0 3.0                  # Vertex 105
+v 10.0 2.0 0.0                 # Vertex 106
+v 10.0 2.0 1.5                 # Vertex 107
+v 10.0 2.0 3.0                 # Vertex 108
+v 10.0 3.5 0.0                 # Vertex 109
+v 10.0 3.5 1.5                 # Vertex 110
+v 10.0 3.5 3.0                 # Vertex 111
+v 10.0 5.0 0.0                 # Vertex 112
+v 10.0 5.0 1.5                 # Vertex 113
+v 10.0 5.0 3.0                 # Vertex 114
+v 10.0 7.0 0.0                 # Vertex 115
+v 10.0 7.0 1.5                 # Vertex 116
+v 10.0 7.0 3.0                 # Vertex 117
+v 10.0 9.0 0.0                 # Vertex 118
+v 10.0 9.0 1.5                 # Vertex 119
+v 10.0 9.0 3.0                 # Vertex 120
+v 10.0 11.0 0.0                # Vertex 121
+v 10.0 11.0 1.5                # Vertex 122
+v 10.0 11.0 3.0                # Vertex 123
+v 10.0 13.0 0.0                # Vertex 124
+v 10.0 13.0 1.5                # Vertex 125
+v 10.0 13.0 3.0                # Vertex 126
+
+################################ Faces
+
+usemtl Patch_1_Mat_Carpet
+f 19 4 1
+f 16 19 1
+usemtl Patch_2_Mat_Carpet
+f 21 7 4
+f 19 21 4
+usemtl Patch_3_Mat_Carpet
+f 23 10 7
+f 21 23 7
+usemtl Patch_4_Mat_Carpet
+f 25 13 10
+f 23 25 10
+usemtl Patch_5_Mat_Carpet
+f 34 19 16
+f 28 34 16
+usemtl Patch_6_Mat_Carpet
+f 42 21 19
+f 34 42 19
+usemtl Patch_7_Mat_Carpet
+f 50 23 21
+f 42 50 21
+usemtl Patch_8_Mat_Carpet
+f 55 25 23
+f 50 55 23
+usemtl Patch_9_Mat_Bricks_open_joints
+f 20 36 30
+f 18 20 30
+usemtl Patch_10_Mat_Bricks_open_joints
+f 22 43 36
+f 20 22 36
+usemtl Patch_11_Mat_Bricks_open_joints
+f 24 51 43
+f 22 24 43
+usemtl Patch_12_Mat_Bricks_open_joints
+f 27 57 51
+f 24 27 51
+usemtl Patch_13_Mat_Bricks_open_joints
+f 6 20 18
+f 3 6 18
+usemtl Patch_14_Mat_Bricks_open_joints
+f 9 22 20
+f 6 9 20
+usemtl Patch_15_Mat_Bricks_open_joints
+f 12 24 22
+f 9 12 22
+usemtl Patch_16_Mat_Bricks_open_joints
+f 15 27 24
+f 12 15 24
+usemtl Patch_17_Mat_Bricks_open_joints
+f 5 2 1
+f 4 5 1
+usemtl Patch_18_Mat_Bricks_open_joints
+f 6 3 2
+f 5 6 2
+usemtl Patch_19_Mat_Bricks_open_joints
+f 8 5 4
+f 7 8 4
+usemtl Patch_20_Mat_Bricks_open_joints
+f 9 6 5
+f 8 9 5
+usemtl Patch_21_Mat_Bricks_open_joints
+f 11 8 7
+f 10 11 7
+usemtl Patch_22_Mat_Bricks_open_joints
+f 12 9 8
+f 11 12 8
+usemtl Patch_23_Mat_Bricks_open_joints
+f 14 11 10
+f 13 14 10
+usemtl Patch_24_Mat_Bricks_open_joints
+f 15 12 11
+f 14 15 11
+usemtl Patch_25_Mat_Bricks_open_joints
+f 53 56 55
+f 52 53 55
+usemtl Patch_26_Mat_Bricks_open_joints
+f 54 57 56
+f 53 54 56
+usemtl Patch_27_Mat_Bricks_open_joints
+f 45 53 52
+f 44 45 52
+usemtl Patch_28_Mat_Bricks_open_joints
+f 46 54 53
+f 45 46 53
+usemtl Patch_29_Mat_Bricks_open_joints
+f 32 38 37
+f 31 32 37
+usemtl Patch_30_Mat_Bricks_open_joints
+f 33 39 38
+f 32 33 38
+usemtl Patch_31_Mat_Bricks_open_joints
+f 29 32 31
+f 28 29 31
+usemtl Patch_32_Mat_Bricks_open_joints
+f 30 33 32
+f 29 30 32
+usemtl Patch_33_Mat_Bricks_open_joints
+f 17 29 28
+f 16 17 28
+usemtl Patch_34_Mat_Bricks_open_joints
+f 18 30 29
+f 17 18 29
+usemtl Patch_35_Mat_Bricks_open_joints
+f 2 17 16
+f 1 2 16
+usemtl Patch_36_Mat_Bricks_open_joints
+f 3 18 17
+f 2 3 17
+usemtl Patch_37_Mat_Bricks_open_joints
+f 26 14 13
+f 25 26 13
+usemtl Patch_38_Mat_Bricks_open_joints
+f 27 15 14
+f 26 27 14
+usemtl Patch_39_Mat_Bricks_open_joints
+f 56 26 25
+f 55 56 25
+usemtl Patch_40_Mat_Bricks_open_joints
+f 57 27 26
+f 56 57 26
+usemtl Patch_41_Mat_Marble_or_tile
+f 64 40 34
+f 61 64 34
+usemtl Patch_42_Mat_Marble_or_tile
+f 66 47 40
+f 64 66 40
+usemtl Patch_43_Mat_Marble_or_tile
+f 90 64 61
+f 87 90 61
+usemtl Patch_44_Mat_Marble_or_tile
+f 92 66 64
+f 90 92 64
+usemtl Patch_45_Mat_Marble_or_tile
+f 109 90 87
+f 106 109 87
+usemtl Patch_46_Mat_Marble_or_tile
+f 112 92 90
+f 109 112 90
+usemtl Patch_47_Mat_Marble_or_tile
+f 91 111 108
+f 89 91 108
+usemtl Patch_48_Mat_Marble_or_tile
+f 93 114 111
+f 91 93 111
+usemtl Patch_49_Mat_Marble_or_tile
+f 65 91 89
+f 63 65 89
+usemtl Patch_50_Mat_Marble_or_tile
+f 68 93 91
+f 65 68 91
+usemtl Patch_51_Mat_Marble_or_tile
+f 41 65 63
+f 36 41 63
+usemtl Patch_52_Mat_Marble_or_tile
+f 49 68 65
+f 41 49 65
+usemtl Patch_53_Mat_Marble_or_tile
+f 38 35 34
+f 37 38 34
+usemtl Patch_54_Mat_Marble_or_tile
+f 39 36 35
+f 38 39 35
+usemtl Patch_55_Mat_Marble_or_tile
+f 48 45 44
+f 47 48 44
+usemtl Patch_56_Mat_Marble_or_tile
+f 49 46 45
+f 48 49 45
+usemtl Patch_57_Mat_Marble_or_tile
+f 110 113 112
+f 109 110 112
+usemtl Patch_58_Mat_Marble_or_tile
+f 111 114 113
+f 110 111 113
+usemtl Patch_59_Mat_Marble_or_tile
+f 107 110 109
+f 106 107 109
+usemtl Patch_60_Mat_Marble_or_tile
+f 108 111 110
+f 107 108 110
+usemtl Patch_61_Mat_Marble_or_tile
+f 88 107 106
+f 87 88 106
+usemtl Patch_62_Mat_Marble_or_tile
+f 89 108 107
+f 88 89 107
+usemtl Patch_63_Mat_Marble_or_tile
+f 62 88 87
+f 61 62 87
+usemtl Patch_64_Mat_Marble_or_tile
+f 63 89 88
+f 62 63 88
+usemtl Patch_65_Mat_Marble_or_tile
+f 35 62 61
+f 34 35 61
+usemtl Patch_66_Mat_Marble_or_tile
+f 36 63 62
+f 35 36 62
+usemtl Patch_67_Mat_Marble_or_tile
+f 59 48 47
+f 58 59 47
+usemtl Patch_68_Mat_Marble_or_tile
+f 60 49 48
+f 59 60 48
+usemtl Patch_69_Mat_Marble_or_tile
+f 82 59 58
+f 81 82 58
+usemtl Patch_70_Mat_Marble_or_tile
+f 83 60 59
+f 82 83 59
+usemtl Patch_71_Mat_Marble_or_tile
+f 104 82 81
+f 103 104 81
+usemtl Patch_72_Mat_Marble_or_tile
+f 105 83 82
+f 104 105 82
+usemtl Patch_73_Mat_Wood_flooring
+f 94 69 66
+f 92 94 66
+usemtl Patch_74_Mat_Wood_flooring
+f 96 72 69
+f 94 96 69
+usemtl Patch_75_Mat_Wood_flooring
+f 98 75 72
+f 96 98 72
+usemtl Patch_76_Mat_Wood_flooring
+f 100 78 75
+f 98 100 75
+usemtl Patch_77_Mat_Wood_flooring
+f 115 94 92
+f 112 115 92
+usemtl Patch_78_Mat_Wood_flooring
+f 118 96 94
+f 115 118 94
+usemtl Patch_79_Mat_Wood_flooring
+f 121 98 96
+f 118 121 96
+usemtl Patch_80_Mat_Wood_flooring
+f 124 100 98
+f 121 124 98
+usemtl Patch_81_Mat_Concrete_painted
+f 95 117 114
+f 93 95 114
+usemtl Patch_82_Mat_Concrete_painted
+f 97 120 117
+f 95 97 117
+usemtl Patch_83_Mat_Concrete_painted
+f 99 123 120
+f 97 99 120
+usemtl Patch_84_Mat_Concrete_painted
+f 102 126 123
+f 99 102 123
+usemtl Patch_85_Mat_Concrete_painted
+f 71 95 93
+f 68 71 93
+usemtl Patch_86_Mat_Concrete_painted
+f 74 97 95
+f 71 74 95
+usemtl Patch_87_Mat_Concrete_painted
+f 77 99 97
+f 74 77 97
+usemtl Patch_88_Mat_Concrete_painted
+f 80 102 99
+f 77 80 99
+usemtl Patch_89_Mat_Concrete_painted
+f 70 67 66
+f 69 70 66
+usemtl Patch_90_Mat_Concrete_painted
+f 71 68 67
+f 70 71 67
+usemtl Patch_91_Mat_Concrete_painted
+f 73 70 69
+f 72 73 69
+usemtl Patch_92_Mat_Concrete_painted
+f 74 71 70
+f 73 74 70
+usemtl Patch_93_Mat_Concrete_painted
+f 76 73 72
+f 75 76 72
+usemtl Patch_94_Mat_Concrete_painted
+f 77 74 73
+f 76 77 73
+usemtl Patch_95_Mat_Concrete_painted
+f 79 76 75
+f 78 79 75
+usemtl Patch_96_Mat_Concrete_painted
+f 80 77 76
+f 79 80 76
+usemtl Patch_97_Mat_Concrete_painted
+f 122 125 124
+f 121 122 124
+usemtl Patch_98_Mat_Concrete_painted
+f 123 126 125
+f 122 123 125
+usemtl Patch_99_Mat_Concrete_painted
+f 119 122 121
+f 118 119 121
+usemtl Patch_100_Mat_Concrete_painted
+f 120 123 122
+f 119 120 122
+usemtl Patch_101_Mat_Concrete_painted
+f 116 119 118
+f 115 116 118
+usemtl Patch_102_Mat_Concrete_painted
+f 117 120 119
+f 116 117 119
+usemtl Patch_103_Mat_Concrete_painted
+f 113 116 115
+f 112 113 115
+usemtl Patch_104_Mat_Concrete_painted
+f 114 117 116
+f 113 114 116
+usemtl Patch_105_Mat_Concrete_painted
+f 85 104 103
+f 84 85 103
+usemtl Patch_106_Mat_Concrete_painted
+f 86 105 104
+f 85 86 104
+usemtl Patch_107_Mat_Concrete_painted
+f 67 85 84
+f 66 67 84
+usemtl Patch_108_Mat_Concrete_painted
+f 68 86 85
+f 67 68 85
+usemtl Patch_109_Mat_Concrete_painted
+f 101 79 78
+f 100 101 78
+usemtl Patch_110_Mat_Concrete_painted
+f 102 80 79
+f 101 102 79
+usemtl Patch_111_Mat_Concrete_painted
+f 125 101 100
+f 124 125 100
+usemtl Patch_112_Mat_Concrete_painted
+f 126 102 101
+f 125 126 101

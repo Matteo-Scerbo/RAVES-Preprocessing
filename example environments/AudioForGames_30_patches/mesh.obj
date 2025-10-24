@@ -1,0 +1,137 @@
+mtllib mesh.mtl
+
+################################ Vertices
+
+v 0.0 0.0 0.0                  # Vertex 1
+v 0.0 0.0 3.0                  # Vertex 2
+v 0.0 4.0 0.0                  # Vertex 3
+v 0.0 4.0 3.0                  # Vertex 4
+v 0.0 8.0 0.0                  # Vertex 5
+v 0.0 8.0 3.0                  # Vertex 6
+v 4.0 0.0 0.0                  # Vertex 7
+v 4.0 0.0 3.0                  # Vertex 8
+v 4.0 2.0 0.0                  # Vertex 9
+v 4.0 2.0 3.0                  # Vertex 10
+v 4.0 2.75 0.0                 # Vertex 11
+v 4.0 2.75 3.0                 # Vertex 12
+v 4.0 4.0 0.0                  # Vertex 13
+v 4.0 4.0 3.0                  # Vertex 14
+v 4.0 4.25 0.0                 # Vertex 15
+v 4.0 4.25 3.0                 # Vertex 16
+v 4.0 5.0 0.0                  # Vertex 17
+v 4.0 5.0 3.0                  # Vertex 18
+v 4.0 8.0 0.0                  # Vertex 19
+v 4.0 8.0 3.0                  # Vertex 20
+v 6.0 5.0 0.0                  # Vertex 21
+v 6.0 5.0 3.0                  # Vertex 22
+v 6.0 9.0 0.0                  # Vertex 23
+v 6.0 9.0 3.0                  # Vertex 24
+v 6.0 13.0 0.0                 # Vertex 25
+v 6.0 13.0 3.0                 # Vertex 26
+v 7.0 2.0 0.0                  # Vertex 27
+v 7.0 2.0 3.0                  # Vertex 28
+v 7.0 5.0 0.0                  # Vertex 29
+v 7.0 5.0 3.0                  # Vertex 30
+v 8.5 5.0 0.0                  # Vertex 31
+v 8.5 5.0 3.0                  # Vertex 32
+v 10.0 2.0 0.0                 # Vertex 33
+v 10.0 2.0 3.0                 # Vertex 34
+v 10.0 5.0 0.0                 # Vertex 35
+v 10.0 5.0 3.0                 # Vertex 36
+v 10.0 9.0 0.0                 # Vertex 37
+v 10.0 9.0 3.0                 # Vertex 38
+v 10.0 13.0 0.0                # Vertex 39
+v 10.0 13.0 3.0                # Vertex 40
+
+################################ Faces
+
+usemtl Patch_1_Mat_Carpet
+f 13 3 1
+f 7 13 1
+usemtl Patch_2_Mat_Carpet
+f 19 5 3
+f 13 19 3
+usemtl Patch_3_Mat_Bricks_open_joints
+f 4 14 8
+f 2 4 8
+usemtl Patch_4_Mat_Bricks_open_joints
+f 6 20 14
+f 4 6 14
+usemtl Patch_5_Mat_Bricks_open_joints
+f 4 2 1
+f 3 4 1
+usemtl Patch_6_Mat_Bricks_open_joints
+f 6 4 3
+f 5 6 3
+usemtl Patch_7_Mat_Bricks_open_joints
+f 16 20 19
+f 15 16 19
+usemtl Patch_8_Mat_Bricks_open_joints
+f 8 12 11
+f 7 8 11
+usemtl Patch_9_Mat_Bricks_open_joints
+f 2 8 7
+f 1 2 7
+usemtl Patch_10_Mat_Bricks_open_joints
+f 20 6 5
+f 19 20 5
+usemtl Patch_11_Mat_Marble_or_tile
+f 29 17 9
+f 27 29 9
+usemtl Patch_12_Mat_Marble_or_tile
+f 35 29 27
+f 33 35 27
+usemtl Patch_13_Mat_Marble_or_tile
+f 30 36 34
+f 28 30 34
+usemtl Patch_14_Mat_Marble_or_tile
+f 18 30 28
+f 10 18 28
+usemtl Patch_15_Mat_Marble_or_tile
+f 12 10 9
+f 11 12 9
+usemtl Patch_16_Mat_Marble_or_tile
+f 18 16 15
+f 17 18 15
+usemtl Patch_17_Mat_Marble_or_tile
+f 34 36 35
+f 33 34 35
+usemtl Patch_18_Mat_Marble_or_tile
+f 28 34 33
+f 27 28 33
+usemtl Patch_19_Mat_Marble_or_tile
+f 10 28 27
+f 9 10 27
+usemtl Patch_20_Mat_Marble_or_tile
+f 32 18 17
+f 31 32 17
+usemtl Patch_21_Mat_Wood_flooring
+f 37 23 21
+f 35 37 21
+usemtl Patch_22_Mat_Wood_flooring
+f 39 25 23
+f 37 39 23
+usemtl Patch_23_Mat_Concrete_painted
+f 24 38 36
+f 22 24 36
+usemtl Patch_24_Mat_Concrete_painted
+f 26 40 38
+f 24 26 38
+usemtl Patch_25_Mat_Concrete_painted
+f 24 22 21
+f 23 24 21
+usemtl Patch_26_Mat_Concrete_painted
+f 26 24 23
+f 25 26 23
+usemtl Patch_27_Mat_Concrete_painted
+f 38 40 39
+f 37 38 39
+usemtl Patch_28_Mat_Concrete_painted
+f 36 38 37
+f 35 36 37
+usemtl Patch_29_Mat_Concrete_painted
+f 22 32 31
+f 21 22 31
+usemtl Patch_30_Mat_Concrete_painted
+f 40 26 25
+f 39 40 25

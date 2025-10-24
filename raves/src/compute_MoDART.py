@@ -68,7 +68,7 @@ def T60_to_eig(T60: float, fs: float) -> float:
 
 def compute_MoDART(folder_path: str,
                    T60_threshold: float = 1e-1, max_slopes_per_band: int = 10,
-                   echogram_sample_rate: float = 1e3, skip_T60_plots: bool = False
+                   echogram_sample_rate: float = 5e3, skip_T60_plots: bool = False
                    ) -> None:
     """
     Perform modal decomposition of acoustic radiance transfer for all frequency bands.
@@ -85,13 +85,13 @@ def compute_MoDART(folder_path: str,
         Path to the environment folder. Must contain:
         - path_delays.csv
         - path_etendues.csv
-        - ART_kernel_1.mtx, ART_kernel_2.mtx, ...
+        - ART_kernel_band_1.mtx, ART_kernel_band_2.mtx, ...
     T60_threshold : float, default: 1e-1
         Minimum T60 (seconds) used to derive the eigenvalue threshold for
         pole search.
     max_slopes_per_band : int, default: 10
         Maximum number of modes reported per band in MoD-ART.csv.
-    echogram_sample_rate : float, default: 1e3
+    echogram_sample_rate : float, default: 5e3
         Sample rate in Hz used to quantize propagation delays.
     skip_T60_plots : bool, default: False
         If True, do not generate T60 scatter plots.
@@ -109,7 +109,7 @@ def compute_MoDART(folder_path: str,
     - Integer propagation delays are computed as floor(echogram_sample_rate * delay).
       If the minimum integer delay is below 3, the state transition matrix cannot be
       constructed; values below 10 trigger a warning.
-    - Kernels are processed in order: ART_kernel_1.mtx, ART_kernel_2.mtx, ...
+    - Kernels are processed in order: ART_kernel_band_1.mtx, ART_kernel_band_2.mtx, ...
       Modes are appended to the CSVs one frequency band at a time.
     - Modes in each band are sorted by decreasing T60. Eigenvectors are scaled as
       discussed in `ART_theory.md`.
@@ -151,20 +151,20 @@ def compute_MoDART(folder_path: str,
     # Save all found poles in a dictionary, for plotting.
     all_pole_T60s = dict()
 
-    # Decompose all kernels matching `ART_kernel_<band_idx>.mtx`. For each frequency band, results are appended to `MoD-ART.csv`.
+    # Decompose all kernels matching `ART_kernel_band_<band_idx>.mtx`. For each frequency band, results are appended to `MoD-ART.csv`.
     band_idx = 0
     while True:
         band_idx += 1
-        if not os.path.isfile(os.path.join(folder_path, 'ART_kernel_{}.mtx'.format(band_idx))):
+        if not os.path.isfile(os.path.join(folder_path, 'ART_kernel_band_{}.mtx'.format(band_idx))):
             if band_idx == 1:
-                raise ValueError('Unable run MoD-ART. ART kernel must be prepared for at least one frequency band (i.e., `ART_kernel_1.mtx` needs to exist).')
+                raise ValueError('Unable run MoD-ART. ART kernel must be prepared for at least one frequency band (i.e., `ART_kernel_band_1.mtx` needs to exist).')
             else:
                 break
 
         print('\nAnalyzing frequency band #{}.'.format(band_idx))
 
         # Load the kernel for this frequency band.
-        kernel = mmread(os.path.join(folder_path, 'ART_kernel_{}.mtx'.format(band_idx)), spmatrix=True)
+        kernel = mmread(os.path.join(folder_path, 'ART_kernel_band_{}.mtx'.format(band_idx)), spmatrix=True)
 
         print('\tGenerating full state transition matrix.')
 
@@ -236,7 +236,7 @@ def compute_MoDART(folder_path: str,
         all_pole_T60s[band_idx] = [eig_to_T60(p, echogram_sample_rate) for p in poles]
 
     if not skip_T60_plots:
-        import matplotlib as mtpl
+        import matplotlib.ticker as ticker
         import matplotlib.pyplot as plt
 
         print('\tPlotting results.')
@@ -261,12 +261,12 @@ def compute_MoDART(folder_path: str,
         plt.savefig(os.path.join(folder_path, 'MoD-ART (rate {:.0f}) T60 values, lin scale.png'.format(echogram_sample_rate)))
 
         plt.yscale('log')
-        # plt.ylim(T60_threshold, None)
-        plt.ylim(None, None)
-        ax.yaxis.set_major_locator(mtpl.ticker.LogLocator(subs=np.arange(0.1, 1, 0.1)))
-        ax.yaxis.set_major_formatter(mtpl.ticker.ScalarFormatter())
-        ax.yaxis.set_minor_locator(mtpl.ticker.LogLocator(subs=np.arange(0.01, 1, 0.01)))
-        ax.yaxis.set_minor_formatter(mtpl.ticker.NullFormatter())
+        plt.autoscale(axis='y')
+
+        ax.yaxis.set_major_locator(ticker.LogLocator(subs=np.arange(0.1, 1, 0.1)))
+        ax.yaxis.set_major_formatter(ticker.ScalarFormatter())
+        ax.yaxis.set_minor_locator(ticker.LogLocator(subs=np.arange(0.01, 1, 0.01)))
+        ax.yaxis.set_minor_formatter(ticker.NullFormatter())
 
         plt.savefig(os.path.join(folder_path, 'MoD-ART (rate {:.0f}) T60 values, log scale.png'.format(echogram_sample_rate)))
 
