@@ -76,7 +76,7 @@ def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
 
     # Prepare a pencil formed by the specular reflection of `hemisphere_pencil` across the surface normal.
     # This pencil will be moved and traced in conjunction with `hemisphere_pencil` to obtain the specular reflection kernel.
-    hemisphere_directions = hemisphere_pencil.getDirections()
+    hemisphere_directions = hemisphere_pencil.get_directions()
     hemisphere_cosines = np.einsum('ij,j->i', hemisphere_directions, patch_normal)
     specular_directions = 2 * hemisphere_cosines[:, np.newaxis] * patch_normal[np.newaxis] - hemisphere_directions
     specular_pencil = RayBundle.from_shared_origin(origin=np.zeros(3), directions=specular_directions)
@@ -95,16 +95,16 @@ def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
         num_points += sample_points.shape[0]
 
         for sample_point in sample_points:
-            hemisphere_pencil.moveOrigins(sample_point)
-            specular_pencil.moveOrigins(sample_point)
+            hemisphere_pencil.move_origins(sample_point)
+            specular_pencil.move_origins(sample_point)
 
-            hemisphere_pencil.traceAll(mesh)
-            specular_pencil.traceAll(mesh)
+            hemisphere_pencil.trace_all(mesh)
+            specular_pencil.trace_all(mesh)
 
-            hemisphere_patch_ids, _ = hemisphere_pencil.getIndices(copy=False)
-            specular_patch_ids, _ = specular_pencil.getIndices(copy=False)
-            hemisphere_distances, _ = hemisphere_pencil.getDistances(copy=False)
-            specular_distances, _ = specular_pencil.getDistances(copy=False)
+            hemisphere_patch_ids, _ = hemisphere_pencil.get_indices(copy=False)
+            specular_patch_ids, _ = specular_pencil.get_indices(copy=False)
+            hemisphere_distances, _ = hemisphere_pencil.get_distances(copy=False)
+            specular_distances, _ = specular_pencil.get_distances(copy=False)
             # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
             # specular_cosines, _ = specular_pencil.getCosines(copy=False)
 
@@ -198,9 +198,9 @@ def assess_ART_on_grid(folder_path: str,
                 else:
                     continue
 
-            etendue_SAPE = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
-            median_SAPE = np.median(etendue_SAPE)
-            medians[p_i, r_i] = median_SAPE
+            etendue_sape = np.loadtxt(os.path.join(folder_path, file_name), delimiter=',')
+            median_sape = np.median(etendue_sape)
+            medians[p_i, r_i] = median_sape
 
     # https://stackoverflow.com/q/71119762
     # https://matplotlib.org/stable/users/explain/axes/arranging_axes.html
@@ -307,15 +307,15 @@ def assess_ART(folder_path: str,
     patch_triangles = dict()
     # Patch areas, as sum of triangle areas.
     patch_areas = np.zeros(num_patches)
-    for triangle_index, triangle_patch_ID in enumerate(mesh.ID):
-        if triangle_patch_ID not in patch_triangles.keys():
+    for triangle_index, triangle_patch_id in enumerate(mesh.patch_ids):
+        if triangle_patch_id not in patch_triangles.keys():
             # This is the first triangle found for this patch. Create the list with one element.
-            patch_triangles[triangle_patch_ID] = [triangle_index]
+            patch_triangles[triangle_patch_id] = [triangle_index]
         else:
             # This is not the first triangle found for this patch. Add element to the existing list.
-            patch_triangles[triangle_patch_ID].append(triangle_index)
+            patch_triangles[triangle_patch_id].append(triangle_index)
 
-        patch_areas[triangle_patch_ID] += mesh.area[triangle_index]
+        patch_areas[triangle_patch_id] += mesh.area[triangle_index]
 
     # This is defined here in order to bake `num_patches` into it.
     def path_index(i: int, j: int) -> int:
@@ -426,7 +426,7 @@ def assess_ART(folder_path: str,
             reverse_path_etendues[path_index(i, j)] = path_etendues[path_index(j, i)]
     # Symmetric absolute percentage error. Note: etendues are guaranteed non-negative.
     mean_etendues = (path_etendues + reverse_path_etendues) / 2
-    etendue_SAPE = 100 * np.divide(np.abs(path_etendues - reverse_path_etendues),
+    etendue_sape = 100 * np.divide(np.abs(path_etendues - reverse_path_etendues),
                                    mean_etendues,
                                    out=np.zeros_like(mean_etendues),
                                    where=(mean_etendues != 0))
@@ -440,17 +440,17 @@ def assess_ART(folder_path: str,
 
     # Drop all non-visible paths from the ART model.
     num_valid_paths = np.count_nonzero(path_visibility)
-    etendue_SAPE = etendue_SAPE[path_visibility]
+    etendue_sape = etendue_sape[path_visibility]
     path_lengths = mean_lengths[path_visibility]
     mean_etendues = mean_etendues[path_visibility]
     diffuse_kernel = lil_array(diffuse_kernel[path_visibility][:, path_visibility])
     specular_kernel = lil_array(specular_kernel[path_visibility][:, path_visibility])
 
     np.savetxt(os.path.join(folder_path, 'etendue_SAPE_{:.0f}pnts_{:d}rays.csv'.format(points_per_square_meter, rays_per_hemisphere)),
-               etendue_SAPE, fmt='%.18f', delimiter=', ')
+               etendue_sape, fmt='%.18f', delimiter=', ')
     print('Etendue SAPE with {:.0f} points/m2, {:d} rays:'.format(points_per_square_meter, rays_per_hemisphere))
-    print('\t Median: {:.2f}%'.format(np.median(etendue_SAPE)))
-    print('\t Average: {:.2f}%'.format(np.mean(etendue_SAPE)))
+    print('\t Median: {:.2f}%'.format(np.median(etendue_sape)))
+    print('\t Average: {:.2f}%'.format(np.mean(etendue_sape)))
     print('\t Valid paths: {}'.format(num_valid_paths))
 
     # Evaluate the row sums of both kernels. All rows should sum to 1; any divergence is an artefact of numerical integration.
@@ -490,12 +490,12 @@ def assess_ART(folder_path: str,
                 diffuse_kernel, field='real', symmetry='general',
                 comment='Diffuse (Lambertian) component of the acoustic radiance transfer reflection kernel. ' +
                         'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
-                        'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+                        'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_sape)))
         mmwrite(os.path.join(folder_path, 'ART_kernel_specular.mtx'),
                 specular_kernel, field='real', symmetry='general',
                 comment='Specular component of the acoustic radiance transfer reflection kernel. ' +
                         'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
-                        'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+                        'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_sape)))
         mmwrite(os.path.join(folder_path, 'path_indexing.mtx'),
                 path_indexing, field='integer', symmetry='general',
                 comment='Relates each pair of surface patch indices to the index of a propagation path. ' +
@@ -587,15 +587,15 @@ def compute_ART(folder_path: str,
     patch_triangles = dict()
     # Patch areas, as sum of triangle areas.
     patch_areas = np.zeros(num_patches)
-    for triangle_index, triangle_patch_ID in enumerate(mesh.ID):
-        if triangle_patch_ID not in patch_triangles.keys():
+    for triangle_index, triangle_patch_id in enumerate(mesh.patch_ids):
+        if triangle_patch_id not in patch_triangles.keys():
             # This is the first triangle found for this patch. Create the list with one element.
-            patch_triangles[triangle_patch_ID] = [triangle_index]
+            patch_triangles[triangle_patch_id] = [triangle_index]
         else:
             # This is not the first triangle found for this patch. Add element to the existing list.
-            patch_triangles[triangle_patch_ID].append(triangle_index)
+            patch_triangles[triangle_patch_id].append(triangle_index)
 
-        patch_areas[triangle_patch_ID] += mesh.area[triangle_index]
+        patch_areas[triangle_patch_id] += mesh.area[triangle_index]
 
     if num_patches > 1000:
         print('Warning: the mesh contains a very large number of patches (' + str(num_patches) + ')')
@@ -791,14 +791,14 @@ def compute_ART(folder_path: str,
                 reverse_path_etendues[path_index(i, j)] = path_etendues[path_index(j, i)]
         # Symmetric absolute percentage error. Note: etendues are guaranteed non-negative.
         mean_etendues = (path_etendues + reverse_path_etendues) / 2
-        etendue_SAPE = 100 * np.divide(np.abs(path_etendues - reverse_path_etendues),
+        etendue_sape = 100 * np.divide(np.abs(path_etendues - reverse_path_etendues),
                                        mean_etendues,
                                        out=np.zeros_like(mean_etendues),
                                        where=(mean_etendues != 0))
         print('\nSymmetric absolute percentage errors (SAPE) of propagation path etendues:')
-        print('\t Maximum: {:.2f}%'.format(np.max(etendue_SAPE)))
-        print('\t Average: {:.2f}%'.format(np.mean(etendue_SAPE)))
-        print('\t Median: {:.2f}%'.format(np.median(etendue_SAPE)))
+        print('\t Maximum: {:.2f}%'.format(np.max(etendue_sape)))
+        print('\t Average: {:.2f}%'.format(np.mean(etendue_sape)))
+        print('\t Median: {:.2f}%'.format(np.median(etendue_sape)))
         print('The propagation path etendues should be symmetric, i.e., the SAPEs should be low.')
         print('If they seem too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
         print('N.B.: The etendue values are based on the diffuse kernel before it is normalized.')
@@ -834,11 +834,11 @@ def compute_ART(folder_path: str,
         specular_row_sums = specular_kernel.sum(axis=1)
 
         # Note: the specular kernel may have 0-sum rows even after removing paths without visibility.
-        diffuse_row_sums_RMSE = np.sqrt(np.mean(np.abs(diffuse_row_sums - 1.) ** 2))
-        specular_row_sums_RMSE = np.sqrt(np.mean(np.abs(specular_row_sums[specular_row_sums != 0] - 1.) ** 2))
+        diffuse_row_sums_rmse = np.sqrt(np.mean(np.abs(diffuse_row_sums - 1.) ** 2))
+        specular_row_sums_rmse = np.sqrt(np.mean(np.abs(specular_row_sums[specular_row_sums != 0] - 1.) ** 2))
 
         print('\nThe kernel rows sum to 1 with a root mean squared error (RMSE) of',
-              '{:.2e} for the diffuse kernel and {:.2e} for the specular kernel.'.format(diffuse_row_sums_RMSE, specular_row_sums_RMSE))
+              '{:.2e} for the diffuse kernel and {:.2e} for the specular kernel.'.format(diffuse_row_sums_rmse, specular_row_sums_rmse))
         print('If either of these seems too high, consider increasing `points_per_square_meter` and/or `rays_per_hemisphere`.')
         print('The row sums will now be forcibly normalized.')
 
@@ -857,14 +857,14 @@ def compute_ART(folder_path: str,
         """
         diffuse_row_sums = diffuse_kernel.sum(axis=1)
         specular_row_sums = specular_kernel.sum(axis=1)
-        diffuse_row_sums_RMSE = np.sqrt(np.mean(np.abs(diffuse_row_sums - 1.) ** 2))
-        specular_row_sums_RMSE = np.sqrt(np.mean(np.abs(specular_row_sums[specular_row_sums != 0] - 1.) ** 2))
+        diffuse_row_sums_rmse = np.sqrt(np.mean(np.abs(diffuse_row_sums - 1.) ** 2))
+        specular_row_sums_rmse = np.sqrt(np.mean(np.abs(specular_row_sums[specular_row_sums != 0] - 1.) ** 2))
     
         import matplotlib.pyplot as plt
         
         fig, ax = plt.subplots(dpi=200, figsize=(8, 6))
-        plt.plot(diffuse_row_sums, label='diffuse (RMSE {:.2e})'.format(diffuse_row_sums_RMSE))
-        plt.plot(specular_row_sums, label='specular (RMSE {:.2e})'.format(specular_row_sums_RMSE))
+        plt.plot(diffuse_row_sums, label='diffuse (RMSE {:.2e})'.format(diffuse_row_sums_rmse))
+        plt.plot(specular_row_sums, label='specular (RMSE {:.2e})'.format(specular_row_sums_rmse))
         plt.tight_layout()
         plt.legend()
         plt.show()
@@ -890,12 +890,12 @@ def compute_ART(folder_path: str,
                 diffuse_kernel, field='real', symmetry='general',
                 comment='Diffuse (Lambertian) component of the acoustic radiance transfer reflection kernel. ' +
                 'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
-                'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+                'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_sape)))
         mmwrite(os.path.join(folder_path, 'ART_kernel_specular.mtx'),
                 specular_kernel, field='real', symmetry='general',
                 comment='Specular component of the acoustic radiance transfer reflection kernel. ' +
                 'Generated using {:.0f} points per square meter and {:d} rays per hemisphere. '.format(points_per_square_meter, rays_per_hemisphere) +
-                'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_SAPE)))
+                'Propagation path etendues have a symmetric mean absolute percentage error (SMAPE) of {:.2f}.'.format(np.mean(etendue_sape)))
         mmwrite(os.path.join(folder_path, 'path_indexing.mtx'),
                 path_indexing, field='integer', symmetry='general',
                 comment='Relates each pair of surface patch indices to the index of a propagation path. ' +
@@ -926,7 +926,7 @@ def compute_ART(folder_path: str,
             all_outgoing_paths_from_i -= 1
 
             # Weighted sum of diffuse and specular kernels.
-            reflection_kernel[:, all_outgoing_paths_from_i] = \
+            reflection_kernel[:, all_outgoing_paths_from_i] =\
                 patch_i_scattering * diffuse_kernel[:, all_outgoing_paths_from_i]\
                 + (1 - patch_i_scattering) * specular_kernel[:, all_outgoing_paths_from_i]
 

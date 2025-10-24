@@ -69,17 +69,17 @@ def build_single_triangle(z: float, up_normal: bool) -> TriangleMesh:
         A mesh with one triangle and patch id 0.
     """
     # Right triangle in the z = const plane with +Z normal
-    V = np.array([
+    v = np.array([
         [1.0, 0.0, z],
         [0.0, 1.0, z],
         [0.0, 0.0, z],
     ])
     if up_normal:
-        F = np.array([[0, 1, 2]], dtype=int)
+        f = np.array([[0, 1, 2]], dtype=int)
     else:
-        F = np.array([[0, 2, 1]], dtype=int)
-    P = np.array([0], dtype=int)
-    return TriangleMesh(V, F, P)
+        f = np.array([[0, 2, 1]], dtype=int)
+    p = np.array([0], dtype=int)
+    return TriangleMesh(v, f, p)
 
 
 def build_unit_cube(outward: bool) -> TriangleMesh:
@@ -101,13 +101,13 @@ def build_unit_cube(outward: bool) -> TriangleMesh:
         A mesh of 12 triangles, with per-triangle patch ids equal to the triangle index.
     """
 
-    V = np.array([
+    v = np.array([
         [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],  # 0..3  (z=0)
         [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1],  # 4..7  (z=1)
     ])
 
     # 12 triangles, outward normals via right-hand rule
-    F = np.array([
+    f = np.array([
         # z = 0 (normal -Z)
         [0, 2, 1], [0, 3, 2],
         # z = 1 (normal +Z)
@@ -124,10 +124,10 @@ def build_unit_cube(outward: bool) -> TriangleMesh:
 
     if not outward:
         # flip winding of every triangle to invert normals
-        F = F[:, [0, 2, 1]]
+        f = f[:, [0, 2, 1]]
 
-    P = np.arange(F.shape[0], dtype=int)
-    return TriangleMesh(V, F, P)
+    p = np.arange(f.shape[0], dtype=int)
+    return TriangleMesh(v, f, p)
 
 
 def build_test_mesh() -> TriangleMesh:
@@ -260,17 +260,17 @@ def platonic_vertices(n: int) -> np.ndarray:
     elif n == 12:
         r = np.sqrt(1.0 + golden * golden)
         s1 = 1.0 / r
-        sP = golden / r
+        s_p = golden / r
         verts = []
         for sy in (-1, 1):
             for sz in (-1, 1):
-                verts.append([0.0, sy * s1, sz * sP])
+                verts.append([0.0, sy * s1, sz * s_p])
         for sx in (-1, 1):
             for sy in (-1, 1):
-                verts.append([sx * s1, sy * sP, 0.0])
+                verts.append([sx * s1, sy * s_p, 0.0])
         for sx in (-1, 1):
             for sz in (-1, 1):
-                verts.append([sx * sP, 0.0, sz * s1])
+                verts.append([sx * s_p, 0.0, sz * s1])
         verts = np.asarray(verts, dtype=float)
     elif n == 20:
         s = 1 / np.sqrt(3)
@@ -307,7 +307,7 @@ class PlaneTests(unittest.TestCase):
         mesh, _, _ = load_mesh('../../example environments/AudioForGames_20_patches')
 
         # For any triangle, the plane identity dot(n, v1) - d0 must be ~0 if (n, d0) are consistent.
-        residual = np.einsum("ij,ij->i", mesh.n, mesh.v1) - mesh.d0
+        residual = np.einsum("ij,ij->i", mesh.n, mesh.v_1) - mesh.d_0
 
         self.assertTrue(np.all(np.abs(residual) < EPS_FACING),
                         msg='Plane (n, d0) inconsistent; max residual = ' + str(np.max(np.abs(residual))))
@@ -330,11 +330,11 @@ class PlaneTests(unittest.TestCase):
                         test_ray = RayBundle.from_shared_origin(origin=np.array([0.25, 0.25, plane_z + ray_origin_position]),
                                                                 directions=ray_orientation * np.array([[0., 0., 1.]]))
 
-                        test_ray.traceAll(test_triangle)
-                        front, back = test_ray.getIndices()
+                        test_ray.trace_all(test_triangle)
+                        front, back = test_ray.get_indices()
 
-                        msg = 'Triangle normal ' + str(triangle_normal) + \
-                              ', ray origin ' + str(ray_origin_position) + \
+                        msg = 'Triangle normal ' + str(triangle_normal) +\
+                              ', ray origin ' + str(ray_origin_position) +\
                               ', ray orientation ' + str(ray_orientation)
 
                         if triangle_normal * ray_origin_position < 0:
@@ -352,13 +352,13 @@ class PlaneTests(unittest.TestCase):
         For a watertight inward-facing cube, tracing from the center should find intersections in both directions.
         If the cube is outward-facing, tracing from the center should find no intersections in either direction.
         """
-        N = 1000
+        n = 1000
 
         # Inward normals
         cube_out = build_unit_cube(outward=False)
-        test_rays = RayBundle.sample_sphere(N, origin=np.array([0.5, 0.5, 0.5]))
-        test_rays.traceAll(cube_out)
-        front, back = test_rays.getIndices()
+        test_rays = RayBundle.sample_sphere(n, origin=np.array([0.5, 0.5, 0.5]))
+        test_rays.trace_all(cube_out)
+        front, back = test_rays.get_indices()
 
         self.assertEqual(int(np.count_nonzero(front == -1)), 0,
                          msg='There should be no invalid front hits from within an inward-facing cube.')
@@ -367,13 +367,13 @@ class PlaneTests(unittest.TestCase):
 
         # Outward normals
         cube_out = build_unit_cube(outward=True)
-        test_rays = RayBundle.sample_sphere(N, origin=np.array([0.5, 0.5, 0.5]))
-        test_rays.traceAll(cube_out)
-        front, back = test_rays.getIndices()
+        test_rays = RayBundle.sample_sphere(n, origin=np.array([0.5, 0.5, 0.5]))
+        test_rays.trace_all(cube_out)
+        front, back = test_rays.get_indices()
 
-        self.assertEqual(int(np.count_nonzero(front == -1)), N,
+        self.assertEqual(int(np.count_nonzero(front == -1)), n,
                          msg='There should be no valid front hits from within an outward-facing cube.')
-        self.assertEqual(int(np.count_nonzero(back == -1)), N,
+        self.assertEqual(int(np.count_nonzero(back == -1)), n,
                          msg='There should be no valid back hits from within an outward-facing cube.')
 
 
@@ -388,12 +388,12 @@ class TracingClassesTests(unittest.TestCase):
         - Front/back distances have the expected finiteness and sign pattern.
         - Front/back hit triangle indices match EXPECTED_IDX_PAIR.
         """
-        testMesh = build_test_mesh()
+        test_mesh = build_test_mesh()
 
-        self.assertTrue(np.allclose(np.linalg.norm(testMesh.n, axis=1), 1.0),
-                        msg='\n' + str(np.linalg.norm(testMesh.n)))
+        self.assertTrue(np.allclose(np.linalg.norm(test_mesh.n, axis=1), 1.0),
+                        msg='\n' + str(np.linalg.norm(test_mesh.n)))
 
-        testDirections = np.array([
+        test_directions = np.array([
             [0.0, 0.0, -1.0],
             [0.4, -0.1, -1.0],
             [-0.1, -0.1, -1.0],
@@ -402,22 +402,22 @@ class TracingClassesTests(unittest.TestCase):
             [10.0, 10.0, 1.0],
         ], dtype=float)
 
-        testOrigins = np.array([
+        test_origins = np.array([
             [0.1, 0.1, 1e-6],
             [0.1, 0.1, 10.0 + 1e-6],
         ], dtype=float)
 
-        for oi in range(testOrigins.shape[0]):
-            testPencil = RayBundle.from_shared_origin(testOrigins[oi], testDirections)
+        for oi in range(test_origins.shape[0]):
+            test_pencil = RayBundle.from_shared_origin(test_origins[oi], test_directions)
 
             # Check that directions are automatically normalized on construction.
-            self.assertTrue(np.allclose(np.linalg.norm(testPencil.getDirections(), axis=1), 1.0),
-                            msg='\n' + str(np.linalg.norm(testPencil.getDirections())))
+            self.assertTrue(np.allclose(np.linalg.norm(test_pencil.get_directions(), axis=1), 1.0),
+                            msg='\n' + str(np.linalg.norm(test_pencil.get_directions())))
 
-            testPencil.traceAll(testMesh)
-            frontDistances, backDistances = testPencil.getDistances()
+            test_pencil.trace_all(test_mesh)
+            frontDistances, backDistances = test_pencil.get_distances()
             # TODO: frontCosines, backCosines = testPencil.getCosines()
-            frontIndices, backIndices = testPencil.getIndices()
+            frontIndices, backIndices = test_pencil.get_indices()
 
             # Either both or neither distance should be NaN.
             self.assertTrue(np.all(np.isnan(EXPECTED_DIST_PAIR[oi, :, 0]) == np.isnan(frontDistances)),
@@ -449,26 +449,26 @@ class TracingClassesTests(unittest.TestCase):
         - Cluster assignment counts (via nearest-cluster cosine) do not vary
           by more than 10 percent of the total ray count.
         """
-        for numRays in np.logspace(2, 5, 4, dtype=int):
-            for numClusters in [1, 2, 3, 4, 6, 8, 12, 20]:
-                testClusters = platonic_vertices(numClusters)
-                self.assertTrue(np.allclose(np.linalg.norm(testClusters, axis=1), 1.0),
-                                msg='\n' + str(np.linalg.norm(testClusters)))
+        for num_rays in np.logspace(2, 5, 4, dtype=int):
+            for num_clusters in [1, 2, 3, 4, 6, 8, 12, 20]:
+                test_clusters = platonic_vertices(num_clusters)
+                self.assertTrue(np.allclose(np.linalg.norm(test_clusters, axis=1), 1.0),
+                                msg='\n' + str(np.linalg.norm(test_clusters)))
 
-                testPencil = RayBundle.sample_sphere(numRays)
+                test_pencil = RayBundle.sample_sphere(num_rays)
 
-                effectiveNumRays = testPencil.getNumRays()
-                self.assertEqual(numRays, effectiveNumRays, msg='\n' + str(numRays) + ' != ' + str(effectiveNumRays))
+                effective_num_rays = test_pencil.get_num_rays()
+                self.assertEqual(num_rays, effective_num_rays, msg='\n' + str(num_rays) + ' != ' + str(effective_num_rays))
 
                 # Check that directions are automatically normalized on construction.
-                self.assertTrue(np.allclose(np.linalg.norm(testPencil.getDirections(), axis=1), 1.0),
-                                msg='\n' + str(np.linalg.norm(testPencil.getDirections())))
+                self.assertTrue(np.allclose(np.linalg.norm(test_pencil.get_directions(), axis=1), 1.0),
+                                msg='\n' + str(np.linalg.norm(test_pencil.get_directions())))
 
-                cosineSimilarities = np.einsum("nj,mj->nm", testClusters, testPencil.getDirections())
-                _, clusters = np.unique(np.argmax(cosineSimilarities, axis=0), return_counts=True)
+                cosine_similarities = np.einsum("nj,mj->nm", test_clusters, test_pencil.get_directions())
+                _, clusters = np.unique(np.argmax(cosine_similarities, axis=0), return_counts=True)
 
                 # Check that the difference between the minimum and maximum cluster size is relatively small.
-                self.assertTrue(np.max(clusters) - np.min(clusters) <= int(effectiveNumRays / 10),
+                self.assertTrue(np.max(clusters) - np.min(clusters) <= int(effective_num_rays / 10),
                                 msg='\n' + str(clusters))
 
     def test_pencil_hemisphere(self):
@@ -482,21 +482,21 @@ class TracingClassesTests(unittest.TestCase):
         - All directions have nonnegative cosine with north_pole (they lie
           in the same hemisphere).
         """
-        for numRays in np.logspace(2, 5, 4, dtype=int):
-            for northPole in platonic_vertices(20):
-                testPencil = RayBundle.sample_sphere(numRays, hemisphere_only=True, north_pole=northPole)
+        for num_rays in np.logspace(2, 5, 4, dtype=int):
+            for north_pole in platonic_vertices(20):
+                test_pencil = RayBundle.sample_sphere(num_rays, hemisphere_only=True, north_pole=north_pole)
 
-                effectiveNumRays = testPencil.getNumRays()
-                self.assertEqual(numRays, effectiveNumRays, msg='\n' + str(numRays) + ' != ' + str(effectiveNumRays))
+                effective_num_rays = test_pencil.get_num_rays()
+                self.assertEqual(num_rays, effective_num_rays, msg='\n' + str(num_rays) + ' != ' + str(effective_num_rays))
 
                 # Check that directions are automatically normalized on construction.
-                self.assertTrue(np.allclose(np.linalg.norm(testPencil.getDirections(), axis=1), 1.0),
-                                msg='\n' + str(np.linalg.norm(testPencil.getDirections())))
+                self.assertTrue(np.allclose(np.linalg.norm(test_pencil.get_directions(), axis=1), 1.0),
+                                msg='\n' + str(np.linalg.norm(test_pencil.get_directions())))
 
                 # Test north_pole rotation
-                cosineSimilarities = np.einsum("j,mj->m", northPole, testPencil.getDirections())
-                self.assertTrue(np.all(cosineSimilarities >= 0.0),
-                                msg='\n' + str(cosineSimilarities))
+                cosine_similarities = np.einsum("j,mj->m", north_pole, test_pencil.get_directions())
+                self.assertTrue(np.all(cosine_similarities >= 0.0),
+                                msg='\n' + str(cosine_similarities))
 
     def test_visibility_in_volume(self):
         """
@@ -511,9 +511,9 @@ class TracingClassesTests(unittest.TestCase):
         for point_in_bounds in [np.array([2.1, 1.9, 1.5]),
                                 np.array([5.8, 4.1, 1.5]),
                                 np.array([7.2, 6.5, 1.5])]:
-            sphere_pencil.moveOrigins(point_in_bounds)
-            sphere_pencil.traceAll(mesh)
-            front_patch_ids, back_patch_ids = sphere_pencil.getIndices()
+            sphere_pencil.move_origins(point_in_bounds)
+            sphere_pencil.trace_all(mesh)
+            front_patch_ids, back_patch_ids = sphere_pencil.get_indices()
 
             num_front_misses = np.count_nonzero(front_patch_ids == -1)
             num_back_misses = np.count_nonzero(back_patch_ids == -1)
@@ -535,13 +535,13 @@ class TracingClassesTests(unittest.TestCase):
         num_rays = 1000
 
         for triangle_idx in range(mesh.size()):
-            centroid = mesh.v1[triangle_idx] + (mesh.edge1[triangle_idx] + mesh.edge2[triangle_idx]) / 3
+            centroid = mesh.v_1[triangle_idx] + (mesh.edge_1[triangle_idx] + mesh.edge_2[triangle_idx]) / 3
             hemisphere_pencil = RayBundle.sample_sphere(num_rays, hemisphere_only=True,
                                                         origin=centroid,
                                                         north_pole=mesh.n[triangle_idx])
 
-            hemisphere_pencil.traceAll(mesh)
-            front_patch_ids, _ = hemisphere_pencil.getIndices()
+            hemisphere_pencil.trace_all(mesh)
+            front_patch_ids, _ = hemisphere_pencil.get_indices()
 
             num_front_misses = np.count_nonzero(front_patch_ids == -1)
 

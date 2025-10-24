@@ -83,7 +83,7 @@ def merge_small_patches(vertices: np.ndarray,
     vert_triplets : (T, 3) ndarray of int
         Triangle vertex indices (0-based) for the mesh.
     mesh : TriangleMesh
-        Mesh structure; ``mesh.ID`` provides per-triangle patch ids and is
+        Mesh structure; ``mesh.patch_ids`` provides per-triangle patch ids and is
         updated in place to reflect merges.
     patch_materials : list of str
         Per-patch material names. This list is modified in place by removing
@@ -101,7 +101,7 @@ def merge_small_patches(vertices: np.ndarray,
 
     Notes
     -----
-    - ``patch_materials`` and ``mesh.ID`` are modified in place.
+    - ``patch_materials`` and ``mesh.patch_ids`` are modified in place.
     - Coplanarity is checked using triangle normals and plane offsets from
       the provided ``mesh``.
     """
@@ -109,7 +109,7 @@ def merge_small_patches(vertices: np.ndarray,
 
     # Compute patch_areas
     patch_areas = np.zeros(len(patch_materials))
-    for p, a in zip(mesh.ID, mesh.area):
+    for p, a in zip(mesh.patch_ids, mesh.area):
         patch_areas[p] += a
 
     group_partitions = list()
@@ -134,9 +134,9 @@ def merge_small_patches(vertices: np.ndarray,
         patch_edge_use = defaultdict(int)
         edge_lengths = dict()
 
-        child_triangles = np.where(np.isin(mesh.ID, child_patches))[0]
+        child_triangles = np.where(np.isin(mesh.patch_ids, child_patches))[0]
         for t_idx in child_triangles:
-            patch = mesh.ID[t_idx]
+            patch = mesh.patch_ids[t_idx]
             a, b, c = (int(x) for x in vert_triplets[t_idx])
             for u, v in ((a, b), (b, c), (c, a)):
                 edge = (u, v) if v > u else (v, u)
@@ -152,8 +152,8 @@ def merge_small_patches(vertices: np.ndarray,
                 patch_to_edges[patch].add(edge)
 
         # Build patch adjacency graph based on shared edges and co-planarity.
-        G = nx.Graph()
-        G.add_nodes_from(child_patches)
+        graph = nx.Graph()
+        graph.add_nodes_from(child_patches)
         for patches in edge_to_patches.values():
             # For debugging:
             # assert len(patches.difference(set(child_patches))) == 0
@@ -161,30 +161,30 @@ def merge_small_patches(vertices: np.ndarray,
                 # This edge only pertains to one patch.
                 continue
             for i, j in combinations(patches, 2):
-                any_triangle_in_i = np.argwhere(mesh.ID == i).flatten()[0]
-                any_triangle_in_j = np.argwhere(mesh.ID == j).flatten()[0]
+                any_triangle_in_i = np.argwhere(mesh.patch_ids == i).flatten()[0]
+                any_triangle_in_j = np.argwhere(mesh.patch_ids == j).flatten()[0]
 
                 parallel_normals = np.isclose(np.dot(mesh.n[any_triangle_in_i],
                                                      mesh.n[any_triangle_in_j]),
                                               1.)
-                same_offset = np.isclose(mesh.d0[any_triangle_in_i],
-                                         mesh.d0[any_triangle_in_j])
+                same_offset = np.isclose(mesh.d_0[any_triangle_in_i],
+                                         mesh.d_0[any_triangle_in_j])
 
                 if parallel_normals and same_offset:
-                    G.add_edge(i, j)
+                    graph.add_edge(i, j)
 
-        if nx.number_connected_components(G) == len(child_patches):
+        if nx.number_connected_components(graph) == len(child_patches):
             # Nothing can be merged in this material (all children are disconnected).
             group_partitions.append(trivial_partition)
             continue
 
-        for comp_nodes in nx.connected_components(G):
-            subG = G.subgraph(comp_nodes).copy()
+        for comp_nodes in nx.connected_components(graph):
+            sub_graph = graph.subgraph(comp_nodes).copy()
 
-            clusters = [set([p]) for p in subG.nodes()]
-            areas = [patch_areas[p] for p in subG.nodes()]
+            clusters = [set([p]) for p in sub_graph.nodes()]
+            areas = [patch_areas[p] for p in sub_graph.nodes()]
             active = set(range(len(clusters)))
-            owner = {p: i for i, p in enumerate(subG.nodes())}
+            owner = {p: i for i, p in enumerate(sub_graph.nodes())}
 
             while True:
                 if all(areas[i] >= area_threshold for i in active):
@@ -192,7 +192,7 @@ def merge_small_patches(vertices: np.ndarray,
 
                 # Build adjacent cluster pairs from adjacency graph
                 adjacent_pairs = set()
-                for u, v in subG.edges():
+                for u, v in sub_graph.edges():
                     iu, iv = owner[u], owner[v]
                     if iu == iv:
                         continue
@@ -323,7 +323,7 @@ def merge_small_patches(vertices: np.ndarray,
     _, inverse_mapping = np.unique(id_mapping, return_inverse=True)
 
     # Remap materials (the [:] is what makes this in-place)
-    mesh.ID[:] = inverse_mapping[mesh.ID]
+    mesh.patch_ids[:] = inverse_mapping[mesh.patch_ids]
     patch_materials[:] = [patch_materials[i] for i in kept_patch_ids]
 
 
@@ -506,17 +506,17 @@ def load_mesh(folder_path: str,
 
     # Check that all triangles in each patch are coplanar.
     # TODO: Make this a separate function to avoid repetition.
-    for patch_id in np.unique(mesh.ID):
-        for triangle_a in np.where(mesh.ID == patch_id)[0]:
-            for triangle_b in np.where(mesh.ID == patch_id)[0]:
+    for patch_id in np.unique(mesh.patch_ids):
+        for triangle_a in np.where(mesh.patch_ids == patch_id)[0]:
+            for triangle_b in np.where(mesh.patch_ids == patch_id)[0]:
                 if triangle_a == triangle_b:
                     continue
 
                 parallel_normals = np.isclose(np.dot(mesh.n[triangle_a],
                                                      mesh.n[triangle_b]),
                                               1.)
-                same_offset = np.isclose(mesh.d0[triangle_a],
-                                         mesh.d0[triangle_b])
+                same_offset = np.isclose(mesh.d_0[triangle_a],
+                                         mesh.d_0[triangle_b])
 
                 if not (parallel_normals and same_offset):
                     raise ValueError('Patches should only contain coplanar triangles.'
@@ -532,7 +532,7 @@ def load_mesh(folder_path: str,
                             mesh, patch_materials,
                             area_threshold, thoroughness)
         # This was changed in-place: retrieve the new values to avoid mix-ups
-        patch_ids = mesh.ID
+        patch_ids = mesh.patch_ids
 
         # TODO: Re-mesh to REDUCE the number of triangles without changing the geometry nor patch assignment.
 
@@ -596,9 +596,9 @@ def load_mesh(folder_path: str,
                 file.write(' Faces\n\n')
 
                 for patch_id in range(new_num_patches):
-                    patch_ID_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
+                    patch_id_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
 
-                    file.write('usemtl ' + patch_ID_str + '\n')
+                    file.write('usemtl ' + patch_id_str + '\n')
 
                     for triangle_index, vert_triplet in enumerate(vert_triplets):
                         if patch_ids[triangle_index] == patch_id:
@@ -607,9 +607,9 @@ def load_mesh(folder_path: str,
             # Write the modified MTL into the new folder.
             with open(os.path.join(new_folder_path, 'mesh.mtl'), mode='w') as file:
                 for patch_id in range(new_num_patches):
-                    patch_ID_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
+                    patch_id_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
 
-                    file.write('newmtl ' + patch_ID_str + '\n')
+                    file.write('newmtl ' + patch_id_str + '\n')
                     # TODO: Use colors from original MTL (pick one original color per material, alternate brightness).
                     c = float(patch_id+1) / new_num_patches
                     cycle = 7
