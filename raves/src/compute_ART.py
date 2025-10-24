@@ -12,11 +12,56 @@ from .utils import RayBundle, TriangleMesh, load_all_inputs, air_absorption_in_b
 # https://stackoverflow.com/a/21130146
 def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
                     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int, int]:
-    # TODO: Fill out documentation properly.
     """
-    The argument "this_patch" is only taken in order to return it;
-     when using multiprocessing, the outputs are obtained in unordered fashion,
-     and need to be reconnected to the patch they relate to.
+    Integrate ART kernel contributions for one patch.
+
+    This traces two ray bundles from uniformly sampled surface points on all
+    triangles that form the patch: (1) a hemisphere bundle aligned with the
+    patch normal and (2) its specularly reflected counterpart. For each
+    sample point, rays are traced, hits are tallied per target patch, and
+    accumulators are updated for distances, departure cosines, and specular
+    pair counts. The index of the source patch is returned so that results
+    from multiprocessing can be re-associated (return order isn't guaranteed).
+
+    Parameters
+    ----------
+    args : tuple
+        Expected layout:
+        (mesh, num_patches, this_patch, patch_triangles,
+         rays_per_hemisphere, points_per_square_meter)
+
+        - mesh : TriangleMesh
+          Mesh defining the environment geometry.
+        - num_patches : int
+          Total number of patches in the mesh.
+        - this_patch : int
+          Index of the source patch to integrate.
+        - patch_triangles : sequence of int
+          Triangle indices that belong to this source patch.
+        - rays_per_hemisphere : int
+          Number of rays shot per surface sample point.
+        - points_per_square_meter : float
+          Surface sampling density used to generate sample points.
+
+    Returns
+    -------
+    cum_distances
+        1D array of size num_patches with summed hit distances from this
+        source patch to each target patch.
+    cum_cosines
+        1D array of size num_patches with summed departure cosines for rays
+        originating on this source patch and hitting each target patch.
+    cum_num_hits
+        1D array of size num_patches with the number of ray hits per target
+        patch, combining hemisphere and specular rays from all sample points.
+    cum_specular_kernel
+        2D array of shape (num_patches, num_patches) with counts of specular
+        ray pairings: entry (h, j) counts pairs where a hemisphere ray from
+        this source hits j and its specular counterpart hits h.
+    num_points
+        Total number of surface sample points used on this source patch.
+    this_patch
+        The source patch index, returned to reconnect unordered results.
     """
     mesh, num_patches, this_patch, patch_triangles, rays_per_hemisphere, points_per_square_meter = args
 
@@ -101,9 +146,38 @@ def assess_ART_on_grid(folder_path: str,
                        compute_missing: bool = True, save_kernels: bool = True,
                        multiprocess_pool_size: int = 1
                        ) -> str:
-    # TODO: Fill out documentation properly.
     """
+    Assess ART accuracy over a grid of parameters and plot summaries.
 
+    For each combination of surface sampling density and rays per hemisphere,
+    this loads the symmetric absolute percentage error (SAPE) of propagation
+    path etendues from CSV files created by assess_ART runs. If a CSV is
+    missing and compute_missing is True, the ART computation is performed
+    via assess_ART to generate it. Heatmaps and summaries are shown.
+
+    Parameters
+    ----------
+    folder_path
+        Path to the environment folder.
+    points_per_square_meter
+        List of surface sampling densities to evaluate.
+    rays_per_hemisphere
+        List of ray counts per sample point to evaluate.
+    area_threshold
+        Optional patch-area simplification threshold passed to assess_ART.
+    thoroughness
+        Optional remeshing effort parameter passed to assess_ART.
+    compute_missing
+        If True, run assess_ART for grid points that do not have a saved CSV.
+    save_kernels
+        Passed to assess_ART to control whether kernels are saved.
+    multiprocess_pool_size
+        Number of worker processes to use when assess_ART is invoked.
+
+    Returns
+    -------
+    folder_path
+        The (possibly updated) environment folder path.
     """
 
     weights = np.zeros((len(points_per_square_meter), len(rays_per_hemisphere)))
@@ -192,10 +266,34 @@ def assess_ART(folder_path: str,
                save_kernels: bool = True,
                multiprocess_pool_size: int = 1
                ) -> str:
-    # TODO: Fill out documentation properly.
+    """
+    Compute core ART kernels and assess numerical integration accuracy.
+    A CSV with the symmetric absolute percentage error (SAPE) of propagation
+    path etendues is saved for later analysis.
+
+    Parameters
+    ----------
+    folder_path
+        Path to the environment folder.
+    points_per_square_meter
+        Surface sampling density used to integrate each patch.
+    rays_per_hemisphere
+        Number of rays traced from each surface sample point.
+    area_threshold
+        Optional patch-area simplification threshold applied when loading inputs.
+    thoroughness
+        Optional remeshing effort parameter applied when loading inputs.
+    save_kernels
+        If True, save the core ART kernels resulting from the integration.
+    multiprocess_pool_size
+        Number of worker processes to use (1 disables multiprocessing).
+
+    Returns
+    -------
+    folder_path
+        The (possibly updated) environment folder path.
     """
 
-    """
     multiprocess_pool_size = min(multiprocess_pool_size, os.cpu_count() - 1)
     num_processes = max(1, multiprocess_pool_size)
     if num_processes == 1:
@@ -417,24 +515,51 @@ def compute_ART(folder_path: str,
                 multiprocess_pool_size: int = 1,
                 humidity: float = 50., temperature: float = 20., pressure: float = 100.
                 ) -> str:
-    # TODO: Fill out documentation properly.
+    """
+    Build ART kernels and per-frequency-band reflection matrices for an environment.
+
+    Depending on the presence of prior outputs and the overwrite flag, either
+    reuse existing core ART files (diffuse/specular kernels, path indexing,
+    lengths, and etendues) or compute them by integrating over patch surfaces.
+    Path delays are computed from lengths using the speed of sound. For each
+    frequency band in the loaded material data, a complete reflection kernel
+    is assembled by weighting the diffuse and specular components by scattering,
+    applying surface absorption, and applying air absorption along paths. All
+    outputs are written to the given folder.
+
+    Parameters
+    ----------
+    folder_path
+        Path to the environment folder.
+    overwrite
+        If True, compute core ART files even if they already exist.
+    area_threshold
+        Optional patch-area simplification threshold applied when loading inputs.
+    thoroughness
+        Optional remeshing effort parameter applied when loading inputs.
+    points_per_square_meter
+        Surface sampling density used to integrate each patch.
+    rays_per_hemisphere
+        Number of rays traced from each surface sample point.
+    multiprocess_pool_size
+        Number of worker processes to use (1 disables multiprocessing).
+    humidity
+        Relative humidity (%) used for air absorption.
+    temperature
+        Air temperature (deg C) used for air absorption and sound speed.
+    pressure
+        Atmospheric pressure (kPa) used for air absorption.
+
+    Returns
+    -------
+    folder_path
+        The (possibly updated) environment folder path.
+
+    Notes
+    -----
+    If `area_threshold > 0`, this may write a simplified mesh to a different folder.
     """
 
-    Args:
-        folder_path:
-        overwrite:
-        area_threshold:
-        thoroughness:
-        points_per_square_meter:
-        rays_per_hemisphere:
-        multiprocess_pool_size:
-        humidity:
-        temperature:
-        pressure:
-
-    Returns:
-
-    """
     if (type(folder_path) != str
             or type(overwrite) != bool
             or type(points_per_square_meter) != float
@@ -781,8 +906,8 @@ def compute_ART(folder_path: str,
         np.savetxt(os.path.join(folder_path, 'path_etendues.csv'), mean_etendues, fmt='%.18f', delimiter=', ')
 
     # Propagation delays in seconds, based on the path lengths in meters.
-    # N.B.: These are prepared and saved separately in case the temperature parameter has been modified.
-    path_delays = path_lengths / sound_speed(temperature)
+    # N.B.: These are prepared and saved separately in case the air parameters have been modified.
+    path_delays = path_lengths / sound_speed(humidity, temperature, pressure)
     np.savetxt(os.path.join(folder_path, 'path_delays.csv'), path_delays, fmt='%.18f', delimiter=', ')
 
     # Construct the full ART reflection kernel for each frequency band.

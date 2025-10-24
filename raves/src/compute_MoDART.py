@@ -7,15 +7,26 @@ from .utils import build_ssm, real_positive_search
 
 
 def eig_to_T60(eigenvalue: float, fs: float) -> float:
-    # TODO: Fill out documentation properly.
     """
+    Translate eigenvalue magnitude to T60 (seconds).
 
-    Args:
-        eigenvalue:
-        fs:
+    If abs(eigenvalue) >= 1, the decay does not converge and T60 is set to
+    infinity. If abs(eigenvalue) == 0, T60 is 0. Otherwise the mapping
+    uses the base-10 logarithm:
 
-    Returns:
+        T60 = -6 / (log10(abs(eigenvalue)) * fs)
 
+    Parameters
+    ----------
+    eigenvalue : float
+        Real eigenvalue (pole) of the state transition matrix.
+    fs : float
+        Sample rate used in the decomposed ART model, in Hz.
+
+    Returns
+    -------
+    float
+        Reverberation time in seconds.
     """
     if np.abs(eigenvalue) >= 1:
         return np.inf
@@ -26,15 +37,26 @@ def eig_to_T60(eigenvalue: float, fs: float) -> float:
 
 
 def T60_to_eig(T60: float, fs: float) -> float:
-    # TODO: Fill out documentation properly.
     """
+    Translate T60 (seconds) to eigenvalue magnitude.
 
-    Args:
-        T60:
-        fs:
+    If T60 is 0, the result is 0. For finite nonzero T60, it is
 
-    Returns:
+        eig = 10 ** (-6 / (T60 * fs))
 
+    and for non-finite T60 the result is 1.
+
+    Parameters
+    ----------
+    T60  : float
+        Reverberation time in seconds.
+    fs : float
+        Sample rate used in the decomposed ART model, in Hz.
+
+    Returns
+    -------
+    float
+        Real eigenvalue magnitude in [0, 1].
     """
     if T60 == 0:
         return 0.
@@ -48,19 +70,51 @@ def compute_MoDART(folder_path: str,
                    T60_threshold: float = 1e-1, max_slopes_per_band: int = 10,
                    echogram_sample_rate: float = 1e3, skip_T60_plots: bool = False
                    ) -> None:
-    # TODO: Fill out documentation properly.
+    """
+    Perform modal decomposition of acoustic radiance transfer for all frequency bands.
+
+    This function reads path delays and etendues, assembles the state
+    transition matrix per frequency band from the ART kernel and integer
+    delays, searches for real positive poles above the given threshold,
+    and writes mode eigen-pairs to CSV files. Optionally, it generates
+    scatter plots of T60 values per band.
+
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder. Must contain:
+        - path_delays.csv
+        - path_etendues.csv
+        - ART_kernel_1.mtx, ART_kernel_2.mtx, ...
+    T60_threshold : float, default: 1e-1
+        Minimum T60 (seconds) used to derive the eigenvalue threshold for
+        pole search.
+    max_slopes_per_band : int, default: 10
+        Maximum number of modes reported per band in MoD-ART.csv.
+    echogram_sample_rate : float, default: 1e3
+        Sample rate in Hz used to quantize propagation delays.
+    skip_T60_plots : bool, default: False
+        If True, do not generate T60 scatter plots.
+
+    Returns
+    -------
+    None
+        Results are written to:
+        - MoD-ART.csv
+        - MoD-ART extra.csv
+        - Optional PNG plots of T60 values (linear and log scale).
+
+    Notes
+    -----
+    - Integer propagation delays are computed as floor(echogram_sample_rate * delay).
+      If the minimum integer delay is below 3, the state transition matrix cannot be
+      constructed; values below 10 trigger a warning.
+    - Kernels are processed in order: ART_kernel_1.mtx, ART_kernel_2.mtx, ...
+      Modes are appended to the CSVs one frequency band at a time.
+    - Modes in each band are sorted by decreasing T60. Eigenvectors are scaled as
+      discussed in `ART_theory.md`.
     """
 
-    Args:
-        folder_path:
-        echogram_sample_rate:
-        T60_threshold:
-        max_slopes_per_band:
-        skip_T60_plots:
-
-    Returns:
-
-    """
     if (type(folder_path) != str
             or type(T60_threshold) != float
             or type(max_slopes_per_band) != int

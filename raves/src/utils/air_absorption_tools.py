@@ -3,9 +3,29 @@ from typing import Union
 
 
 def air_absorption_db(frequency: Union[np.ndarray, float],
-                      humidity: float, temperature: float, pressure: float = 100) -> Union[np.ndarray, float]:
+                      humidity: float, temperature: float, pressure: float = 100.) -> Union[np.ndarray, float]:
     """
-    Formulas adapted from sengpielaudio.com, originally from ISO 9613 Part 1
+    Compute air absorption in dB per meter.
+
+    Parameters
+    ----------
+    frequency : float or ndarray
+        Frequency in Hz. Can be a scalar or a vector (process multiple at once).
+    humidity : float
+        Ambient relative humidity (%).
+    temperature : float
+        Ambient temperature (°C).
+    pressure : float, default: 100.0
+        Ambient pressure (kPa).
+
+    Returns
+    -------
+    float or ndarray
+        Attenuation in dB per meter at the given frequency or frequencies.
+
+    Notes
+    -----
+    Formulas are adapted from sengpielaudio.com, originally from ISO 9613 Part 1.
     """
     T = 273.15 + temperature
     f = frequency
@@ -28,39 +48,179 @@ def air_absorption_db(frequency: Union[np.ndarray, float],
     return 8.686 * (f**2) * (x + ((T / To)**(-5/2)) * (y + z))
 
 
-def gain_from_dbm(dbm: Union[np.ndarray, float], distance: float = 1) -> Union[np.ndarray, float]:
+def gain_from_dbm(dbm: Union[np.ndarray, float], distance: float = 1.) -> Union[np.ndarray, float]:
+    """
+    Convert per-meter attenuation (dB/m) to linear pressure gain over a distance.
+
+    Parameters
+    ----------
+    dbm : float or ndarray
+        Attenuation in dB per meter.
+    distance : float, default 1.0
+        Propagation distance in meters.
+
+    Returns
+    -------
+    float or ndarray
+        Linear pressure gain (amplitude scale factor).
+    """
+
     return 10 ** (-dbm * distance / 20)
 
 
 def air_absorption_linear(frequency: Union[np.ndarray, float], distance: float,
-                          humidity: float, temperature: float, pressure: float = 100) -> Union[np.ndarray, float]:
+                          humidity: float, temperature: float, pressure: float = 100.) -> Union[np.ndarray, float]:
+    """
+    Compute linear pressure gain due to air absorption over a distance.
+
+    Parameters
+    ----------
+    frequency : float or ndarray
+        Frequency in Hz. Can be a scalar or a vector (process multiple at once).
+    distance : float
+        Propagation distance in meters.
+    humidity : float
+        Ambient relative humidity (%).
+    temperature : float
+        Ambient temperature (°C).
+    pressure : float, default: 100.0
+        Ambient pressure (kPa).
+
+    Returns
+    -------
+    float or ndarray
+        Linear pressure gain (amplitude scale factor) at the given frequency or frequencies.
+    """
     return gain_from_dbm(air_absorption_db(frequency, humidity, temperature, pressure), distance)
 
 
 def air_absorption_in_band(fc: float, fd: float, distance: float,
-                           humidity: float, temperature: float, pressure: float = 100,
+                           humidity: float, temperature: float, pressure: float = 100.,
                            num_samples: int = 1000) -> float:
     """
-    The band level is the root-mean-square of the response within the band (integral over linear frequency).
+    Compute band-average linear pressure gain via RMS over a fractional band.
+
+    The band is [fc/fd, fc*fd] and the response is averaged over linear frequency.
+
+    Parameters
+    ----------
+    fc : float
+        Band center frequency in Hz.
+    fd : float
+        Band width factor (e.g., sqrt(2) for full octave band).
+    distance : float
+        Propagation distance in meters.
+    humidity : float
+        Ambient relative humidity (%).
+    temperature : float
+        Ambient temperature (°C).
+    pressure : float, default: 100.0
+        Ambient pressure (kPa).
+    num_samples : int, default 1000
+        Number of frequency samples used inside the band.
+
+    Returns
+    -------
+    float
+        RMS linear pressure gain for the band.
     """
     return np.sqrt(np.mean(air_absorption_linear(np.linspace(fc/fd, fc*fd, num_samples),
                                                  distance, humidity, temperature, pressure)**2))
 
 
 def air_absorption_in_bands(band_centers: np.ndarray, fd: float, distance: float,
-                            humidity: float, temperature: float, pressure: float = 100) -> np.ndarray:
-    return np.array([air_absorption_in_band(fc, fd, distance, humidity, temperature, pressure)
+                            humidity: float, temperature: float, pressure: float = 100,
+                            num_samples: int = 1000) -> np.ndarray:
+    """
+    Compute band-average linear pressure gain for multiple band centers.
+
+    Parameters
+    ----------
+    band_centers : ndarray
+        Array of band center frequencies in Hz.
+    fd : float
+        Band width factor (e.g., sqrt(2) for full octave band).
+    distance : float
+        Propagation distance in meters.
+    humidity : float
+        Ambient relative humidity (%).
+    temperature : float
+        Ambient temperature (°C).
+    pressure : float, default: 100.0
+        Ambient pressure (kPa).
+    num_samples : int, default 1000
+        Number of frequency samples used inside each band.
+
+    Returns
+    -------
+    ndarray
+        Linear pressure gain per band center, same length as band_centers.
+    """
+    return np.array([air_absorption_in_band(fc, fd, distance, humidity, temperature, pressure, num_samples)
                      for fc in band_centers])
 
 
-def sound_speed(temperature: float) -> float:
-    T = 273.15 + temperature
-    R = 287.05
-    return np.sqrt(1.4 * T * R)
+def sound_speed(humidity: float, temperature: float, pressure: float = 100.) -> float:
+    """
+    Compute the speed of sound in air.
+
+    Parameters
+    ----------
+    humidity : float
+        Ambient relative humidity (%).
+    temperature : float
+        Ambient temperature (°C).
+    pressure : float, default: 100.0
+        Ambient pressure (kPa).
+
+    Returns
+    -------
+    float
+        Speed of sound in m/s.
+
+    Notes
+    -----
+    Formulas are adapted from resource.npl.co.uk, originally from Cramer (J. Acoust. Soc. Am., 93, p2510, 1993),
+    "with saturation vapour pressure taken from Davis, Metrologia, 29, p67, 1992, and a mole fraction of carbon dioxide of 0.0004."
+    """
+    T = temperature
+    Rh = humidity
+    P = pressure * 1e3
+
+    T_kel = 273.15 + T
+
+    ENH = 3.14e-8 * P + 1.00062 + (T * T) * 5.6e-7
+
+    PSV1 = T_kel * (T_kel * 1.2378847e-5 - 1.9121316e-2)
+    PSV2 = 33.93711047 - 6.3431645e3 / T_kel
+    PSV = np.exp(PSV1 + PSV2)
+
+    H = Rh * ENH * PSV / P
+    Xw = H / 100.0
+    Xc = 400.0e-6
+
+    C1 = (
+        0.603055 * T
+        + 331.5024
+        - (T * T) * 5.28e-4
+        + (0.1495874 * T + 51.471935 - (T * T) * 7.82e-4) * Xw
+    )
+    C2 = (
+        (-1.82e-7 + 3.73e-8 * T - (T * T) * 2.93e-10) * P
+        + (-85.20931 - 0.228525 * T + (T * T) * 5.91e-5) * Xc
+    )
+    C3 = (
+        (Xw * Xw) * 2.835149
+        + (P * P) * 2.15e-13
+        - (Xc * Xc) * 29.179762
+        - 4.86e-4 * Xw * P * Xc
+    )
+
+    return C1 + C2 - C3
 
 
 if __name__ == "__main__":
-    # Test visualization code
+    # Test (visualization) code
     import matplotlib.pyplot as plt
 
     distance = 1.

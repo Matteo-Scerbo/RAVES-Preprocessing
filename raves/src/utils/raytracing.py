@@ -14,45 +14,47 @@ EPS_SELFHIT = 1e-7      # reject hits too close to the ray origin
 
 
 class TriangleMesh:
-    # TODO: Fill out documentation properly.
     """
-    Structure-of-Arrays (SoA) container for a triangle mesh used by the tracing kernels.
+    Structure-of-Arrays (SoA) container for triangle meshes used by the tracing kernels.
+    These are designed for using the Möller–Trumbore intersection algorithm.
 
-    The Möller–Trumbore algorithm stores (for each triangle i):
-      - A: First vertex
-      - edge1: B-A
-      - edge2: C-A
-      - n: Surface normal = edge1 x edge2
-      - d0: plane offset so that dot(n, X) - d0 = 0 for all X on the triangle's plane
-      - ID
+    Each triangle i stores:
+      - v1: first vertex A
+      - edge1: B - A
+      - edge2: C - A
+      - n: unit surface normal = edge1 x edge2
+      - d0: plane offset such that dot(n, X) - d0 = 0 on the triangle plane
+      - ID: per-triangle patch identifier
 
-    Notes:
-      * The kernel enforces:
-          - the triangle's normal faces the ray origin (dot(n,O)-d0 > EPS_FACING)
-          - the intersection point lies inside the triangle (edges included)
-        It does NOT enforce t > 0 (line–triangle, not ray–triangle).
-      * In case of Z-fighting, the lower triangle index wins (mirrors the original logic).
+    Notes
+    -----
+    - The intersection kernel enforces:
+      dot(n, O) - d0 > EPS_FACING (triangle faces the ray origin), and
+      barycentric coordinates within edges (edges inclusive).
+      It does not enforce t > 0; the low-level test is line-triangle.
+    - In case of near ties (Z-fighting), the lower triangle index wins.
     """
 
     def __init__(self, vertices: np.ndarray,
                  vert_triplets: np.ndarray,
                  patch_ids: np.ndarray):
-        # TODO: Fill out documentation properly.
         """
+        Build the SoA representation from vertex and face lists.
 
-        Args:
-            vertices:
-            vert_triplets:
-            patch_ids:
-        """
-        """
-        Build the SoA from:
-          - vertices:       (N,3) array of 3D coordinates (float)
-          - vert_triplets:  (M,3) array of vertex indices forming M triangles (int)
-          - patch_ids:      (M,)  array of patch IDs for each triangle (int)
+        Parameters
+        ----------
+        vertices : (N, 3) array_like of float
+            3D vertex coordinates.
+        vert_triplets : (M, 3) array_like of int
+            Vertex indices forming M triangles. Winding determines the normal
+            orientation by the right-hand rule: n = (B - A) x (C - A).
+        patch_ids : (M,) array_like of int
+            Per-triangle patch identifier.
 
-        The winding order in `faces` determines the triangle normal orientation
-        (right-hand rule): n = (B - A) x (C - A).
+        Notes
+        -----
+        The stored normals are normalized to unit length. Triangle areas are
+        stored in `area`, and d0 is computed as dot(n, v1).
         """
         # Validate & coerce inputs
         V = np.asarray(vertices, dtype=float)
@@ -83,25 +85,43 @@ class TriangleMesh:
         self.d0 = np.einsum("ij,ij->i", self.n, self.v1)
 
     def size(self) -> int:
+        """
+        Number of triangles in the mesh.
+
+        Returns
+        -------
+        int
+            The count of triangles (M).
+        """
         return int(self.v1.shape[0])
 
     def sample_triangle(self, triangle_idx: int, points_per_square_meter: float) -> np.ndarray:
-        # TODO: Fill out documentation properly.
         """
+        Quasi-Monte Carlo surface sampling of one triangle.
 
-        Args:
-            triangle_idx:
-            points_per_square_meter:
+        A 2D lattice is constructed in a local orthonormal basis defined by
+        two tangent vectors and the triangle normal. The lattice is rotated
+        by 3*pi/8 (Rodrigues' formula) and tested against the target triangle
+        in 2D; accepted samples are mapped back to 3D. If no lattice points
+        fall inside, the centroid is used. This approach in inspired by the
+        one proposed in: Kinjal Basu and Art B. Owen. "Low discrepancy
+        constructions in the triangle." SIAM Journal on Numerical Analysis
+        53.2 (2015): 743-761. However, here we test sample points against the
+        target triangle. In the cited paper, the authors test sample points
+        against the unit right triangle, and then apply a linear
+        transformation to the target triangle.
 
-        Returns:
+        Parameters
+        ----------
+        triangle_idx : int
+            Index of the triangle to sample.
+        points_per_square_meter : float
+            Target sampling density.
 
-        """
-        """
-        Quasi-Monte Carlo surface sampling for numerical integration.
-        This approach in inspired by the one proposed in:
-        Kinjal Basu and Art B. Owen. "Low discrepancy constructions in the triangle." SIAM Journal on Numerical Analysis 53.2 (2015): 743-761.
-        However, here we test sample points against the target triangle.
-        In the cited paper, the authors test sample points against the unit right triangle, and then apply a linear transformation to the target triangle.
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape (K, 3) containing 3D sample points on the triangle.
         """
         edge1_len = np.linalg.norm(self.edge1[triangle_idx])
         edge2_len = np.linalg.norm(self.edge2[triangle_idx])
@@ -170,23 +190,31 @@ class TriangleMesh:
 #       - Expose the fact that it's a hemisphere
 #       - Hide the fact that it's a hemisphere (return duplicated, inverted results, like the C++ code does)
 class RayBundle:
-    # TODO: Fill out documentation properly.
     """
-    Class for tracing a bundle of rays with (possibly) separate origins and directions.
-    All RayPencil functionality from the original code is folded into this class.
+    Bundle of rays with (possibly) separate per-ray origins and directions.
+
+    Directions are normalized on construction. The instance stores per-ray
+    bookkeeping used by the tracing kernel:
+      - radiance
+      - totalDistance
+      - currentTriangle (for future self-hit handling)
+      - frontDistance, frontCosine, frontPatch
+      - backDistance, backCosine, backPatch
+
+    Methods are provided to construct bundles, access internal arrays, move
+    origins, and perform intersection queries against a TriangleMesh.
     """
 
     def __init__(self, O: np.ndarray, D: np.ndarray):
-        # TODO: Fill out documentation properly.
         """
+        Construct a bundle from per-ray origins and directions.
 
-        Args:
-            O:
-            D:
-        """
-        """
-        Basic, explicit constructor.
-        It also allocates per-ray bookkeeping arrays on the instance.
+        Parameters
+        ----------
+        O : (M, 3) array_like of float
+            Per-ray origins.
+        D : (M, 3) array_like of float
+            Per-ray directions. They are normalized inside this constructor.
         """
         self.O = np.asarray(O, dtype=float)
         self.D = np.asarray(D, dtype=float)
@@ -214,25 +242,20 @@ class RayBundle:
                            origin: np.ndarray,
                            directions: np.ndarray,
     ) -> "RayBundle":
-        # TODO: Fill out documentation properly.
         """
-
-        Args:
-            origin:
-            directions:
-
-        Returns:
-
-        """
-        """
-        Initialization with one shared origin and many directions.
+        Construct a bundle from one origin and many directions.
 
         Parameters
         ----------
-        origin : (3,) float ndarray
-            The common origin for all rays.
-        directions : (M,3) float ndarray
-            Array of M direction vectors (not necessarily normalized).
+        origin : (3,) array_like of float
+            Shared origin for all rays.
+        directions : (M, 3) array_like of float
+            Ray directions (not necessarily normalized).
+
+        Returns
+        -------
+        RayBundle
+            A new bundle with repeated origins and normalized directions.
 
         Notes
         -----
@@ -258,25 +281,20 @@ class RayBundle:
                                     origins: np.ndarray,
                                     directions: np.ndarray,
     ) -> "RayBundle":
-        # TODO: Fill out documentation properly.
         """
-
-        Args:
-            origins:
-            directions:
-
-        Returns:
-
-        """
-        """
-        Initialization with per-ray origins and directions.
+        Construct a bundle from per-ray origins and directions.
 
         Parameters
         ----------
-        origins : (M,3) float ndarray
-            Per-ray origin points.
-        directions : (M,3) float ndarray
-            Per-ray direction vectors (not necessarily normalized).
+        origins : (M, 3) array_like of float
+            Per-ray origins.
+        directions : (M, 3) array_like of float
+            Per-ray directions (not necessarily normalized).
+
+        Returns
+        -------
+        RayBundle
+            A new bundle with normalized directions.
 
         Notes
         -----
@@ -303,35 +321,34 @@ class RayBundle:
                       origin: np.ndarray = np.zeros(3),
                       north_pole: np.ndarray = np.array([0., 0., 1.]),
     ) -> "RayBundle":
-        # TODO: Fill out documentation properly.
         """
+        Sample directions on a Fibonacci sphere and build a bundle.
 
-        Args:
-            num_rays:
-            hemisphere_only:
-            origin:
-            north_pole:
-
-        Returns:
-
-        """
-        """
-        Build a 'pencil' of directions sampled uniformly on a Fibonacci sphere,
-        optionally restricted to the +Z hemisphere (matching the C++ RayPencil constructor).
+        The generator creates `num_rays` approximately uniform directions.
+        If `hemisphere_only` is True, it selects the +Z hemisphere before
+        rotation. The +Z axis is then rotated so it aligns with `north_pole`
+        using Rodrigues' formula. A shared `origin` is assigned to all rays.
 
         Parameters
         ----------
         num_rays : int
             Number of directions to generate.
-        hemisphere_only : bool, default True
-            If True, restrict to +Z hemisphere; else use the full sphere.
-        origin : (3,) float ndarray, default zeros(3)
-            Common origin for all rays.
-        north_pole : (3,) float ndarray, default (0, 0, 1)
-            Center of the +Z hemisphere.
+        hemisphere_only : bool, default False
+            If True, use only the +Z hemisphere before rotation.
+        origin : (3,) array_like of float, default zeros(3)
+            Shared origin for all rays.
+        north_pole : (3,) array_like of float, default [0, 0, 1]
+            Target direction for the +Z axis after rotation.
+
+        Returns
+        -------
+        RayBundle
+            A new bundle with normalized directions.
 
         Notes
         -----
+        The number of generated directions is always `num_rays`, i.e.,
+        the sampling density is doubled when `hemisphere_only` is True.
         Directions are normalized in the RayBundle constructor.
         """
         O = np.asarray(origin, dtype=float)
@@ -399,65 +416,160 @@ class RayBundle:
             return cls(O, D)
 
     def getNumRays(self) -> int:
+        """
+        Number of rays in the bundle.
+
+        Returns
+        -------
+        int
+            The count of rays (M).
+        """
         return int(self.D.shape[0])
 
     def getOrigins(self, copy: bool = True) -> np.ndarray:
+        """
+        Access current per-ray origins.
+
+        Parameters
+        ----------
+        copy : bool, default True
+            If True, return a copy; otherwise, return a view.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape (M, 3) with origins.
+        """
         if copy:
             return self.O.copy()
         else:
             return self.O
 
     def getDirections(self, copy: bool = True) -> np.ndarray:
+        """
+        Access current per-ray directions.
+
+        Parameters
+        ----------
+        copy : bool, default True
+            If True, return a copy; otherwise, return a view.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape (M, 3) with directions.
+        """
         if copy:
             return self.D.copy()
         else:
             return self.D
 
+    def getRadiance(self, copy: bool = True) -> np.ndarray:
+        """
+        Access current per-ray radiance scalars.
+
+        Parameters
+        ----------
+        copy : bool, default True
+            If True, return a copy; otherwise, return a view.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape (M,) with radiance values.
+        """
+        if copy:
+            return self.radiance.copy()
+
     def getTotalDistances(self, copy: bool = True) -> np.ndarray:
+        """
+        Access accumulated path lengths.
+
+        Parameters
+        ----------
+        copy : bool, default True
+            If True, return a copy; otherwise, return a view.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape (M,) with total distances.
+        """
         if copy:
             return self.totalDistance.copy()
         else:
             return self.totalDistance
 
     def getDistances(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Access front and back intersection distances related to the latest trace.
+
+        Parameters
+        ----------
+        copy : bool, default True
+            If True, return copies; otherwise, return views.
+
+        Returns
+        -------
+        (numpy.ndarray, numpy.ndarray)
+            Front and back distances, each of shape (M,).
+            All distances are non-negative; back distances are stored as positive
+            magnitudes for hits behind the origin.
+        """
         if copy:
             return self.frontDistance.copy(), self.backDistance.copy()
         else:
             return self.frontDistance, self.backDistance
 
     def getCosines(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Access front and back departure cosines related to the latest trace.
+
+        Parameters
+        ----------
+        copy : bool, default True
+            If True, return copies; otherwise, return views.
+
+        Returns
+        -------
+        (numpy.ndarray, numpy.ndarray)
+            Front and back cosines, each of shape (M,).
+        """
         if copy:
             return self.frontCosine.copy(), self.backCosine.copy()
         else:
             return self.frontCosine, self.backCosine
 
     def getIndices(self, copy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Access front and back patch indices hit during the latest trace.
+
+        Parameters
+        ----------
+        copy : bool, default True
+            If True, return copies; otherwise, return views.
+
+        Returns
+        -------
+        (numpy.ndarray, numpy.ndarray)
+            Front and back patch ids, each of shape (M,). A value of -1 marks no hit.
+        """
         if copy:
             return self.frontPatch.copy(), self.backPatch.copy()
         else:
             return self.frontPatch, self.backPatch
 
-    def getRadiance(self, copy: bool = True) -> np.ndarray:
-        if copy:
-            return self.radiance.copy()
-
     def moveOrigins(self, origins: np.ndarray) -> None:
-        # TODO: Fill out documentation properly.
         """
+        Replace ray origins in bulk.
 
-        Args:
-            origins:
-
-        Returns:
-
-        """
-        """
-        Change the rays' origins (if one origin is given, it is used for all rays).
+        If a single origin is provided, it is broadcast to all rays.
 
         Parameters
         ----------
-        origins : (M,3) float ndarray
-            Per-ray origin points. If M==1, the value is used for all rays.
+        origins : array_like
+            Either shape (3,) or (1, 3) to broadcast to all rays, or shape
+            (M, 3) to set per-ray origins.
         """
         if origins.ndim < 1 or origins.ndim > 2 or origins.shape[-1] != 3:
             raise ValueError("origins must have shape (M, 3), and M must either be 1 or the number of rays")
@@ -472,18 +584,25 @@ class RayBundle:
             raise ValueError("origins must have shape (M, 3), and M must either be 1 or the number of rays.")
 
     def traceAll(self, triangles: TriangleMesh) -> None:
-        # TODO: Fill out documentation properly.
         """
+        Trace all rays against a TriangleMesh and record nearest hits.
 
-        Args:
-            triangles:
+        For each ray, perform a facing test and a Möller-Trumbore triangle
+        test against all triangles, with edge-inclusive tolerances. Update:
+          - frontPatch/frontDistance/frontCosine with the minimal positive
+            distance hit (ties resolved to the lowest triangle index),
+          - backPatch/backDistance/backCosine with the negative-distance hit
+            closest to the origin (again, lowest index on ties).
+        Distances below EPS_SELFHIT are ignored.
 
-        Returns:
+        Parameters
+        ----------
+        triangles : TriangleMesh
+            Mesh to intersect against.
 
-        """
-        """
-        Find the next intersection point of each ray and update the intersected triangle indices,
-        without advancing the rays.
+        Notes
+        -----
+        This method does not advance rays or update totalDistance.
         """
         M = self.getNumRays()
         N = triangles.size()

@@ -1,5 +1,5 @@
 """
-@brief Python translation of UnitTest_TracingTypes.cpp and UnitTest_TracingClasses.cpp,
+Python translation of UnitTest_TracingTypes.cpp and UnitTest_TracingClasses.cpp,
 adapted to use the Python TriangleMesh and RayBundle in raytracing.py.
 """
 import numpy as np
@@ -48,7 +48,26 @@ EXPECTED_IDX_PAIR = np.array([
 ], dtype=int)
 
 
-def build_single_triangle(z, up_normal):
+def build_single_triangle(z: float, up_normal: bool) -> TriangleMesh:
+    """
+    Construct a single right triangle in the plane z = const.
+
+    The triangle uses vertices (1, 0, z), (0, 1, z), and (0, 0, z). Its
+    winding is chosen so that the normal points along +Z when up_normal
+    is True, and along -Z when up_normal is False.
+
+    Parameters
+    ----------
+    z : float
+        Z coordinate of the triangle plane.
+    up_normal : bool
+        If True, use winding for a +Z normal; otherwise flip winding for a -Z normal.
+
+    Returns
+    -------
+    TriangleMesh
+        A mesh with one triangle and patch id 0.
+    """
     # Right triangle in the z = const plane with +Z normal
     V = np.array([
         [1.0, 0.0, z],
@@ -63,7 +82,25 @@ def build_single_triangle(z, up_normal):
     return TriangleMesh(V, F, P)
 
 
-def build_unit_cube(outward):
+def build_unit_cube(outward: bool) -> TriangleMesh:
+    """
+    Construct a unit cube [0, 1]^3 as a TriangleMesh.
+
+    The mesh has 8 vertices and 12 triangles (two per face). By default the
+    face normals point outward; if outward is False, the triangle winding is
+    flipped to produce inward-pointing normals.
+
+    Parameters
+    ----------
+    outward : bool
+        If True, triangle winding yields outward normals; if False, normals point inward.
+
+    Returns
+    -------
+    TriangleMesh
+        A mesh of 12 triangles, with per-triangle patch ids equal to the triangle index.
+    """
+
     V = np.array([
         [0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0],  # 0..3  (z=0)
         [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1],  # 4..7  (z=1)
@@ -93,7 +130,18 @@ def build_unit_cube(outward):
     return TriangleMesh(V, F, P)
 
 
-def build_test_mesh():
+def build_test_mesh() -> TriangleMesh:
+    """
+    Build a synthetic test mesh with 14 triangles.
+
+    Vertices and triangle indices match the C++ unit tests this file mirrors.
+    Each triangle is assigned a unique patch id equal to its index.
+
+    Returns
+    -------
+    TriangleMesh
+        A mesh with 14 triangles and matching patch ids.
+    """
     # Build a room containing an assortment of triangles (same vertex data as C++ tests)
     vertices = np.zeros((42, 3), dtype=float)
     vertices[0] = [0.0, 0.0, -1.0]
@@ -152,7 +200,32 @@ def build_test_mesh():
 
 
 # PlatonicVertices helper exactly as in C++ unit tests (ported)
-def platonic_vertices(n):
+def platonic_vertices(n: int) -> np.ndarray:
+    """
+    Return unit-length vertices of a Platonic solid.
+
+    Supported values of n produce:
+    - 1: north pole
+    - 2: poles at +-Z
+    - 3: equilateral triangle in the XY plane
+    - 4: tetrahedron
+    - 6: axis-aligned directions (+-X, +-Y, +-Z)
+    - 8: cube vertices, normalized
+    - 12: icosahedron vertices, normalized
+    - 20: dodecahedron vertices, normalized
+
+    Any other n returns an empty (0, 3) array.
+
+    Parameters
+    ----------
+    n : int
+        Number of vertices requested.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape (n, 3) with unit-length rows, or shape (0, 3) if n is unsupported.
+    """
     if n == 1:
         verts = np.array([[0.0, 0.0, 1.0]], dtype=float)
     elif n == 2:
@@ -224,6 +297,13 @@ def platonic_vertices(n):
 
 class PlaneTests(unittest.TestCase):
     def test_plane_parameters_consistency(self):
+        """
+        Validate plane parameter consistency for a known mesh.
+
+        For each triangle, verify that dot(n, v1) - d0 is approximately zero,
+        within EPS_FACING, where (n, d0) are the plane parameters and v1 is
+        one vertex on the triangle.
+        """
         mesh, _, _ = load_mesh('../../example environments/AudioForGames_20_patches')
 
         # For any triangle, the plane identity dot(n, v1) - d0 must be ~0 if (n, d0) are consistent.
@@ -233,6 +313,14 @@ class PlaneTests(unittest.TestCase):
                         msg='Plane (n, d0) inconsistent; max residual = ' + str(np.max(np.abs(residual))))
 
     def test_origin_side_vs_direction(self):
+        """
+        Check front/back hit logic against plane side and ray direction.
+
+        For a single triangle at multiple Z planes and with normals pointing
+        up or down, cast rays from points above and below the plane in both
+        +Z and -Z directions. Assert whether front or back intersections
+        should be reported, or no hit, according to the relative orientation.
+        """
         for plane_z in [-3., 0., 3.]:
             for triangle_normal in [1, -1]:
                 test_triangle = build_single_triangle(z=plane_z,
@@ -291,6 +379,15 @@ class PlaneTests(unittest.TestCase):
 
 class TracingClassesTests(unittest.TestCase):
     def test_pencil_tracing(self):
+        """
+        Verify pencil tracing distances and indices against expected values.
+
+        Build a 14-triangle test mesh, emit a small set of rays from shared
+        origins, and check that:
+        - Ray directions are normalized on construction.
+        - Front/back distances have the expected finiteness and sign pattern.
+        - Front/back hit triangle indices match EXPECTED_IDX_PAIR.
+        """
         testMesh = build_test_mesh()
 
         self.assertTrue(np.allclose(np.linalg.norm(testMesh.n, axis=1), 1.0),
@@ -342,6 +439,16 @@ class TracingClassesTests(unittest.TestCase):
             # TODO: Test moving to different origins
 
     def test_pencil_sphere(self):
+        """
+        Assess uniformity and normalization of sphere sampling.
+
+        For multiple ray counts and cluster counts, sample directions on the
+        sphere, confirm:
+        - The requested number of rays is produced.
+        - Directions are unit length.
+        - Cluster assignment counts (via nearest-cluster cosine) do not vary
+          by more than 10 percent of the total ray count.
+        """
         for numRays in np.logspace(2, 5, 4, dtype=int):
             for numClusters in [1, 2, 3, 4, 6, 8, 12, 20]:
                 testClusters = platonic_vertices(numClusters)
@@ -365,6 +472,16 @@ class TracingClassesTests(unittest.TestCase):
                                 msg='\n' + str(clusters))
 
     def test_pencil_hemisphere(self):
+        """
+        Verify hemisphere sampling is oriented by north_pole and normalized.
+
+        For multiple ray counts and several north_pole directions, sample a
+        hemisphere and assert:
+        - The requested number of rays is produced.
+        - Directions are unit length.
+        - All directions have nonnegative cosine with north_pole (they lie
+          in the same hemisphere).
+        """
         for numRays in np.logspace(2, 5, 4, dtype=int):
             for northPole in platonic_vertices(20):
                 testPencil = RayBundle.sample_sphere(numRays, hemisphere_only=True, north_pole=northPole)

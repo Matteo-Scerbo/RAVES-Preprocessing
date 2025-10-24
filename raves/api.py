@@ -19,9 +19,68 @@ def raves(folder_path: str,
           T60_threshold: float = 1e-1, max_slopes_per_band: int = 10,
           echogram_sample_rate: float = 1e3, skip_T60_plots: bool = False
           ) -> None:
-    # TODO: Fill out documentation properly.
     """
+    Run the full RAVES pipeline in a given environment folder.
+    This builds the ART model and immediately performs MoD-ART.
 
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder.
+    overwrite : bool, default: False
+        If True, any existing ART kernels are re-computed and overwritten.
+        Otherwise, existing geometrical data is re-used, whereas material
+        properties (and air absorption parameters) are read again and replaced.
+    skip_ART : bool, default: False
+        If True, skip the ART pre-processing stage and run only MoD-ART.
+    skip_MoDART : bool, default: False
+        If True, run only ART and skip MoD-ART.
+    area_threshold : float, default: 0.0
+        Minimum patch area (square meters) used to optionally simplify the mesh.
+        Values > 0 may cause a simplified mesh to be written to a new folder.
+        The path returned by `compute_ART` is then propagated to `compute_MoDART`.
+    thoroughness : float, default: 0.0
+        Effort/speed trade-off factor for remeshing (higher is more thorough).
+    points_per_square_meter : float, default: 30.0
+        Surface sampling density used during ART.
+    rays_per_hemisphere : int, default: 1000
+        Number of rays cast from each sample point during ART.
+    multiprocess_pool_size : int, default: 1
+        Number of worker processes to use. Use 1 to disable multiprocessing.
+    humidity : float, default: 50.0
+        Ambient relative humidity (%).
+    temperature : float, default: 20.0
+        Ambient temperature (°C).
+    pressure : float, default: 100.0
+        Ambient pressure (kPa).
+    T60_threshold : float, default: 1e-1
+        Threshold used during decomposition; the processing of each band
+        halts if an energy mode is found to have T60 below this value.
+    max_slopes_per_band : int, default: 10
+        Threshold used during decomposition; the processing of each band
+        halts if more than this many energy modes have been found.
+    echogram_sample_rate : float, default: 1e3
+        Sample rate (Hz) in the decomposed ART model.
+        NOT TO BE CONFUSED WITH AN AUDIO RATE.
+    skip_T60_plots : bool, default: False
+        If True, suppress generation of T60 plots by `compute_MoDART`.
+
+    Returns
+    -------
+    None
+        Outputs are written to `folder_path` (or a new path if a simplified mesh
+        is produced) following the specifications outlined in `README.md`.
+
+    Notes
+    -----
+    If `skip_ART` is False and `area_threshold > 0`, `compute_ART` may write
+    a simplified mesh to a different folder and will return that new path;
+    this function forwards that path to `compute_MoDART` to keep outputs consistent.
+
+    Examples
+    --------
+    >>> from raves import raves
+    >>> raves("/path/to/project", multiprocess_pool_size=4, echogram_sample_rate=1e4)
     """
     if not os.path.isdir(folder_path):
         raise ValueError('Not a valid folder path:\n\t' + folder_path)

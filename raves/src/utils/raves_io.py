@@ -13,15 +13,40 @@ from .raytracing import TriangleMesh
 
 def is_clean_ascii(s: str) -> bool:
     """
-    Allows no characters other than letters, digits, and underscores.
+    Check whether a string contains only ASCII letters, digits, or underscores.
+
+    The test uses a full-string match against the regex ``\\w+`` with the ASCII flag.
+
+    Parameters
+    ----------
+    s : str
+        Input string to validate.
+
+    Returns
+    -------
+    bool
+        True if and only if the string contains only letters, digits, or underscores.
     """
     return bool(re.fullmatch(r'\w+', s, flags=re.ASCII))
 
 
 def sanitize_ascii(s: str) -> str:
     """
-    Removes any characters other than letters, digits, and underscores and replaces them with underscores.
-    Also strips leading and trailing underscores, and collapses runs of multiple underscores.
+    Replace non-alphanumeric ASCII characters with underscores and normalize.
+
+    All characters other than letters, digits, and underscores are replaced by
+    underscores, multiple underscores are collapsed, and leading/trailing
+    underscores are removed.
+
+    Parameters
+    ----------
+    s : str
+        Input string to sanitize.
+
+    Returns
+    -------
+    str
+        Sanitized string containing only letters, digits, and underscores.
     """
     return re.sub(r'[\W_]+', '_', s, flags=re.ASCII).strip('_')
 
@@ -33,10 +58,52 @@ def merge_small_patches(vertices: np.ndarray,
                         area_threshold: float,
                         thoroughness: float
                         ) -> None:
-    # TODO: Fill out documentation properly.
     """
-    patch_materials is modified in-place (elements are removed).
-    Patch IDs are modified in-place inside "mesh".
+    Merge coplanar, same-material patches whose areas are below a threshold.
+
+    Patches are grouped by material, boundary edges are identified per patch,
+    and a patch-adjacency graph is built where edges connect coplanar patches
+    that share at least one edge. Within each connected component, clusters
+    (sets of patch ids) are iteratively merged until all active clusters meet
+    the area threshold or no eligible merges remain.
+
+    Merge candidates are scored using:
+    - new_range: range of cluster areas after the merge,
+    - new_max: maximum cluster area after the merge,
+    - compactness: merged area divided by estimated perimeter length.
+
+    A soft selection controlled by ``thoroughness`` (clipped to [0, 1]) narrows
+    the candidate set on each score in turn, and the best remaining merge is
+    applied greedily.
+
+    Parameters
+    ----------
+    vertices : (V, 3) ndarray of float
+        Vertex coordinates of the mesh.
+    vert_triplets : (T, 3) ndarray of int
+        Triangle vertex indices (0-based) for the mesh.
+    mesh : TriangleMesh
+        Mesh structure; ``mesh.ID`` provides per-triangle patch ids and is
+        updated in place to reflect merges.
+    patch_materials : list of str
+        Per-patch material names. This list is modified in place by removing
+        entries for merged-away patches and keeping the first id of each merge.
+    area_threshold : float
+        Minimum desired area per patch. Clusters with area below this value
+        are candidates for merging.
+    thoroughness : float
+        Controls the softness of candidate filtering in [0, 1]; higher values
+        keep more candidates during the staged filtering.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    - ``patch_materials`` and ``mesh.ID`` are modified in place.
+    - Coplanarity is checked using triangle normals and plane offsets from
+      the provided ``mesh``.
     """
     thoroughness = np.clip(thoroughness, 0., 1.)
 
@@ -264,16 +331,31 @@ def load_all_inputs(folder_path: str,
                     area_threshold: float = 0.,
                     thoroughness: float = 0.
                     ) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray], str]:
-    # TODO: Fill out documentation properly.
     """
+    Load mesh geometry and materials, optionally merging small patches.
 
-    Args:
-        folder_path:
-        area_threshold:
-        thoroughness:
+    This function reads the OBJ mesh and associated materials, optionally
+    merges small coplanar patches, and then loads material coefficients.
 
-    Returns:
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder.
+    area_threshold : float, default 0.0
+        If greater than 0, patches may be merged by ``load_mesh``.
+    thoroughness : float, default 0.0
+        Passed to ``load_mesh`` to control merge candidate selection.
 
+    Returns
+    -------
+    TriangleMesh
+        Structure-of-Arrays mesh with per-triangle patch ids.
+    list of str
+        Material name per patch, potentially updated after merging.
+    dict
+        Material coefficients, including band centers under key ``"Frequencies"``.
+    str
+        Resolved folder path, which may change if a merged mesh was written.
     """
     mesh, patch_materials, folder_path = load_mesh(folder_path, area_threshold, thoroughness)
     material_coefficients = load_materials(folder_path, set(patch_materials))
@@ -285,16 +367,34 @@ def load_mesh(folder_path: str,
               area_threshold: float = 0.,
               thoroughness: float = 0.
               ) -> Tuple[TriangleMesh, List[str], str]:
-    # TODO: Fill out documentation properly.
     """
+    Parse an OBJ mesh, validate per-patch consistency, and optionally merge patches.
 
-    Args:
-        folder_path:
-        area_threshold:
-        thoroughness:
+    The OBJ file ``mesh.obj`` is parsed following the specifications in `README.md`.
+    Duplicate vertices are collapsed within a 1 mm tolerance before building the mesh.
 
-    Returns:
+    If ``area_threshold > 0``, small coplanar, same-material patches may be merged;
+    if the number of patches changes, a new folder is created and updated mesh is
+    written there. The returned ``folder_path`` reflects this change.
 
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder.
+    area_threshold : float, default 0.0
+        If greater than 0, attempt to merge patches whose areas are below
+        the threshold.
+    thoroughness : float, default 0.0
+        Controls merge candidate selection when merging patches.
+
+    Returns
+    -------
+    TriangleMesh
+        Structure-of-Arrays mesh with derived normals, areas, and plane offsets.
+    list of str
+        Material name per patch, updated if merges occurred.
+    str
+        Folder path; may point to a newly created folder if the mesh was rewritten.
     """
     vertex_list = list()
     face_triplet_list = list()
@@ -534,15 +634,25 @@ def load_mesh(folder_path: str,
 
 
 def load_materials(folder_path: str, expected_names: Set[str]) -> Dict[str, np.ndarray]:
-    # TODO: Fill out documentation properly.
     """
+    Load band centers, absorption, and scattering coefficients from CSV.
 
-    Args:
-        folder_path:
-        expected_names:
+    The file ``materials.csv`` is parsed following the specifications in `README.md`.
 
-    Returns:
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder.
+    expected_names : set of str
+        Material names expected to appear in the file.
 
+    Returns
+    -------
+    dict
+        Dictionary with:
+        - key ``"Frequencies"`` mapped to the band centers (1D array),
+        - one entry per material name mapped to a ``(2, B)`` array with
+          absorption in row 0 and scattering in row 1.
     """
     material_coefficients = dict()
 
@@ -619,15 +729,27 @@ def load_materials(folder_path: str, expected_names: Set[str]) -> Dict[str, np.n
 
 
 def visualize_mesh(folder_path: str, cull_back_faces: bool = True) -> None:
-    # TODO: Fill out documentation properly.
     """
+    Visualize the OBJ mesh using pymeshlab and polyscope.
 
-    Args:
-        folder_path:
-        cull_back_faces:
+    Loads ``mesh.obj`` from the given folder, registers it as a surface mesh,
+    and displays per-face colors. Back-face culling can be enabled to hide
+    back-facing triangles.
 
-    Returns:
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder.
+    cull_back_faces : bool, default True
+        If True, enable back-face culling for rendering.
 
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Disables creation of imgui.ini and log files for tidiness.
     """
     import pymeshlab
     import polyscope

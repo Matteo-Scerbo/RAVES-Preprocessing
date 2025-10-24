@@ -148,6 +148,18 @@ $$
 Let's remember that, in the input-output configuration we have selected, $B(z)$ are intended to feed directly into $s_2(z)$, while $C(z)$ are intended to feed directly from $s_1(z)$.
 As such, $W$ are the elements of $\mathfrak{W}$ related to $s_2(z)$, and $V$ are supposed to be the elements of $\mathfrak{V}$ related to $s_1(z)$ &mdash; but as we've said, $s_1(z)$ does not appear explicitly in the state vector $\mathfrak{s}(z)$, so we need to take the elements of $\mathfrak{V}$ related to $s_2(z)$ and left-multiply them by $A$, because $s_1(z) = A s_2(z)$.
 
+A final note: the algorithm we use for decomposition finds left and right eigenvectors separately, and then relates one to the other.
+Algorithms which directly locate left/right pairs are only available for the decomposition of dense matrices, whilst accounting for the sparsity of $A$ and $\mathfrak{A}$ is paramount in our case.
+Besides having to perform the decomposition twice (once for each side), this means that the left/right pairs we locate are "mismatched" by an unknown scalar factor.
+In order for the decomposition to hold, the left and right vectors must uphold
+$$
+    \mathfrak{W}^H \mathfrak{V}
+    = \mathfrak{V}^{-1} \mathfrak{V}
+    = I \, ,
+$$
+which is achieved by ensuring the dot product of each left/right pair is exactly 1.
+
+
 ### ART injection and detection operators
 
 We earlier said that the input operators $B(z)$ describe how "acoustic energy" emanated from sound sources is injected into the discrete propagation paths between surface patches, and the output operators $C(z)$ describe how "acoustic energy" inside the discrete propagation paths is perceived by listeners.

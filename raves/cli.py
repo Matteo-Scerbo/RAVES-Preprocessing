@@ -3,6 +3,9 @@ from .api import raves
 
 
 def main(argv=None):
+    """
+    Parser to run RAVES from a command line; see notes in `__main__.py`.
+    """
     parser = argparse.ArgumentParser(
         prog='RAVES pre-processing',
         description='One-shot RAVES pipeline: prepares ART model of a given environment and runs MoD-ART on it.',

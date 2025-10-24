@@ -9,16 +9,51 @@ from scipy.sparse.linalg import ArpackNoConvergence, eigs
 def build_ssm(kernel: csr_array, m: np.ndarray,
               element_wise_assembly: bool = True
               ) -> csr_array:
-    # TODO: Fill out documentation properly.
     """
-    Construct the state transition matrix of a system exhibiting a "Feedback Delay Network" structure.
-    Args:
-        A:
-        m:
-        element_wise_assembly:
+    Construct the sparse state transition matrix for an FDN-like system.
 
-    Returns:
+    Given an N x N feedback matrix and N integer delay lengths `m` (each
+    at least 3), this builds the state transition matrix (size sum(m) x sum(m))
+    that advances all inner states by one sample and feeds the last samples
+    through the feedback matrix and then into the first samples.
 
+    Two assembly modes are supported:
+    - element_wise_assembly=True: set individual nonzeros directly in a LIL
+      matrix and convert to CSR (fast and memory-friendly for large N).
+    - element_wise_assembly=False: assemble using block matrices:
+        * U_i: shifts inner samples of line i (shape (m_i-2, m_i-2))
+        * R_i: shifts the first sample to the second (shape (m_i-2, N))
+        * P_i: shifts the last sample into the first (shape (N, m_i-2))
+        * feedback matrix: couples last to first samples across lines
+    The latter assembly mode is included to intuitively match the definition
+    shown in our papers.
+
+    Parameters
+    ----------
+    kernel : csr_array
+        Feedback matrix of shape (N, N), where N == len(m).
+    m : array_like of int
+        Per-line integer delay lengths; each m_i must be >= 3.
+    element_wise_assembly : bool, default True
+        If True, assemble by writing individual entries.
+        If False, assemble from sparse blocks.
+
+    Returns
+    -------
+    csr_array
+        Sparse state transition matrix of shape (sum(m), sum(m)).
+
+    Raises
+    ------
+    AssertionError
+        If any m_i < 3, if any m_i is non-integer, or if `kernel` is not
+        square with size equal to len(m).
+
+    Notes
+    -----
+    In block mode the matrix is organized in N+2 block rows/columns:
+    block rows 0..N-1 contain U_i and R_i, row N contains P_j, and the last
+    block row places `kernel` beneath the P row.
     """
     assert np.all(m > 2), 'The delay lengths `m` must be at least 3.'
     assert np.all(np.mod(m, 1) == 0), 'The delay lengths `m` must be integer.'
@@ -127,7 +162,7 @@ def build_ssm(kernel: csr_array, m: np.ndarray,
             AA_blocks.append(blocks_row)
 
         # Create a sparse matrix from the blocks.
-        return block_array(AA_blocks, format='csc')
+        return block_array(AA_blocks, format='csr')
 
 
 def real_positive_search(ssm: csr_array,
@@ -135,17 +170,53 @@ def real_positive_search(ssm: csr_array,
                          num_thresh: int,
                          imaginary_part_thresh: float = 1e-7
                          ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    # TODO: Fill out documentation properly.
     """
+    Find real, positive eigenpairs of a sparse state matrix. Left and right
+    eigenvectors are found separately, linked in pairs, and calibrated.
 
-    Args:
-        ssm:
-        mag_thresh:
-        num_thresh:
-        imaginary_part_thresh:
+    Performs a shift-invert Arnoldi search (sigma=1) for right eigenpairs of
+    the state transition matrix, filters to real positive eigenvalues (by
+    bounding the imaginary part to `imaginary_part_thresh`), and stops when:
+      1) at least one valid eigenvalue has magnitude <= `mag_thresh`, or
+      2) at least `num_thresh` valid eigenvalues have been found, or
+      3) the search size reaches dim-2 (max allowed by Arnoldi), or
+      4) convergence fails.
 
-    Returns:
+    The search is then repeated on the transposed matrix to obtain left eigenpairs,
+    which are matched to their right counterparts by nearest eigenvalue, discarding
+    unmatched pairs. Finally, each left/right pair is calibrated to have unity dot
+    product, as discussed in `ART_theory.md`.
 
+    Parameters
+    ----------
+    ssm : csr_array
+        Square sparse state transition matrix.
+    mag_thresh : float
+        Target magnitude threshold for early stopping. Search stops once any
+        valid eigenvalue has magnitude <= this value.
+    num_thresh : int
+        Target count threshold for early stopping. Search stops once at least
+        this many valid eigenvalues are found.
+    imaginary_part_thresh : float, default 1e-7
+        Maximum absolute imaginary part for an eigenvalue to be treated as real.
+
+    Returns
+    -------
+    numpy.ndarray
+        Real eigenvalues (shape (K,)). Values are the average of matched left
+        and right eigenvalues.
+    numpy.ndarray
+        Right eigenvectors (shape (M, K)), columns correspond to eigenvalues.
+    numpy.ndarray
+        Left eigenvectors (shape (M, K)), columns correspond to eigenvalues.
+
+    Notes
+    -----
+    - The search size `k` starts at `num_thresh` and doubles up to dim-2.
+    - Validity requires positive real part and small imaginary part (as set
+      by `imaginary_part_thresh`).
+    - Returned count K equals the number of matched valid eigenpairs; it may
+      be less than the number initially found on either side.
     """
     # Start with a right eigenvector search, stopping when
     #   a. we find a (real, positive) pole with T60 < T60_thresh, or
