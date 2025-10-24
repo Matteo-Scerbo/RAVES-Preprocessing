@@ -35,7 +35,7 @@ $$
 where $\mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)$ is the differential *etendue* between a pair of differential area elements, defined as
 
 $$
-\begin{aligned}
+\begin{align}
     \mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)
     &{}=
     \frac{\cos\theta_{ij}\,\cos\theta_{ji}}{\lVert x_i - x_j\rVert^2}
@@ -47,14 +47,14 @@ $$
     \mathrm{d}\Omega_j
     \mathrm{d}A_i
     .
-\end{aligned}
+\end{align}
 $$
 
 Taking the integral of $\mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)$ over both surface patches gives the full path etendue, $G_{i \to j}$.
 Under the assumption that the radiance $L_{i \to j}$ is constant within the propagation path, it can be taken out of the integral, giving
 
 $$
-\begin{aligned}
+\begin{align}
     P_{i \to j}
     &{}=
     L_{i \to j}
@@ -67,7 +67,7 @@ $$
     \iff
     L_{i \to j} = \frac{P_{i \to j}}{G_{i \to j}}
     .
-\end{aligned}
+\end{align}
 $$
 
 The etendue is what translates radiance to power and vice-versa: this property is essential for the input-output operations of ART, as discussed in the following.
@@ -100,11 +100,11 @@ The eigenvalues $\Lambda$ and (state-space) eigenvectors $\overline{V}$, $\overl
 Using $s_1(z)$ and $s_2(z)$, the loop operation takes the form
 
 $$
-\begin{aligned}
+\begin{align}
     s_1(z) &{}= A s_2(z) ,
     \\
     s_2(z) &{}= T_{a}(z) s_1(z) .
-\end{aligned}
+\end{align}
 $$
 
 The full state vector $\overline{s}(z)$ contains both $z^{-1}s_1(z)$ and $s_2(z)$.
@@ -132,35 +132,35 @@ The detected signals therefore act like signals leaving scattering surfaces, abo
 Using the equivalence $s_1(z) = A s_2(z)$, the full system is then represented as
 
 $$
-\begin{aligned}
+\begin{align}
     s_2(z) &{}= T_\mathrm{a}(z) A s_2(z) + B(z) x(z) ,
     \\
     y(z) &{}= C(z) A s_2(z) + D(z) x(z) ;
     \\
     H(z) &{}= C(z) A \left[I - T_\mathrm{a}(z)A\right]^{-1} B(z) + D(z) .
-\end{aligned}
+\end{align}
 $$
 
 Reframing the same using only $s_1(z)$:
 
 $$
-\begin{aligned}
+\begin{align}
     s_1(z) &{}= A T_\mathrm{a}(z) s_1(z) + A B(z) x(z) ,
     \\
     y(z) &{}= C(z) s_1(z) + D(z) x(z) ;
     \\
     H(z) &{}= C(z) \left[I - AT_\mathrm{a}(z)\right]^{-1} A B(z) + D(z) .
-\end{aligned}
+\end{align}
 $$
 
 The objective of modal decomposition is to achieve the form
 
 $$
-\begin{aligned}
+\begin{align}
     H(z) &{}= C(z) V \left[zI - \Lambda\right]^{-1} W^H B(z) + D(z)
     \\ &{}=
     \sum_{i=1}^{M} \frac{C(z) w_i v_i^H b(z)}{z - \lambda_i} + D(z) .
-\end{aligned}
+\end{align}
 $$
 
 Let's remember that, in the input-output configuration we have selected, $B(z)$ are intended to feed directly into $s_2(z)$, while $C(z)$ are intended to feed directly from $s_1(z)$.
@@ -239,7 +239,7 @@ Similarly, the compensation for the initial delay of the whole late reverberatio
 The ART kernel is given by
 
 $$
-\begin{aligned}
+\begin{align}
     F_{h \to i \to j}
     &{}=
     \iint_{A_h}
@@ -263,7 +263,7 @@ $$
     \frac{\mathrm{d}A_i}{A_i}
     \frac{\mathrm{d}A_h}{A_h}
     ,
-\end{aligned}
+\end{align}
 $$
 
 where $\left[(x_h - x_i) \in \Omega_h\right]$ is a visibility term equal to $1$ if $x_h$ is visible from $x_i$ and $0$ otherwise, and $\cos \theta_{ij} = n_i \cdot (x_j - x_i)$.
@@ -300,7 +300,7 @@ In the diffuse case, the BRDF is constant: ${\rho(x_h, x_i, x_j) = \frac{1}{\pi}
 The kernel is
 
 $$
-\begin{aligned}
+\begin{align}
     F_{\text{diff } h \to i \to j}
     &{}=
     \iint_{A_i}
@@ -319,7 +319,7 @@ $$
     \frac{\mathrm{d}A_i}{A_i}
     \quad \forall h
     .
-\end{aligned}
+\end{align}
 $$
 
 The outer integral with $\frac{\mathrm{d}A_i}{A_i}$ means that its integrand is averaged over all points in $A_i$.
@@ -329,7 +329,7 @@ We can uniformly sample $\Omega_j$ by taking uniform directions in the hemispher
 Then, if the full hemisphere is sampled with $N_\omega$ directions, ${\mathrm{d}\Omega_j = \frac{2\pi}{N_\omega}}$ and
 
 $$
-\begin{aligned}
+\begin{align}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
     \mathrm{d}\Omega_j(\omega_j)
@@ -350,7 +350,7 @@ $$
     \sum\nolimits_{\omega_j \in \Omega_j}
     \cos \theta_{ij}
     .
-\end{aligned}
+\end{align}
 $$
 
 As a side note,
@@ -369,7 +369,7 @@ We can use two properties of form factors to assess the accuracy of the numerica
 Form factor unity summation (provided the surface is closed), and etendue symmetry:
 
 $$
-\begin{aligned}
+\begin{align}
     \sum_{j=1}^{n}
     F_{\text{diff } h \to i \to j}
     &{}= 1
@@ -385,7 +385,7 @@ $$
     % \pi A_j F_{\text{diff } h \to j \to i}
     % \quad \forall h
     .
-\end{aligned}
+\end{align}
 $$
 
 Both of these equalities are exact in theory, but approximate in practice, due to discretization of the integrals.
@@ -398,7 +398,7 @@ The incurred error acts as an assessment of the integration accuracy.
 The specular BRDF is
 
 $$
-\begin{aligned}
+\begin{align}
     \rho(x_h, x_i, x_j)
     &{}=
     \frac{\delta(\text{spec}(x_h - x_i) - (x_j - x_i))}{\cos \theta_{ih}}
@@ -409,13 +409,13 @@ $$
     \\ &{}=
     \frac{\delta(\text{spec}(x_j - x_i) - (x_h - x_i))}{\cos \theta_{ij}}
     .
-\end{aligned}
+\end{align}
 $$
 
 which gives
 
 $$
-\begin{aligned}
+\begin{align}
     F_{\text{spec } h \to i \to j}
     &{}=
     \iint_{A_i}
@@ -443,14 +443,14 @@ $$
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
     .
-\end{aligned}
+\end{align}
 $$
 
 We can remove an integral thanks to the delta's sifting property ${\int_{-\infty}^{\infty} f(t) \delta(t-T) \,\mathrm{d}t = f(T)}$.
 Before we do, let us make the visibility term w.r.t. $\Omega_j$ explicit again:
 
 $$
-\begin{aligned}
+\begin{align}
     F_{\text{spec } h \to i \to j}
     &{}=
     \iint_{A_i}
@@ -468,14 +468,14 @@ $$
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
     .
-\end{aligned}
+\end{align}
 $$
 
 The innermost integrand $\left[\text{spec}(x_h - x_i) \in \Omega_j\right]$ is equal to 1 if the direction *specular to* $(x_h - x_i)$ falls within $\Omega_j$ and 0 otherwise.
 In practice, for numerical integration, taking the average of a "boolean" integrand like this means counting the number of sample points (i.e., rays) for which the condition is true.
 
 $$
-\begin{aligned}
+\begin{align}
     \iint_{\Omega_h}
     \left[\text{spec}(x_h - x_i) \in \Omega_j\right]
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
@@ -505,7 +505,7 @@ $$
     1
     }
     .
-\end{aligned}
+\end{align}
 $$
 
 With that said, in practice we carry out the averaging over $x_i \in A_i$ slightly differently, so that the results are closer to the kernel's unity summation property:
