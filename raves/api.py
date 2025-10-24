@@ -3,7 +3,6 @@ from .src import compute_ART, compute_MoDART
 
 
 # Project-wide TODOs
-# TODO: Revise all comments and documentation.
 # TODO: Consistent use of camel case and underscores.
 # TODO: Add `run_ART.py`
 # TODO: Add complex-valued decomposition in `compute_MoDART.py`

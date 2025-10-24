@@ -489,19 +489,23 @@ def load_mesh(folder_path: str,
 
     patch_materials = [patch_materials_dict[i] for i in range(len(patch_materials_dict))]
 
+    # TODO: Cross-validate OBJ and MTL. Read original patch colors in the process.
+
     # Collapse duplicate vertices (within a millimeter of each other).
     keys = np.round(vertices * 1e3)
     _, keep_idx, old2new = np.unique(keys, axis=0, return_index=True, return_inverse=True)
     vertices = vertices[keep_idx]
     vert_triplets = old2new[vert_triplets]
 
-    # TODO: if area_threshold > 0: Re-mesh to INCREASE the number of triangles without changing the geometry.
-    # TODO: if area_threshold > 0: Make each triangle its own patch.
+    # TODO: if area_threshold > 0:
+    #           Re-mesh to INCREASE the number of triangles without changing the geometry.
+    #           Make each triangle its own patch.
 
     # Create structure-of-arrays mesh (includes normal vectors, areas, etc).
     mesh = TriangleMesh(vertices, vert_triplets, patch_ids)
 
     # Check that all triangles in each patch are coplanar.
+    # TODO: Make this a separate function to avoid repetition.
     for patch_id in np.unique(mesh.ID):
         for triangle_a in np.where(mesh.ID == patch_id)[0]:
             for triangle_b in np.where(mesh.ID == patch_id)[0]:
@@ -530,7 +534,7 @@ def load_mesh(folder_path: str,
         # This was changed in-place: retrieve the new values to avoid mix-ups
         patch_ids = mesh.ID
 
-        # TODO: Re-mesh to reduce the number of triangles without changing the patch geometry.
+        # TODO: Re-mesh to REDUCE the number of triangles without changing the geometry nor patch assignment.
 
         # For debugging: Check that all triangles in each patch are still coplanar.
         """
@@ -606,7 +610,7 @@ def load_mesh(folder_path: str,
                     patch_ID_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
 
                     file.write('newmtl ' + patch_ID_str + '\n')
-                    # TODO: Get appropriate color from original MTL.
+                    # TODO: Use colors from original MTL (pick one original color per material, alternate brightness).
                     c = float(patch_id+1) / new_num_patches
                     cycle = 7
                     c = (c + (patch_id % cycle)) / cycle
@@ -626,9 +630,6 @@ def load_mesh(folder_path: str,
 
     if new_folder_path is not None:
         folder_path = new_folder_path
-
-    # TODO: Validate `mesh.mtl`.
-    # TODO: Cross-validate OBJ-MTL.
 
     return mesh, patch_materials, folder_path
 

@@ -56,7 +56,7 @@ class TriangleMesh:
         The stored normals are normalized to unit length. Triangle areas are
         stored in `area`, and d0 is computed as dot(n, v1).
         """
-        # Validate & coerce inputs
+        # Validate inputs and force types
         V = np.asarray(vertices, dtype=float)
         F = np.asarray(vert_triplets, dtype=int)
         self.ID = np.asarray(patch_ids, dtype=int)
@@ -187,8 +187,8 @@ class TriangleMesh:
 
 
 # TODO: In "hemisphere mode", add two options:
-#       - Expose the fact that it's a hemisphere
-#       - Hide the fact that it's a hemisphere (return duplicated, inverted results, like the C++ code does)
+#       - Expose the fact that it's a hemisphere (current behavior)
+#       - Pretend it's a sphere, use hemisphere under the hood (like the C++ code does)
 class RayBundle:
     """
     Bundle of rays with (possibly) separate per-ray origins and directions.
@@ -218,11 +218,10 @@ class RayBundle:
         """
         self.O = np.asarray(O, dtype=float)
         self.D = np.asarray(D, dtype=float)
-        # Normalize directions (avoid division by zero by clamping length to 1)
+        # Normalize directions
         self.D = self.D / np.linalg.norm(self.D, axis=1, keepdims=True)
 
         N = self.O.shape[0]
-        # Per-ray state (initialized to defaults)
         self.radiance = np.ones(N)
         self.totalDistance = np.zeros(N)
 
@@ -380,6 +379,7 @@ class RayBundle:
             r = r[z >= 0]
             z = z[z >= 0]
 
+            # This should be ensured by the Fibonacci construction
             assert z.shape[0] == N
 
         D = np.column_stack((r * np.cos(phi), r * np.sin(phi), z))
@@ -389,16 +389,16 @@ class RayBundle:
 
         # Rotate so +Z maps to north_pole
         pos_z = np.array([0.0, 0.0, 1.0])
-        if np.allclose(north_pole, pos_z, atol=1e-7):
+        if np.allclose(north_pole, pos_z, atol=EPS_PARALLEL):
             # Already aligned, nothing to do
             return cls(O, D)
-        elif np.allclose(north_pole, -pos_z, atol=1e-7):
+        elif np.allclose(north_pole, -pos_z, atol=EPS_PARALLEL):
             # Opposite: flip along Z
             D[:, 2] *= -1
 
             return cls(O, D)
         else:
-            # N.B.: Using atol=1e-7 in the previous two checks means that the cross product's norm is guaranteed to be nonzero.
+            # N.B.: Using `atol` in the previous two checks means that the cross product's norm is guaranteed to be nonzero.
             c = np.dot(pos_z, north_pole)
             axis = np.cross(pos_z, north_pole)
             s = np.linalg.norm(axis)
@@ -609,11 +609,11 @@ class RayBundle:
         if M == 0 or N == 0:
             return
 
-        # 1) Facing test: faceNum = dot(n, O) - d0 -> (M,N)
+        # Facing test: faceNum = dot(n, O) - d0 > 0
         faceNum = np.einsum("nj,mj->mn", triangles.n, self.O) - triangles.d0[None, :]  # (M,N)
         face_ok = (faceNum > EPS_FACING)
 
-        # 2) Möller–Trumbore (broadcasted over (M,N,3))
+        # Möller–Trumbore (broadcasted over (M,N,3))
         D = self.D[:, None, :]  # (M,1,3)
         O = self.O[:, None, :]  # (M,1,3)
         v1 = triangles.v1[None, :, :]  # (1,N,3)
@@ -650,7 +650,7 @@ class RayBundle:
         #       Invalid indices should be ignored BEFORE performing einsum, rather that ignoring invalid results.
         cosv[valid] = np.abs(np.einsum("nj,mj->mn", triangles.n, self.D)[valid])
 
-        # TODO: The following section can be greatly simplified through a smart use of np.argwhere and np.argmin.
+        # TODO: The following section can probably be simplified through a smart use of np.argwhere and np.argmin.
         idx = np.arange(N)[None, :].repeat(M, axis=0)  # (M,N)
 
         # FRONT selection: minimal positive distance; tie by lowest triangle index
@@ -669,7 +669,7 @@ class RayBundle:
         cand_back = np.where(tie_back, idx, N)
         i_back = cand_back.min(axis=1)  # (M,)
 
-        # TODO: This np.arange can be replaced by a smart use of np.take_along_axis. But would it be any faster?
+        # TODO: This np.arange can probably be replaced by a smart use of np.take_along_axis. But would it be any faster?
         row = np.arange(M)
 
         front_ok = (i_front < N)

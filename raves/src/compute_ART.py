@@ -248,8 +248,6 @@ def assess_ART_on_grid(folder_path: str,
         axs[1, 1].set_xlabel('Averaged over rays')
         axs[1, 1].grid()
 
-    # subfigs[0].suptitle('Median')
-    # subfigs[1].suptitle('Median $\\times$ thousands of tests per m2')
     plt.suptitle('Etendue SAPE over number of rays and samples per square meter.'
                  '\nThe left figure shows the median.'
                  '\nThe right figure shows (median $\\cdot$ $\\log_{10}$ traced_rays_per_square_meter).'

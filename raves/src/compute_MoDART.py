@@ -172,6 +172,7 @@ def compute_MoDART(folder_path: str,
         state_transition_matrix = build_ssm(kernel, integer_delays)
 
         # Perform modal decomposition, keeping only real positive eigenvalues.
+        # N.B. These are the STATE-SPACE eigenvectors; their size is the system order.
         poles, right_vecs, left_vecs = real_positive_search(state_transition_matrix,
                                                             T60_to_eig(T60_threshold, echogram_sample_rate),
                                                             max_slopes_per_band)
@@ -184,33 +185,34 @@ def compute_MoDART(folder_path: str,
         right_vecs = right_vecs[:, poles_order]
         left_vecs = left_vecs[:, poles_order]
 
+        # All following operations prepare the eigenvectors for RAVES. Refer to `ART_theory.md` for details.
+
         # Take the relevant slices (last sample of each delay line).
         N = kernel.shape[0]
         M = state_transition_matrix.shape[0]
         V = right_vecs[slice(M - 2 * N, M - N)]
         W = left_vecs[slice(M - 2 * N, M - N)]
 
-        # Bake all necessary scaling factors directly into the eigenvectors for RAVES.
-
         # Recall that V, W of length N are slices of the full state-space vectors of size M.
-        # Given the structure of the s.s.m. used above, both V and W now refer to the last sample of each delay line.
+        # Given the structure of the s.s.m. used above, both V and W refer to the last sample of each delay line.
         # In the ART format used in RAVES:
         #   - energy is injected at the surface patches, as if it had just been propagated (about to be reflected)
         #   - energy is detected at the surface patches, as if it had just been reflected (about to be propagated)
         # As such, the "injection" eigenvector (W_hat) should refer directly to the last sample of each propagation line,
         # while the "detection" eigenvector (V_hat) should refer to the last sample of each propagation line AND apply scattering.
-        # N.B.: if the "detection" eigenvector (V_hat) referred to the first sample of each line, it would differ by a one-sample delay.
+        # N.B.: If the "detection" eigenvector (V_hat) referred to the first sample of each line, it would differ by a one-sample delay.
+        #       The true "next input" would be the "future first sample of each line", which is not explicitly a part of the state space.
         V_hat = kernel @ V
-        W_hat = W.copy()
+        W_hat = W
 
-        # Prefer pairs of mostly positive vectors rather than pairs of mostly negative vectors.
+        # Prefer pairs of mostly positive vectors rather than pairs of mostly negative vectors (kind of inconsequential).
         V_signs = np.sign(np.mean(V_hat, axis=0))
         V_hat *= V_signs[np.newaxis]
         W_hat *= V_signs[np.newaxis]
 
         # Scale by the path etendues to "translate" quantities between power and radiance.
         # The signals circulating in the loop are power, and must be translated to radiance
-        # in order to use solid angles as detectors. This means dividing by the path etendue (P = G * L)
+        # in order to use solid angles as detectors. This means dividing by the path etendue (P = G * L).
         V_hat /= path_etendues[:, np.newaxis]
 
         # The injectors and detectors, being solid angles, should both sum to 4 pi.
