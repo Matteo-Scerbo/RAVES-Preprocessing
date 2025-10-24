@@ -300,17 +300,17 @@ class PlaneTests(unittest.TestCase):
         """
         Validate plane parameter consistency for a known mesh.
 
-        For each triangle, verify that dot(n, v1) - d0 is approximately zero,
-        within EPS_FACING, where (n, d0) are the plane parameters and v1 is
+        For each triangle, verify that dot(n, v_1) - d_0 is approximately zero,
+        within EPS_FACING, where (n, d_0) are the plane parameters and v_1 is
         one vertex on the triangle.
         """
         mesh, _, _ = load_mesh('../../example environments/AudioForGames_20_patches')
 
-        # For any triangle, the plane identity dot(n, v1) - d0 must be ~0 if (n, d0) are consistent.
+        # For any triangle, the plane identity dot(n, v_1) - d_0 must be ~0 if (n, d_0) are consistent.
         residual = np.einsum("ij,ij->i", mesh.n, mesh.v_1) - mesh.d_0
 
         self.assertTrue(np.all(np.abs(residual) < EPS_FACING),
-                        msg='Plane (n, d0) inconsistent; max residual = ' + str(np.max(np.abs(residual))))
+                        msg='Plane (n, d_0) inconsistent; max residual = ' + str(np.max(np.abs(residual))))
 
     def test_origin_side_vs_direction(self):
         """

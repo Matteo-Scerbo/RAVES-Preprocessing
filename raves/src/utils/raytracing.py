@@ -19,17 +19,17 @@ class TriangleMesh:
     These are designed for using the Möller–Trumbore intersection algorithm.
 
     Each triangle i stores:
-      - v1: first vertex A
-      - edge1: B - A
-      - edge2: C - A
-      - n: unit surface normal = edge1 x edge2
-      - d0: plane offset such that dot(n, X) - d0 = 0 on the triangle plane
-      - ID: per-triangle patch identifier
+      - v_1: first vertex A
+      - edge_1: B - A
+      - edge_2: C - A
+      - n: unit surface normal = edge_1 x edge_2
+      - d_0: plane offset such that dot(n, X) - d_0 = 0 on the triangle plane
+      - patch_ids: per-triangle patch identifier
 
     Notes
     -----
     - The intersection kernel enforces:
-      dot(n, O) - d0 > EPS_FACING (triangle faces the ray origin), and
+      dot(n, origins) - d_0 > EPS_FACING (triangle faces the ray origin), and
       barycentric coordinates within edges (edges inclusive).
       It does not enforce t > 0; the low-level test is line-triangle.
     - In case of near ties (Z-fighting), the lower triangle index wins.
@@ -54,7 +54,7 @@ class TriangleMesh:
         Notes
         -----
         The stored normals are normalized to unit length. Triangle areas are
-        stored in `area`, and d0 is computed as dot(n, v1).
+        stored in `area`, and d_0 is computed as dot(n, v_1).
         """
         # Validate inputs and force types
         v = np.asarray(vertices, dtype=float)
@@ -123,13 +123,13 @@ class TriangleMesh:
         numpy.ndarray
             Array of shape (K, 3) containing 3D sample points on the triangle.
         """
-        edge1_len = np.linalg.norm(self.edge_1[triangle_idx])
-        edge2_len = np.linalg.norm(self.edge_2[triangle_idx])
+        edge_1_len = np.linalg.norm(self.edge_1[triangle_idx])
+        edge_2_len = np.linalg.norm(self.edge_2[triangle_idx])
         # The maximum extent for the 2D lattice (see below)
-        grid_extent = max(edge1_len, edge2_len)
+        grid_extent = max(edge_1_len, edge_2_len)
 
         # Start by using one edge of the triangle as a reference tangent vector
-        tangent1 = self.edge_1[triangle_idx] / edge1_len
+        tangent1 = self.edge_1[triangle_idx] / edge_1_len
         # Rotate the tangent by an irrational angle (3*pi/8) using Rodrigues' rotation formula
         # https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula#Matrix_notation
         theta = 3. * np.pi / 8.
@@ -156,9 +156,9 @@ class TriangleMesh:
         # Vectorized 2D point-in-triangle test (test whole lattice in one go)
         # https://stackoverflow.com/a/51479401
         #   x, y = lattice_2D
-        #   ax, ay = (0, 0) (the reference vertex v1 is the origin of the lattice)
-        #   bx, by = edge1_2D
-        #   cx, cy = edge2_2D
+        #   ax, ay = (0, 0) (the reference vertex v_1 is the origin of the lattice)
+        #   bx, by = edge_1_2D
+        #   cx, cy = edge_2_2D
         side_1 = np.cross(lattice_2D - edge_1_2D, -edge_1_2D)
         side_2 = np.cross(lattice_2D - edge_2_2D, edge_1_2D - edge_2_2D)
         side_3 = np.cross(lattice_2D, edge_2_2D)
@@ -211,7 +211,7 @@ class RayBundle:
 
         Parameters
         ----------
-        O : (M, 3) array_like of float
+        origins : (M, 3) array_like of float
             Per-ray origins.
         D : (M, 3) array_like of float
             Per-ray directions. They are normalized inside this constructor.
@@ -609,24 +609,24 @@ class RayBundle:
         if m == 0 or n == 0:
             return
 
-        # Facing test: faceNum = dot(n, O) - d0 > 0
+        # Facing test: faceNum = dot(n, origins) - d_0 > 0
         face_num = np.einsum("nj,mj->mn", triangles.n, self.origins) - triangles.d_0[None, :]  # (M,N)
         face_ok = (face_num > EPS_FACING)
 
         # Möller–Trumbore (broadcasted over (M,N,3))
         directions = self.directions[:, None, :]  # (M,1,3)
         origins = self.origins[:, None, :]  # (M,1,3)
-        v1 = triangles.v_1[None, :, :]  # (1,N,3)
-        edge1 = triangles.edge_1[None, :, :]  # (1,N,3)
-        edge2 = triangles.edge_2[None, :, :]  # (1,N,3)
+        v_1 = triangles.v_1[None, :, :]  # (1,N,3)
+        edge_1 = triangles.edge_1[None, :, :]  # (1,N,3)
+        edge_2 = triangles.edge_2[None, :, :]  # (1,N,3)
 
-        pvec = np.cross(directions, edge2)  # (M,N,3)
-        det = np.einsum("mnj,mnj->mn", pvec, edge1)  # (M,N)
+        pvec = np.cross(directions, edge_2)  # (M,N,3)
+        det = np.einsum("mnj,mnj->mn", pvec, edge_1)  # (M,N)
 
-        tvec = origins - v1  # (M,N,3)
+        tvec = origins - v_1  # (M,N,3)
         u_num = np.einsum("mnj,mnj->mn", tvec, pvec)  # (M,N)
 
-        qvec = np.cross(tvec, edge1)  # (M,N,3)
+        qvec = np.cross(tvec, edge_1)  # (M,N,3)
         v_num = np.einsum("mj,mnj->mn", self.directions, qvec)  # (M,N)
 
         w_num = det - (u_num + v_num)
@@ -645,7 +645,7 @@ class RayBundle:
         dist[valid] = t_num[valid] / det[valid]
 
         cosv = np.full((m, n), np.nan, dtype=float)
-        # |dot(n, D)| broadcast over (M,N)
+        # |dot(n, directions)| broadcast over (M,N)
         # TODO: This eigensum performs redundant operations.
         #       Invalid indices should be ignored BEFORE performing einsum, rather that ignoring invalid results.
         cosv[valid] = np.abs(np.einsum("nj,mj->mn", triangles.n, self.directions)[valid])

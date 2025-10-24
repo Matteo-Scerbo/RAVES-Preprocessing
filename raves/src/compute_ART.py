@@ -620,9 +620,9 @@ def compute_ART(folder_path: str,
             all_plots.append(dict())
             all_plots[-1]['Sample points'] = sample_points
             all_plots[-1]['Triangle normal'] = mesh.n[triangle_idx]
-            all_plots[-1]['Triangle vertex'] = mesh.v1[triangle_idx]
-            all_plots[-1]['Triangle edge 1'] = mesh.edge1[triangle_idx]
-            all_plots[-1]['Triangle edge 2'] = mesh.edge2[triangle_idx]
+            all_plots[-1]['Triangle vertex'] = mesh.v_1[triangle_idx]
+            all_plots[-1]['Triangle edge 1'] = mesh.edge_1[triangle_idx]
+            all_plots[-1]['Triangle edge 2'] = mesh.edge_2[triangle_idx]
 
             fig = plt.figure(figsize=(4, 4), dpi=200)
             ax = fig.add_subplot(111, projection='3d')

@@ -547,8 +547,8 @@ def load_mesh(folder_path: str,
                     parallel_normals = np.isclose(np.dot(mesh.n[triangle_a],
                                                          mesh.n[triangle_b]),
                                                   1.)
-                    same_offset = np.isclose(mesh.d0[triangle_a],
-                                             mesh.d0[triangle_b])
+                    same_offset = np.isclose(mesh.d_0[triangle_a],
+                                             mesh.d_0[triangle_b])
 
                     if not (parallel_normals and same_offset):
                         raise ValueError('Patches should only contain coplanar triangles.'
