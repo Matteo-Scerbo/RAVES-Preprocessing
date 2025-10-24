@@ -88,13 +88,13 @@ Let's start by noting that the recursive loop is agnostic to the concept of ``fe
 The operation of the $A \to T_{a}(z)$ loop is univocally expressed in the state space as
 
 $$
-    \mathfrak{s}(z) =
-    z^{-1} \mathfrak{A} \mathfrak{s}(z)
+    \overline{s}(z) =
+    z^{-1} \overline{A} \overline{s}(z)
     \, ,
 $$
 
-where $\mathfrak{s}$ is the full state vector of the ART system, and $\mathfrak{A}$ is the full state transition matrix of the ART system.
-The eigenvalues $\Lambda$ and (state-space) eigenvectors $\mathfrak{V}$, $\mathfrak{W}$ are uniquely determined by the state transition matrix $\mathfrak{A}$, and by extension, of the $A \to T_{a}(z)$ loop: they are not influences by the way inputs and outputs are positioned in the loop.
+where $\overline{s}$ is the full state vector of the ART system, and $\overline{A}$ is the full state transition matrix of the ART system.
+The eigenvalues $\Lambda$ and (state-space) eigenvectors $\overline{V}$, $\overline{W}$ are uniquely determined by the state transition matrix $\overline{A}$, and by extension, of the $A \to T_{a}(z)$ loop: they are not influences by the way inputs and outputs are positioned in the loop.
 
 Using $s_1(z)$ and $s_2(z)$, the loop operation takes the form
 
@@ -106,14 +106,14 @@ $$
 \end{aligned}
 $$
 
-The full state vector $\mathfrak{s}(z)$ contains both $z^{-1}s_1(z)$ and $s_2(z)$.
-**N.B.: $\mathfrak{s}(z)$ does *not* contain $s_1(z)$ explicitly &mdash; only implicitly, as $z^{-1}s_1(z)$ &mdash; because $s_1(z)$ is not part of the delay lines' state variables.**
-We do not need to concern ourselves with where these elements reside exactly; the ordering of elements in $\mathfrak{s}(z)$ is irrelevant as long as $\mathfrak{A}$ is defined to match it.
+The full state vector $\overline{s}(z)$ contains both $z^{-1}s_1(z)$ and $s_2(z)$.
+**N.B.: $\overline{s}(z)$ does *not* contain $s_1(z)$ explicitly &mdash; only implicitly, as $z^{-1}s_1(z)$ &mdash; because $s_1(z)$ is not part of the delay lines' state variables.**
+We do not need to concern ourselves with where these elements reside exactly; the ordering of elements in $\overline{s}(z)$ is irrelevant as long as $\overline{A}$ is defined to match it.
 The concept of "feed-forward or feed-back" path comes into play when inputs and outputs taps are placed in the loop, as we discuss later in this section.
 
-The state-space eigenvalues $\Lambda$ always correspond to the MoD-ART $\Lambda$, and the state-space $\mathfrak{V}$, $\mathfrak{W}$ always *contain* the MoD-ART $V$, $W$ &mdash; similarly to how $\mathfrak{s}(z)$ contains $z^{-1}s_1(z)$ and $s_2(z)$.
-In the case of $\mathfrak{s}(z)$ containing $z^{-1}s_1(z)$ and $s_2(z)$, the element locations are a fixed property of the loop.
-In the case of $\mathfrak{V}$, $\mathfrak{W}$ containing $V$, $W$, the element locations depend on the relationship between system inputs and outputs with respect to $s_1(z)$ and $s_2(z)$.
+The state-space eigenvalues $\Lambda$ always correspond to the MoD-ART $\Lambda$, and the state-space $\overline{V}$, $\overline{W}$ always *contain* the MoD-ART $V$, $W$ &mdash; similarly to how $\overline{s}(z)$ contains $z^{-1}s_1(z)$ and $s_2(z)$.
+In the case of $\overline{s}(z)$ containing $z^{-1}s_1(z)$ and $s_2(z)$, the element locations are a fixed property of the loop.
+In the case of $\overline{V}$, $\overline{W}$ containing $V$, $W$, the element locations depend on the relationship between system inputs and outputs with respect to $s_1(z)$ and $s_2(z)$.
 We explain this relationship in the following.
 
 ### MoD-ART eigenvectors
@@ -163,16 +163,16 @@ $$
 $$
 
 Let's remember that, in the input-output configuration we have selected, $B(z)$ are intended to feed directly into $s_2(z)$, while $C(z)$ are intended to feed directly from $s_1(z)$.
-As such, $W$ are the elements of $\mathfrak{W}$ related to $s_2(z)$, and $V$ are supposed to be the elements of $\mathfrak{V}$ related to $s_1(z)$ &mdash; but as we've said, $s_1(z)$ does not appear explicitly in the state vector $\mathfrak{s}(z)$, so we need to take the elements of $\mathfrak{V}$ related to $s_2(z)$ and left-multiply them by $A$, because $s_1(z) = A s_2(z)$.
+As such, $W$ are the elements of $\overline{W}$ related to $s_2(z)$, and $V$ are supposed to be the elements of $\overline{V}$ related to $s_1(z)$ &mdash; but as we've said, $s_1(z)$ does not appear explicitly in the state vector $\overline{s}(z)$, so we need to take the elements of $\overline{V}$ related to $s_2(z)$ and left-multiply them by $A$, because $s_1(z) = A s_2(z)$.
 
 A final note: the algorithm we use for decomposition finds left and right eigenvectors separately, and then relates one to the other.
-Algorithms which directly locate left/right pairs are only available for the decomposition of dense matrices, whilst accounting for the sparsity of $A$ and $\mathfrak{A}$ is paramount in our case.
+Algorithms which directly locate left/right pairs are only available for the decomposition of dense matrices, whilst accounting for the sparsity of $A$ and $\overline{A}$ is paramount in our case.
 Besides having to perform the decomposition twice (once for each side), this means that the left/right pairs we locate are "mismatched" by an unknown scalar factor.
 In order for the decomposition to hold, the left and right vectors must uphold
 
 $$
-    \mathfrak{W}^H \mathfrak{V}
-    = \mathfrak{V}^{-1} \mathfrak{V}
+    \overline{W}^H \overline{V}
+    = \overline{V}^{-1} \overline{V}
     = I \, ,
 $$
 
