@@ -105,8 +105,8 @@ def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
             specular_patch_ids, _ = specular_pencil.get_indices(copy=False)
             hemisphere_distances, _ = hemisphere_pencil.get_distances(copy=False)
             specular_distances, _ = specular_pencil.get_distances(copy=False)
-            # hemisphere_cosines, _ = hemisphere_pencil.getCosines(copy=False)
-            # specular_cosines, _ = specular_pencil.getCosines(copy=False)
+            # hemisphere_cosines, _ = hemisphere_pencil.get_cosines(copy=False)
+            # specular_cosines, _ = specular_pencil.get_cosines(copy=False)
 
             hemisphere_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)
             specular_hits_per_patch = np.zeros((num_patches, rays_per_hemisphere), dtype=bool)

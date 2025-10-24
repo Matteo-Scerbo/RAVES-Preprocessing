@@ -196,10 +196,10 @@ class RayBundle:
     Directions are normalized on construction. The instance stores per-ray
     bookkeeping used by the tracing kernel:
       - radiance
-      - totalDistance
-      - currentTriangle (for future self-hit handling)
-      - frontDistance, frontCosine, frontPatch
-      - backDistance, backCosine, backPatch
+      - total_distance
+      - current_triangle (for future self-hit handling)
+      - front_distance, front_cosine, front_patch
+      - back_distance, back_cosine, back_patch
 
     Methods are provided to construct bundles, access internal arrays, move
     origins, and perform intersection queries against a TriangleMesh.
@@ -213,7 +213,7 @@ class RayBundle:
         ----------
         origins : (M, 3) array_like of float
             Per-ray origins.
-        D : (M, 3) array_like of float
+        directions : (M, 3) array_like of float
             Per-ray directions. They are normalized inside this constructor.
         """
         self.origins = np.asarray(origins, dtype=float)
@@ -225,7 +225,7 @@ class RayBundle:
         self.radiance = np.ones(n)
         self.total_distance = np.zeros(n)
 
-        # TODO: Use currentTriangle to avoid self-hits
+        # TODO: Use current_triangle to avoid self-hits
         self.current_triangle = np.full(n, -1, dtype=int)
 
         self.front_distance = np.full(n, np.nan, dtype=float)
@@ -589,9 +589,9 @@ class RayBundle:
 
         For each ray, perform a facing test and a Möller-Trumbore triangle
         test against all triangles, with edge-inclusive tolerances. Update:
-          - frontPatch/frontDistance/frontCosine with the minimal positive
+          - front_patch/front_distance/front_cosine with the minimal positive
             distance hit (ties resolved to the lowest triangle index),
-          - backPatch/backDistance/backCosine with the negative-distance hit
+          - back_patch/back_distance/back_cosine with the negative-distance hit
             closest to the origin (again, lowest index on ties).
         Distances below EPS_SELFHIT are ignored.
 
@@ -602,7 +602,7 @@ class RayBundle:
 
         Notes
         -----
-        This method does not advance rays or update totalDistance.
+        This method does not advance rays or update total_distance.
         """
         m = self.get_num_rays()
         n = triangles.size()

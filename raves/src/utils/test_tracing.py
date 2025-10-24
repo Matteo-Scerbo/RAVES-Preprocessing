@@ -416,7 +416,7 @@ class TracingClassesTests(unittest.TestCase):
 
             test_pencil.trace_all(test_mesh)
             frontDistances, backDistances = test_pencil.get_distances()
-            # TODO: frontCosines, backCosines = testPencil.getCosines()
+            # TODO: frontCosines, backCosines = testPencil.get_cosines()
             frontIndices, backIndices = test_pencil.get_indices()
 
             # Either both or neither distance should be NaN.
