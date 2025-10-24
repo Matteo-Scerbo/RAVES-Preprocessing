@@ -7,18 +7,21 @@ These notes assume some level of familiarity with acoustic radiance transfer lit
 The room acoustic rendering equation defines the propagation of radiance $L(x_i, x_j)$ between surface points.
 It is an integral equation, and the radiance itself is a function of two surface points (the point $x_i$ radiance departs from, and the point $x_j$ radiance is directed towards).
 The fundamental premise of acoustic radiance transfer is that, after discretizing the surface into a finite number of patches, point-to-point radiance will be approximately constant for all pairs of points on a pair of surface patches:
+
 $$
     L(x_i, x_j) = \text{const}
     \quad \forall x_i \in A_i, \forall x_j \in A_j \, .
     %\approx
     %L(x_i, x_j)
 $$
+
 Under that assumption, the *discretized radiance* propagated by ART is given by said approximately constant value for each pair of surface patches &mdash; which may either be *averaged* over the pair of patches, or *integrated* over the pair of patches.
 Both are valid choices, and different works in the literature disagree on this definition.
 We take the time to discuss the choice here because it affects the way the ART scattering matrix is defined, as well as the weighting which needs to be applied to inputs and outputs of the ART system.
 
 In RAVES, and by extension in this implementation of ART, we *integrate* radiance in each propagation path.
 This means that the physical quantity being propagated between pairs of surface patches is acoustical *power*:
+
 $$
     P_{i \to j}
     =
@@ -28,7 +31,9 @@ $$
     \mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)
     \, ,
 $$
+
 where $\mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)$ is the differential *etendue* between a pair of differential area elements, defined as
+
 $$
 \begin{aligned}
     \mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)
@@ -44,8 +49,10 @@ $$
     \, .
 \end{aligned}
 $$
+
 Taking the integral of $\mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)$ over both surface patches gives the full path etendue, $G_{i \to j}$.
 Under the assumption that the radiance $L_{i \to j}$ is constant within the propagation path, it can be taken out of the integral, giving
+
 $$
 \begin{aligned}
     P_{i \to j}
@@ -61,6 +68,7 @@ $$
     L_{i \to j} = \frac{P_{i \to j}}{G_{i \to j}}
 \end{aligned}
 $$
+
 The etendue is what translates radiance to power and vice-versa: this property is essential for the input-output operations of ART, as discussed in the following.
 
 
@@ -78,15 +86,18 @@ In this context, $s_1(z)$ is the *future first* element of each line's inner sta
 
 Let's start by noting that the recursive loop is agnostic to the concept of ``feed-forward or feed-back path''.
 The operation of the $A \to T_{a}(z)$ loop is univocally expressed in the state space as
+
 $$
     \mathfrak{s}(z) =
     z^{-1} \mathfrak{A} \mathfrak{s}(z)
     \, ,
 $$
+
 where $\mathfrak{s}$ is the full state vector of the ART system, and $\mathfrak{A}$ is the full state transition matrix of the ART system.
 The eigenvalues $\Lambda$ and (state-space) eigenvectors $\mathfrak{V}$, $\mathfrak{W}$ are uniquely determined by the state transition matrix $\mathfrak{A}$, and by extension, of the $A \to T_{a}(z)$ loop: they are not influences by the way inputs and outputs are positioned in the loop.
 
 Using $s_1(z)$ and $s_2(z)$, the loop operation takes the form
+
 $$
 \begin{aligned}
     s_1(z) &= A s_2(z) \, ,
@@ -94,6 +105,7 @@ $$
     s_2(z) &= T_{a}(z) s_1(z) \, .
 \end{aligned}
 $$
+
 The full state vector $\mathfrak{s}(z)$ contains both $z^{-1}s_1(z)$ and $s_2(z)$.
 **N.B.: $\mathfrak{s}(z)$ does *not* contain $s_1(z)$ explicitly &mdash; only implicitly, as $z^{-1}s_1(z)$ &mdash; because $s_1(z)$ is not part of the delay lines' state variables.**
 We do not need to concern ourselves with where these elements reside exactly; the ordering of elements in $\mathfrak{s}(z)$ is irrelevant as long as $\mathfrak{A}$ is defined to match it.
@@ -117,27 +129,31 @@ The detected signals therefore act like signals leaving scattering surfaces, abo
 \* "Energy" is a bit of a misnomer here; the next section discusses what these quantities actually are in the physical sense.
 
 Using the equivalence $s_1(z) = A s_2(z)$, the full system is then represented as
+
 $$
 \begin{aligned}
-    s_2(z) &= T_\textrm{a}(z) A s_2(z) + B(z) x(z) \, ,
+    s_2(z) &= T_\mathrm{a}(z) A s_2(z) + B(z) x(z) \, ,
     \\
     y(z) &= C(z) A s_2(z) + D(z) x(z) \, ;
     \\
-    H(z) &= C(z) A \left[I - T_\textrm{a}(z)A\right]^{-1} B(z) + D(z) \, .
+    H(z) &= C(z) A \left[I - T_\mathrm{a}(z)A\right]^{-1} B(z) + D(z) \, .
 \end{aligned}
 $$
+
 Reframing the same using only $s_1(z)$:
+
 $$
 \begin{aligned}
-    s_1(z) &= A T_\textrm{a}(z) s_1(z) + A B(z) x(z) \, ,
+    s_1(z) &= A T_\mathrm{a}(z) s_1(z) + A B(z) x(z) \, ,
     \\
     y(z) &= C(z) s_1(z) + D(z) x(z) \, ;
     \\
-    H(z) &= C(z) \left[I - AT_\textrm{a}(z)\right]^{-1} A B(z) + D(z) \, .
+    H(z) &= C(z) \left[I - AT_\mathrm{a}(z)\right]^{-1} A B(z) + D(z) \, .
 \end{aligned}
 $$
 
 The objective of modal decomposition is to achieve the form
+
 $$
 \begin{aligned}
     H(z) &= C(z) V \left[zI - \Lambda\right]^{-1} W^H B(z) + D(z)
@@ -145,6 +161,7 @@ $$
     \sum_{i=1}^{M} \frac{C(z) w_i v_i^H b(z)}{z - \lambda_i} + D(z) \, .
 \end{aligned}
 $$
+
 Let's remember that, in the input-output configuration we have selected, $B(z)$ are intended to feed directly into $s_2(z)$, while $C(z)$ are intended to feed directly from $s_1(z)$.
 As such, $W$ are the elements of $\mathfrak{W}$ related to $s_2(z)$, and $V$ are supposed to be the elements of $\mathfrak{V}$ related to $s_1(z)$ &mdash; but as we've said, $s_1(z)$ does not appear explicitly in the state vector $\mathfrak{s}(z)$, so we need to take the elements of $\mathfrak{V}$ related to $s_2(z)$ and left-multiply them by $A$, because $s_1(z) = A s_2(z)$.
 
@@ -152,11 +169,13 @@ A final note: the algorithm we use for decomposition finds left and right eigenv
 Algorithms which directly locate left/right pairs are only available for the decomposition of dense matrices, whilst accounting for the sparsity of $A$ and $\mathfrak{A}$ is paramount in our case.
 Besides having to perform the decomposition twice (once for each side), this means that the left/right pairs we locate are "mismatched" by an unknown scalar factor.
 In order for the decomposition to hold, the left and right vectors must uphold
+
 $$
     \mathfrak{W}^H \mathfrak{V}
     = \mathfrak{V}^{-1} \mathfrak{V}
     = I \, ,
 $$
+
 which is achieved by ensuring the dot product of each left/right pair is exactly 1.
 
 
@@ -191,22 +210,24 @@ The left vectors $W$ are also divided by the relevant path etendues $G_{i \to j}
 All of these scaling factors are baked into the eigenvectors saved in the output file `MoD-ART.csv`.
 
 Lastly, when computing residues, we need to make sure we're evaluating $B(\lambda_i)$ and $C(\lambda_i)$ instead of just $B(1)$ and $C(1)$.
-For example, one element of $B(\lambda_i)$ is defined as ${e_\textrm{b} \lambda_i^{-\tau_\textrm{b}}}$, where $e_\textrm{b}$ is the contribution *scaling* and $\tau_\textrm{b}$ is the *delay* in samples.
-If we say that $t_\textrm{b}$ is the same delay in seconds, then ${\tau_\textrm{b} = t_\textrm{b} f_e}$ where $f_e$ is the sample rate used to run the ART system (not the audio sample rate).
+For example, one element of $B(\lambda_i)$ is defined as ${e_\mathrm{b} \lambda_i^{-\tau_\mathrm{b}}}$, where $e_\mathrm{b}$ is the contribution *scaling* and $\tau_\mathrm{b}$ is the *delay* in samples.
+If we say that $t_\mathrm{b}$ is the same delay in seconds, then ${\tau_\mathrm{b} = t_\mathrm{b} f_e}$ where $f_e$ is the sample rate used to run the ART system (not the audio sample rate).
 If we say that $\sigma_i$ is the energy decay per second (whereas $\lambda_i$ is the energy decay per sample), then ${\lambda_i = \sigma_i^{1/f_e}}$.
 Then,
+
 $$
-    e_\textrm{b} \lambda_i^{-\tau_\textrm{b}}
+    e_\mathrm{b} \lambda_i^{-\tau_\mathrm{b}}
     =
-    e_\textrm{b} \lambda_i^{-t_\textrm{b} f_e}
+    e_\mathrm{b} \lambda_i^{-t_\mathrm{b} f_e}
     =
-    e_\textrm{b} \left(\sigma_i^{1/f_e}\right)^{-t_\textrm{b} f_e}
+    e_\mathrm{b} \left(\sigma_i^{1/f_e}\right)^{-t_\mathrm{b} f_e}
     =
-    e_\textrm{b} \sigma_i^{-t_\textrm{b}}
+    e_\mathrm{b} \sigma_i^{-t_\mathrm{b}}
     % =
-    % \frac{e_\textrm{b}}{\sigma_i^{t_\textrm{b}}}
+    % \frac{e_\mathrm{b}}{\sigma_i^{t_\mathrm{b}}}
     \, .
 $$
+
 This scaling is applied when contributions to (and from) propagation paths are computed in RAVES, at runtime.
 Similarly, the compensation for the initial delay of the whole late reverberation section is $\sigma_i^{t_d}$ where $t_d$ is in seconds.
 
@@ -215,6 +236,7 @@ Similarly, the compensation for the initial delay of the whole late reverberatio
 ## Reflection kernel
 
 The ART kernel is given by
+
 $$
 \begin{aligned}
     F_{h \to i \to j}
@@ -242,12 +264,14 @@ $$
     \, ,
 \end{aligned}
 $$
+
 where $\left[(x_h\!-\!x_i) \in \Omega_h\right]$ is a visibility term equal to $1$ if $x_h$ is visible from $x_i$ and $0$ otherwise, and $\cos \theta_{ij} = n_i \cdot (x_j\!-\!x_i)$.
 Note that we incorporate visibility in the definition of differential solid angle.
 
-Note that ${\iint_{A_h} \frac{\hbox{d}A_h}{A_h}}$ indicates an averaging integration.
-In the following, instead of averaging the integrand as ${\iint_{A_h} \frac{\hbox{d}A_h}{A_h}}$, we use an averaging solid angle integral ${\iint_{\Omega_h} \frac{\hbox{d}\Omega_h}{\Omega_h}}$.
+Note that ${\iint_{A_h} \frac{\mathrm{d}A_h}{A_h}}$ indicates an averaging integration.
+In the following, instead of averaging the integrand as ${\iint_{A_h} \frac{\mathrm{d}A_h}{A_h}}$, we use an averaging solid angle integral ${\iint_{\Omega_h} \frac{\mathrm{d}\Omega_h}{\Omega_h}}$.
 This gives the kernel definition
+
 $$
     F_{h \to i \to j}
     =
@@ -256,11 +280,12 @@ $$
     \iint_{\Omega_j}
     \rho(x_h, x_i, x_j)
     \cos \theta_{ij}
-    \, \hbox{d}\Omega_j
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \, .
 $$
+
 This results in a different weighting, but both approximations converge to the room acoustic rendering equation.
 
 Since we use ray-tracing for the numerical evaluation of solid angle integrals, visibility terms are implicitly enforced by the ray-tracing.
@@ -272,6 +297,7 @@ In the case of obstruction, $\Omega_j$ is the part of $A_j$ which is visible fro
 
 In the diffuse case, the BRDF is constant: ${\rho(x_h, x_i, x_j) = \frac{1}{\pi}}$.
 The kernel is
+
 $$
 \begin{aligned}
     F_{\text{diff } h \to i \to j}
@@ -281,29 +307,31 @@ $$
     \iint_{\Omega_j}
     \frac{1}{\pi}
     \cos \theta_{ij}
-    \, \hbox{d}\Omega_j
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \\ & =
     \iint_{A_i}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
-    \, \hbox{d}\Omega_j
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j
+    \frac{\mathrm{d}A_i}{A_i}
     \quad \forall h
     \, .
 \end{aligned}
 $$
-The outer integral with $\frac{\hbox{d}A_i}{A_i}$ means that its integrand is averaged over all points in $A_i$.
-In practice, for numerical integration, we can evaluate ${\iint_{\Omega_j} \frac{\cos \theta_{ij}}{\pi}\, \hbox{d}\Omega_j}$ at a set of sample points on $A_i$ and average the results.
+
+The outer integral with $\frac{\mathrm{d}A_i}{A_i}$ means that its integrand is averaged over all points in $A_i$.
+In practice, for numerical integration, we can evaluate ${\iint_{\Omega_j} \frac{\cos \theta_{ij}}{\pi}\, \mathrm{d}\Omega_j}$ at a set of sample points on $A_i$ and average the results.
 The inner integral is a solid angle integral.
 We can uniformly sample $\Omega_j$ by taking uniform directions in the hemisphere around $n_i$ and selecting only the directions which fall inside $\Omega_j$ (with ray-tracing).
-Then, if the full hemisphere is sampled with $N_\omega$ directions, ${\hbox{d}\Omega_j = \frac{2\pi}{N_\omega}}$ and
+Then, if the full hemisphere is sampled with $N_\omega$ directions, ${\mathrm{d}\Omega_j = \frac{2\pi}{N_\omega}}$ and
+
 $$
 \begin{aligned}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
-    \, \hbox{d}\Omega_j(\omega_j)
+    \, \mathrm{d}\Omega_j(\omega_j)
     & \approx
     \frac{2}{N_\omega}
     \sum\nolimits_{\omega_j \in \Omega_j}
@@ -313,8 +341,8 @@ $$
     \iint_{A_i}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
-    \, \hbox{d}\Omega_j(\omega_j)
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j(\omega_j)
+    \frac{\mathrm{d}A_i}{A_i}
     & \approx
     \frac{2}{N_\omega N_x}
     \sum\nolimits_{x_i \in A_i}
@@ -325,6 +353,7 @@ $$
 $$
 
 As a side note,
+
 $$
     F_{\text{diff } h \to i \to j}
     =
@@ -337,6 +366,7 @@ $$
 
 We can use two properties of form factors to assess the accuracy of the numerical integration.
 Form factor unity summation (provided the surface is closed), and etendue symmetry:
+
 $$
 \begin{aligned}
     \sum_{j=1}^{n}
@@ -356,6 +386,7 @@ $$
     \, .
 \end{aligned}
 $$
+
 Both of these equalities are exact in theory, but approximate in practice, due to discretization of the integrals.
 The incurred error acts as an assessment of the integration accuracy.
 
@@ -364,6 +395,7 @@ The incurred error acts as an assessment of the integration accuracy.
 #### Evaluation
 
 The specular BRDF is
+
 $$
 \begin{aligned}
     \rho(x_h, x_i, x_j)
@@ -378,7 +410,9 @@ $$
     \, .
 \end{aligned}
 $$
+
 which gives
+
 $$
 \begin{aligned}
     F_{\text{spec } h \to i \to j}
@@ -388,30 +422,32 @@ $$
     \iint_{\Omega_j}
     \frac{\delta(\text{spec}(x_j\!-\!x_i) - (x_h\!-\!x_i))}{\cos \theta_{ij}}
     \cos \theta_{ij}
-    \, \hbox{d}\Omega_j
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \\ & =
     \iint_{A_i}
     \iint_{\Omega_h}
     \iint_{\Omega_j}
     \delta(\text{spec}(x_j\!-\!x_i) - (x_h\!-\!x_i))
-    \, \hbox{d}\Omega_j
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \\ & =
     \iint_{A_i}
     \iint_{\Omega_h}
     \iint_{\Omega_j}
     \delta((x_j\!-\!x_i) - \text{spec}(x_h\!-\!x_i))
-    \, \hbox{d}\Omega_j
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \, .
 \end{aligned}
 $$
-We can remove an integral thanks to the delta's sifting property ${\int_{-\infty}^{\infty} f(t) \delta(t-T) \,\hbox{d}t = f(T)}$.
+
+We can remove an integral thanks to the delta's sifting property ${\int_{-\infty}^{\infty} f(t) \delta(t-T) \,\mathrm{d}t = f(T)}$.
 Before we do, let us make the visibility term w.r.t. $\Omega_j$ explicit again:
+
 $$
 \begin{aligned}
     F_{\text{spec } h \to i \to j}
@@ -421,25 +457,27 @@ $$
     \iint_{\Omega_j}
     \left[(x_j\!-\!x_i) \in \Omega_j\right]
     \delta((x_j\!-\!x_i) - \text{spec}(x_h\!-\!x_i))
-    \, \hbox{d}\Omega_j
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \, \mathrm{d}\Omega_j
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \\ & =
     \iint_{A_i}
     \iint_{\Omega_h}
     \left[\text{spec}(x_h\!-\!x_i) \in \Omega_j\right]
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \, .
 \end{aligned}
 $$
+
 The innermost integrand $\left[\text{spec}(x_h\!-\!x_i) \in \Omega_j\right]$ is equal to 1 if the direction *specular to* $(x_h\!-\!x_i)$ falls within $\Omega_j$ and 0 otherwise.
 In practice, for numerical integration, taking the average of a "boolean" integrand like this means counting the number of sample points (i.e., rays) for which the condition is true.
+
 $$
 \begin{aligned}
     \iint_{\Omega_h}
     \left[\text{spec}(x_h\!-\!x_i) \in \Omega_j\right]
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
     & \approx
     \frac{
     \sum\nolimits_{\omega_h \in \Omega_h}
@@ -453,8 +491,8 @@ $$
     \iint_{A_i}
     \iint_{\Omega_h}
     \left[\text{spec}(x_h\!-\!x_i) \in \Omega_j\right]
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     & \approx
     \frac{1}{N_x}
     \sum\nolimits_{x_i \in A_i}
@@ -468,13 +506,15 @@ $$
     \, .
 \end{aligned}
 $$
+
 With that said, in practice we carry out the averaging over $x_i \in A_i$ slightly differently, so that the results are closer to the kernel's unity summation property:
+
 $$
     \iint_{A_i}
     \iint_{\Omega_h}
     \left[\text{spec}(x_h\!-\!x_i) \in \Omega_j\right]
-    \frac{\hbox{d}\Omega_h}{\Omega_h}
-    \frac{\hbox{d}A_i}{A_i}
+    \frac{\mathrm{d}\Omega_h}{\Omega_h}
+    \frac{\mathrm{d}A_i}{A_i}
     \approx
     \frac{
     \sum\nolimits_{x_i \in A_i}
