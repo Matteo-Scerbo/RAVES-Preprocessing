@@ -7,7 +7,7 @@ Assuming you run this command from the root directory of the repository.
 Run it with argument `-h` or `--help` to see a list of optional arguments.
 For an example, try
 ```
-python -m raves "./example environments/AudioForGames_fewest_patches"
+python -m raves "./example environments/AudioForGames_20_patches"
 ```
 """
 from .cli import main
