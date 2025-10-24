@@ -10,7 +10,7 @@ The fundamental premise of acoustic radiance transfer is that, after discretizin
 
 $$
     L(x_i, x_j) = \text{const}
-    \quad \forall x_i \in A_i, \forall x_j \in A_j \, .
+    \quad \forall x_i \in A_i, \forall x_j \in A_j .
     %\approx
     %L(x_i, x_j)
 $$
@@ -29,7 +29,7 @@ $$
     \iint_{A_j}
     L(x_i, x_j)
     \mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)
-    \, ,
+    ,
 $$
 
 where $\mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)$ is the differential *etendue* between a pair of differential area elements, defined as
@@ -39,14 +39,14 @@ $$
     \mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)
     & =
     \frac{\cos\theta_{ij}\,\cos\theta_{ji}}{\lVert x_i - x_j\rVert^2}
-    \, \mathrm{d}A_j
-    \, \mathrm{d}A_i
+    \mathrm{d}A_j
+    \mathrm{d}A_i
     % \\ & =
     =
     \cos\theta_{ij}
-    \, \mathrm{d}\Omega_j
-    \, \mathrm{d}A_i
-    \, .
+    \mathrm{d}\Omega_j
+    \mathrm{d}A_i
+    .
 \end{aligned}
 $$
 
@@ -61,7 +61,7 @@ $$
     \iint_{A_i}
     \iint_{A_j}
     \mathrm{d}G(\mathrm{d}A_i, \mathrm{d}A_j)
-    \, ,
+    ,
     \\
     P_{i \to j} & = L_{i \to j} G_{i \to j}
     \iff
@@ -90,7 +90,7 @@ The operation of the $A \to T_{a}(z)$ loop is univocally expressed in the state 
 $$
     \overline{s}(z) =
     z^{-1} \overline{A} \overline{s}(z)
-    \, ,
+    ,
 $$
 
 where $\overline{s}$ is the full state vector of the ART system, and $\overline{A}$ is the full state transition matrix of the ART system.
@@ -100,9 +100,9 @@ Using $s_1(z)$ and $s_2(z)$, the loop operation takes the form
 
 $$
 \begin{aligned}
-    s_1(z) &= A s_2(z) \, ,
+    s_1(z) &= A s_2(z) ,
     \\
-    s_2(z) &= T_{a}(z) s_1(z) \, .
+    s_2(z) &= T_{a}(z) s_1(z) .
 \end{aligned}
 $$
 
@@ -132,11 +132,11 @@ Using the equivalence $s_1(z) = A s_2(z)$, the full system is then represented a
 
 $$
 \begin{aligned}
-    s_2(z) &= T_\mathrm{a}(z) A s_2(z) + B(z) x(z) \, ,
+    s_2(z) &= T_\mathrm{a}(z) A s_2(z) + B(z) x(z) ,
     \\
-    y(z) &= C(z) A s_2(z) + D(z) x(z) \, ;
+    y(z) &= C(z) A s_2(z) + D(z) x(z) ;
     \\
-    H(z) &= C(z) A \left[I - T_\mathrm{a}(z)A\right]^{-1} B(z) + D(z) \, .
+    H(z) &= C(z) A \left[I - T_\mathrm{a}(z)A\right]^{-1} B(z) + D(z) .
 \end{aligned}
 $$
 
@@ -144,11 +144,11 @@ Reframing the same using only $s_1(z)$:
 
 $$
 \begin{aligned}
-    s_1(z) &= A T_\mathrm{a}(z) s_1(z) + A B(z) x(z) \, ,
+    s_1(z) &= A T_\mathrm{a}(z) s_1(z) + A B(z) x(z) ,
     \\
-    y(z) &= C(z) s_1(z) + D(z) x(z) \, ;
+    y(z) &= C(z) s_1(z) + D(z) x(z) ;
     \\
-    H(z) &= C(z) \left[I - AT_\mathrm{a}(z)\right]^{-1} A B(z) + D(z) \, .
+    H(z) &= C(z) \left[I - AT_\mathrm{a}(z)\right]^{-1} A B(z) + D(z) .
 \end{aligned}
 $$
 
@@ -158,7 +158,7 @@ $$
 \begin{aligned}
     H(z) &= C(z) V \left[zI - \Lambda\right]^{-1} W^H B(z) + D(z)
     \\ &=
-    \sum_{i=1}^{M} \frac{C(z) w_i v_i^H b(z)}{z - \lambda_i} + D(z) \, .
+    \sum_{i=1}^{M} \frac{C(z) w_i v_i^H b(z)}{z - \lambda_i} + D(z) .
 \end{aligned}
 $$
 
@@ -173,7 +173,7 @@ In order for the decomposition to hold, the left and right vectors must uphold
 $$
     \overline{W}^H \overline{V}
     = \overline{V}^{-1} \overline{V}
-    = I \, ,
+    = I ,
 $$
 
 which is achieved by ensuring the dot product of each left/right pair is exactly 1.
@@ -225,7 +225,7 @@ $$
     e_\mathrm{b} \sigma_i^{-t_\mathrm{b}}
     % =
     % \frac{e_\mathrm{b}}{\sigma_i^{t_\mathrm{b}}}
-    \, .
+    .
 $$
 
 This scaling is applied when contributions to (and from) propagation paths are computed in RAVES, at runtime.
@@ -248,9 +248,9 @@ $$
     \left[(x_h\!-\!x_i) \in \Omega_h\right]
     \left[(x_j\!-\!x_i) \in \Omega_j\right]
     \frac{\cos\theta_{ij}\,\cos\theta_{ji}}{\lVert x_i - x_j\rVert^2}
-    \, \mathrm{d}A_j
-    \, \frac{\mathrm{d}A_i}{A_i}
-    \, \frac{\mathrm{d}A_h}{A_h}
+    \mathrm{d}A_j
+    \frac{\mathrm{d}A_i}{A_i}
+    \frac{\mathrm{d}A_h}{A_h}
     \\ & =
     \iint_{A_h}
     \iint_{A_i}
@@ -258,10 +258,10 @@ $$
     \rho(x_h, x_i, x_j)
     \left[(x_h\!-\!x_i) \in \Omega_h\right]
     \cos\theta_{ij}
-    \, \mathrm{d}\Omega_j
-    \, \frac{\mathrm{d}A_i}{A_i}
-    \, \frac{\mathrm{d}A_h}{A_h}
-    \, ,
+    \mathrm{d}\Omega_j
+    \frac{\mathrm{d}A_i}{A_i}
+    \frac{\mathrm{d}A_h}{A_h}
+    ,
 \end{aligned}
 $$
 
@@ -280,10 +280,10 @@ $$
     \iint_{\Omega_j}
     \rho(x_h, x_i, x_j)
     \cos \theta_{ij}
-    \, \mathrm{d}\Omega_j
+    \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
-    \, .
+    .
 $$
 
 This results in a different weighting, but both approximations converge to the room acoustic rendering equation.
@@ -307,22 +307,22 @@ $$
     \iint_{\Omega_j}
     \frac{1}{\pi}
     \cos \theta_{ij}
-    \, \mathrm{d}\Omega_j
+    \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
     \\ & =
     \iint_{A_i}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
-    \, \mathrm{d}\Omega_j
+    \mathrm{d}\Omega_j
     \frac{\mathrm{d}A_i}{A_i}
     \quad \forall h
-    \, .
+    .
 \end{aligned}
 $$
 
 The outer integral with $\frac{\mathrm{d}A_i}{A_i}$ means that its integrand is averaged over all points in $A_i$.
-In practice, for numerical integration, we can evaluate ${\iint_{\Omega_j} \frac{\cos \theta_{ij}}{\pi}\, \mathrm{d}\Omega_j}$ at a set of sample points on $A_i$ and average the results.
+In practice, for numerical integration, we can evaluate ${\iint_{\Omega_j} \frac{\cos \theta_{ij}}{\pi}\mathrm{d}\Omega_j}$ at a set of sample points on $A_i$ and average the results.
 The inner integral is a solid angle integral.
 We can uniformly sample $\Omega_j$ by taking uniform directions in the hemisphere around $n_i$ and selecting only the directions which fall inside $\Omega_j$ (with ray-tracing).
 Then, if the full hemisphere is sampled with $N_\omega$ directions, ${\mathrm{d}\Omega_j = \frac{2\pi}{N_\omega}}$ and
@@ -331,24 +331,24 @@ $$
 \begin{aligned}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
-    \, \mathrm{d}\Omega_j(\omega_j)
+    \mathrm{d}\Omega_j(\omega_j)
     & \approx
     \frac{2}{N_\omega}
     \sum\nolimits_{\omega_j \in \Omega_j}
     \cos \theta_{ij}
-    \, ,
+    ,
     \\
     \iint_{A_i}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
-    \, \mathrm{d}\Omega_j(\omega_j)
+    \mathrm{d}\Omega_j(\omega_j)
     \frac{\mathrm{d}A_i}{A_i}
     & \approx
     \frac{2}{N_\omega N_x}
     \sum\nolimits_{x_i \in A_i}
     \sum\nolimits_{\omega_j \in \Omega_j}
     \cos \theta_{ij}
-    \, .
+    .
 \end{aligned}
 $$
 
@@ -359,7 +359,7 @@ $$
     =
     \frac{G_{i \to j}}{\pi A_i}
     \quad \forall h
-    \, .
+    .
 $$
 
 #### Validation
@@ -373,7 +373,7 @@ $$
     F_{\text{diff } h \to i \to j}
     & = 1
     \quad \forall h
-    \, ,
+    ,
     \\
     % \pi A_i F_{\text{diff } h \to i \to j}
     % =
@@ -383,7 +383,7 @@ $$
     % =
     % \pi A_j F_{\text{diff } h \to j \to i}
     % \quad \forall h
-    \, .
+    .
 \end{aligned}
 $$
 
@@ -407,7 +407,7 @@ $$
     \frac{\delta(\text{spec}(x_j\!-\!x_i) - (x_h\!-\!x_i))}{\cos \theta_{ih}}
     \\ & =
     \frac{\delta(\text{spec}(x_j\!-\!x_i) - (x_h\!-\!x_i))}{\cos \theta_{ij}}
-    \, .
+    .
 \end{aligned}
 $$
 
@@ -422,7 +422,7 @@ $$
     \iint_{\Omega_j}
     \frac{\delta(\text{spec}(x_j\!-\!x_i) - (x_h\!-\!x_i))}{\cos \theta_{ij}}
     \cos \theta_{ij}
-    \, \mathrm{d}\Omega_j
+    \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
     \\ & =
@@ -430,7 +430,7 @@ $$
     \iint_{\Omega_h}
     \iint_{\Omega_j}
     \delta(\text{spec}(x_j\!-\!x_i) - (x_h\!-\!x_i))
-    \, \mathrm{d}\Omega_j
+    \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
     \\ & =
@@ -438,10 +438,10 @@ $$
     \iint_{\Omega_h}
     \iint_{\Omega_j}
     \delta((x_j\!-\!x_i) - \text{spec}(x_h\!-\!x_i))
-    \, \mathrm{d}\Omega_j
+    \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
-    \, .
+    .
 \end{aligned}
 $$
 
@@ -457,7 +457,7 @@ $$
     \iint_{\Omega_j}
     \left[(x_j\!-\!x_i) \in \Omega_j\right]
     \delta((x_j\!-\!x_i) - \text{spec}(x_h\!-\!x_i))
-    \, \mathrm{d}\Omega_j
+    \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
     \\ & =
@@ -466,7 +466,7 @@ $$
     \left[\text{spec}(x_h\!-\!x_i) \in \Omega_j\right]
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
-    \, .
+    .
 \end{aligned}
 $$
 
@@ -486,7 +486,7 @@ $$
     \sum\nolimits_{\omega_h \in \Omega_h}
     1
     }
-    \, ,
+    ,
     \\
     \iint_{A_i}
     \iint_{\Omega_h}
@@ -503,7 +503,7 @@ $$
     \sum\nolimits_{\omega_h \in \Omega_h}
     1
     }
-    \, .
+    .
 \end{aligned}
 $$
 
@@ -525,5 +525,5 @@ $$
     \sum\nolimits_{\omega_h \in \Omega_h}
     1
     }
-    \, .
+    .
 $$
