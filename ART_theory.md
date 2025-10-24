@@ -41,7 +41,8 @@ $$
     \frac{\cos\theta_{ij}\,\cos\theta_{ji}}{\lVert x_i - x_j\rVert^2}
     \mathrm{d}A_j
     \mathrm{d}A_i
-    % \\ &{}=
+    % \\
+    % &{}=
     =
     \cos\theta_{ij}
     \mathrm{d}\Omega_j
@@ -158,7 +159,8 @@ The objective of modal decomposition is to achieve the form
 $$
 \begin{align}
     H(z) &{}= C(z) V \left[zI - \Lambda\right]^{-1} W^H B(z) + D(z)
-    \\ &{}=
+    \\
+    &{}=
     \sum_{i=1}^{M} \frac{C(z) w_i v_i^H b(z)}{z - \lambda_i} + D(z) .
 \end{align}
 $$
@@ -252,7 +254,8 @@ $$
     \mathrm{d}A_j
     \frac{\mathrm{d}A_i}{A_i}
     \frac{\mathrm{d}A_h}{A_h}
-    \\ &{}=
+    \\
+    &{}=
     \iint_{A_h}
     \iint_{A_i}
     \iint_{\Omega_j}
@@ -311,7 +314,8 @@ $$
     \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
-    \\ &{}=
+    \\
+    &{}=
     \iint_{A_i}
     \iint_{\Omega_j}
     \frac{\cos \theta_{ij}}{\pi}
@@ -402,11 +406,14 @@ $$
     \rho(x_h, x_i, x_j)
     &{}=
     \frac{\delta(\text{spec}(x_h - x_i) - (x_j - x_i))}{\cos \theta_{ih}}
-    \\ &{}=
+    \\
+    &{}=
     \frac{\delta(\text{spec}(x_h - x_i) - (x_j - x_i))}{\cos \theta_{ij}}
-    \\ &{}=
+    \\
+    &{}=
     \frac{\delta(\text{spec}(x_j - x_i) - (x_h - x_i))}{\cos \theta_{ih}}
-    \\ &{}=
+    \\
+    &{}=
     \frac{\delta(\text{spec}(x_j - x_i) - (x_h - x_i))}{\cos \theta_{ij}}
     .
 \end{align}
@@ -426,7 +433,8 @@ $$
     \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
-    \\ &{}=
+    \\
+    &{}=
     \iint_{A_i}
     \iint_{\Omega_h}
     \iint_{\Omega_j}
@@ -434,7 +442,8 @@ $$
     \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
-    \\ &{}=
+    \\
+    &{}=
     \iint_{A_i}
     \iint_{\Omega_h}
     \iint_{\Omega_j}
@@ -461,7 +470,8 @@ $$
     \mathrm{d}\Omega_j
     \frac{\mathrm{d}\Omega_h}{\Omega_h}
     \frac{\mathrm{d}A_i}{A_i}
-    \\ &{}=
+    \\
+    &{}=
     \iint_{A_i}
     \iint_{\Omega_h}
     \left[\text{spec}(x_h - x_i) \in \Omega_j\right]
