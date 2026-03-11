@@ -2,6 +2,7 @@
 Python translation of TracingTypes.h/.cpp and TracingUtils.h/.cpp (with PLUCKER_KERNEL and LEAN_PLUCKER assumed False),
 revised to store all x/y/z data as (N,3) arrays for efficient vectorized NumPy operations.
 """
+import warnings
 import numpy as np
 from scipy.constants import golden
 from typing import Tuple
@@ -78,7 +79,14 @@ class TriangleMesh:
         self.n = np.cross(self.edge_1, self.edge_2)
         nlen = np.linalg.norm(self.n, axis=1)
         if np.any(nlen == 0):
-            raise ValueError("All faces must have nonzero area.")
+            # raise ValueError("All faces must have nonzero area.")
+            warnings.warn("Some triangles have zero area. They will be removed.")
+            self.patch_ids = self.patch_ids[nlen != 0]
+            self.v_1 = self.v_1[nlen != 0]
+            self.edge_1 = self.edge_1[nlen != 0]
+            self.edge_2 = self.edge_2[nlen != 0]
+            self.n = self.n[nlen != 0]
+            nlen = nlen[nlen != 0]
         self.n /= nlen[:, None]
 
         self.area = 0.5 * nlen
