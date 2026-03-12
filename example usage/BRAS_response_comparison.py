@@ -93,7 +93,33 @@ for short_name, full_name in full_room_names.items():
                 rirs_per_room[short_name][(src, lst)].append(rir_data)
 
 for short_name, rirs_dict in rirs_per_room.items():
+    fig, ax = plt.subplots(dpi=200, figsize=(8, 4))
+
     for (src, lst), rirs in rirs_dict.items():
         print('Found', len(rirs), 'recordings in room', short_name,
               'with source', src, 'and listener', lst)
+        
+        first = True
+        for rir in rirs:
+            energy = rir**2
+            # Reverse integration
+            edc = np.cumsum(energy[::-1])[::-1]
+            # dB scale
+            edc = 10 * np.log10(edc)
+            # Normalize by total energy
+            edc -= edc[0]
+            # Decimate (speeds up rendering)
+            edc = edc[::100]
+            
+            if first:
+                plt.plot(edc, label = src + ' ' + lst)
+                first = False
+            else:
+                plt.plot(edc, color = plt.gca().lines[-1].get_color())
+    
+    plt.ylim(-60, 0)
+    plt.title('Mesh name: ' + short_name)
 
+    plt.tight_layout()
+    plt.legend()
+    plt.show()

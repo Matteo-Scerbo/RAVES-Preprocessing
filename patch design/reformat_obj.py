@@ -232,6 +232,4 @@ for root, dirs, files in os.walk(root_folder):
                 plt.tight_layout()
                 plt.show()
                 
-                break
-                
                 # visualize_mesh(new_dir)
