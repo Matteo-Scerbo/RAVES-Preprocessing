@@ -233,7 +233,8 @@ def run_ART(folder_path: str,
             echogram_duration: float = 1.,
             num_rays: int = 1000,
             output_folder_path: str = None,
-            humidity: float = 50., temperature: float = 20., pressure: float = 100.
+            humidity: float = 50., temperature: float = 20., pressure: float = 100.,
+            assert_coplanarity: bool = True
             ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Build echograms using TD-ART.
@@ -319,7 +320,7 @@ def run_ART(folder_path: str,
         raise ValueError(size_message)
 
     # Load 3D mesh for ray-tracing.
-    mesh, _, _, _ = load_all_inputs(folder_path)
+    mesh, _, _, _ = load_all_inputs(folder_path, assert_coplanarity=assert_coplanarity)
 
     # Load frequency band centers.
     frequencies = load_frequencies(folder_path)
@@ -544,7 +545,8 @@ def run_MoDART(folder_path: str,
                echogram_duration: float = 1.,
                num_rays: int = 1000,
                output_folder_path: str = None,
-               humidity: float = 50., temperature: float = 20., pressure: float = 100.
+               humidity: float = 50., temperature: float = 20., pressure: float = 100.,
+               assert_coplanarity: bool = True
                ) -> Tuple[np.ndarray, np.ndarray, Dict[str, np.ndarray]]:
     """
     Build echograms using MoD-ART.
@@ -643,7 +645,7 @@ def run_MoDART(folder_path: str,
         raise ValueError(size_message)
 
     # Load 3D mesh for ray-tracing.
-    mesh, _, _, _ = load_all_inputs(folder_path)
+    mesh, _, _, _ = load_all_inputs(folder_path, assert_coplanarity=assert_coplanarity)
 
     # Load frequency band centers.
     frequencies = load_frequencies(folder_path)

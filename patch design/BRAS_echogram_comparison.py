@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from scipy.io.wavfile import read
 from collections import defaultdict
 
-from raves import compute_ART, run_ART
-
 mesh_folder = os.path.join('..', 'BRAS meshes')
 response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
 

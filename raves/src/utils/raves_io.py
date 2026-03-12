@@ -336,7 +336,8 @@ def merge_small_patches(vertices: np.ndarray,
 
 def load_all_inputs(folder_path: str,
                     area_threshold: float = 0.,
-                    thoroughness: float = 0.
+                    thoroughness: float = 0.,
+                    assert_coplanarity: bool = True
                     ) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray], str]:
     """
     Load mesh geometry and materials, optionally merging small patches.
@@ -364,7 +365,9 @@ def load_all_inputs(folder_path: str,
     str
         Resolved folder path, which may change if a merged mesh was written.
     """
-    mesh, patch_materials, folder_path = load_mesh(folder_path, area_threshold, thoroughness)
+    mesh, patch_materials, folder_path = load_mesh(folder_path,
+                                                   area_threshold, thoroughness,
+                                                   assert_coplanarity)
     material_coefficients = load_materials(folder_path, set(patch_materials))
 
     return mesh, patch_materials, material_coefficients, folder_path
