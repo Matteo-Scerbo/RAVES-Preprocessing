@@ -2,7 +2,6 @@
 Python translation of TracingTypes.h/.cpp and TracingUtils.h/.cpp (with PLUCKER_KERNEL and LEAN_PLUCKER assumed False),
 revised to store all x/y/z data as (N,3) arrays for efficient vectorized NumPy operations.
 """
-import warnings
 import numpy as np
 from scipy.constants import golden
 from typing import Tuple
@@ -71,37 +70,53 @@ class TriangleMesh:
 
         if f.min() < 0 or f.max() >= v.shape[0]:
             raise IndexError("faces contain vertex indices out of range for `vertices`")
-
+        
         self.v_1 = v[f[:, 0]]
         self.edge_1 = v[f[:, 1]] - self.v_1
         self.edge_2 = v[f[:, 2]] - self.v_1
-
+        
         self.n = np.cross(self.edge_1, self.edge_2)
         nlen = np.linalg.norm(self.n, axis=1)
         if np.any(nlen == 0):
-            # raise ValueError("All faces must have nonzero area.")
-            warnings.warn("Some triangles have zero area. They will be removed.")
-            self.patch_ids = self.patch_ids[nlen != 0]
-            self.v_1 = self.v_1[nlen != 0]
-            self.edge_1 = self.edge_1[nlen != 0]
-            self.edge_2 = self.edge_2[nlen != 0]
-            self.n = self.n[nlen != 0]
-            nlen = nlen[nlen != 0]
+            raise ValueError("All faces must have nonzero area.")
+        
         self.n /= nlen[:, None]
 
         self.area = 0.5 * nlen
         self.d_0 = np.einsum("ij,ij->i", self.n, self.v_1)
 
-    def size(self) -> int:
+    def size(self, count_patches: bool = False) -> int:
         """
-        Number of triangles in the mesh.
+        Number of triangles or patches in the mesh.
+
+        Parameters
+        ----------
+        count_patches : bool
+            If True, return the number of patches.
+            Otherwise, the number of triangles.
 
         Returns
         -------
         int
-            The count of triangles (M).
+            The count of triangles (M) or patches.
         """
-        return int(self.v_1.shape[0])
+        if count_patches:
+            return int(np.max(self.patch_ids) + 1)
+        else:
+            return int(self.v_1.shape[0])
+
+    def perimeter(self) -> np.ndarray:
+        """
+        Calculate the perimeter of each triangle in the mesh.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of size (M) containing the perimeter of each triangle.
+        """
+        return (np.linalg.norm(self.edge_1, axis=1) +
+                np.linalg.norm(self.edge_2, axis=1) +
+                np.linalg.norm(self.edge_1 - self.edge_2, axis=1))
 
     def sample_triangle(self, triangle_idx: int, points_per_square_meter: float) -> np.ndarray:
         """

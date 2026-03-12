@@ -432,7 +432,8 @@ def load_mesh(folder_path: str,
 
             if split_line[0] == 'v':
                 if len(split_line) == 5:
-                    print('`w` coordinates are ignored.')
+                    warnings.warn('`w` coordinates are ignored.'
+                                  + ' Bad line index: ' + str(line_idx) + ', bad line:\n\t' + line)
                     split_line = split_line[:-1]
 
                 if len(split_line) != 4:
