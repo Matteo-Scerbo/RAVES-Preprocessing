@@ -5,9 +5,9 @@ v -51.3185997 167.02275085 5.90551186
 v -111.16111755 160.723526 5.90551186
 v -111.16111755 167.02275085 5.90551186
 v -51.3185997 160.723526 5.90551186
-usemtl Patch_1_Mat_mat0
+usemtl Patch_1_Mat_CR2_concrete
 f 1 2 3
-usemtl Patch_2_Mat_mat0
+usemtl Patch_2_Mat_CR2_concrete
 f 2 1 4
 
 # obj2
@@ -15,9 +15,9 @@ v -51.3185997 160.723526 23.4251976
 v -111.16111755 167.02275085 23.4251976
 v -111.16111755 160.723526 23.4251976
 v -51.3185997 167.02275085 23.4251976
-usemtl Patch_3_Mat_mat0
+usemtl Patch_3_Mat_CR2_concrete
 f 5 6 7
-usemtl Patch_4_Mat_mat0
+usemtl Patch_4_Mat_CR2_concrete
 f 6 5 8
 
 # obj3
@@ -25,9 +25,9 @@ v -51.3185997 167.02275085 5.90551186
 v -51.3185997 160.723526 23.4251976
 v -51.3185997 160.723526 5.90551186
 v -51.3185997 167.02275085 23.4251976
-usemtl Patch_5_Mat_mat0
+usemtl Patch_5_Mat_CR2_concrete
 f 9 10 11
-usemtl Patch_6_Mat_mat0
+usemtl Patch_6_Mat_CR2_concrete
 f 10 9 12
 
 # obj4
@@ -35,9 +35,9 @@ v -111.16111755 167.02275085 23.4251976
 v -51.3185997 167.02275085 5.90551186
 v -111.16111755 167.02275085 5.90551186
 v -51.3185997 167.02275085 23.4251976
-usemtl Patch_7_Mat_mat0
+usemtl Patch_7_Mat_CR2_concrete
 f 13 14 15
-usemtl Patch_8_Mat_mat0
+usemtl Patch_8_Mat_CR2_concrete
 f 14 13 16
 
 # obj5
@@ -45,9 +45,9 @@ v -111.16111755 167.02275085 23.4251976
 v -111.16111755 160.723526 5.90551186
 v -111.16111755 160.723526 23.4251976
 v -111.16111755 167.02275085 5.90551186
-usemtl Patch_9_Mat_mat0
+usemtl Patch_9_Mat_CR2_concrete
 f 17 18 19
-usemtl Patch_10_Mat_mat0
+usemtl Patch_10_Mat_CR2_concrete
 f 18 17 20
 
 # obj6
@@ -55,9 +55,9 @@ v -51.3185997 160.723526 23.4251976
 v -111.16111755 160.723526 5.90551186
 v -51.3185997 160.723526 5.90551186
 v -111.16111755 160.723526 23.4251976
-usemtl Patch_11_Mat_mat0
+usemtl Patch_11_Mat_CR2_concrete
 f 21 22 23
-usemtl Patch_12_Mat_mat0
+usemtl Patch_12_Mat_CR2_concrete
 f 22 21 24
 
 # obj7
@@ -65,9 +65,9 @@ v 29.78376389 167.02275085 5.90551186
 v -30.05875587 160.723526 5.90551186
 v -30.05875587 167.02275085 5.90551186
 v 29.78376389 160.723526 5.90551186
-usemtl Patch_13_Mat_mat0
+usemtl Patch_13_Mat_CR2_concrete
 f 25 26 27
-usemtl Patch_14_Mat_mat0
+usemtl Patch_14_Mat_CR2_concrete
 f 26 25 28
 
 # obj8
@@ -75,9 +75,9 @@ v 29.78376389 160.723526 23.4251976
 v -30.05875587 167.02275085 23.4251976
 v -30.05875587 160.723526 23.4251976
 v 29.78376389 167.02275085 23.4251976
-usemtl Patch_15_Mat_mat0
+usemtl Patch_15_Mat_CR2_concrete
 f 29 30 31
-usemtl Patch_16_Mat_mat0
+usemtl Patch_16_Mat_CR2_concrete
 f 30 29 32
 
 # obj9
@@ -85,9 +85,9 @@ v 29.78376389 160.723526 23.4251976
 v -30.05875587 160.723526 5.90551186
 v 29.78376389 160.723526 5.90551186
 v -30.05875587 160.723526 23.4251976
-usemtl Patch_17_Mat_mat0
+usemtl Patch_17_Mat_CR2_concrete
 f 33 34 35
-usemtl Patch_18_Mat_mat0
+usemtl Patch_18_Mat_CR2_concrete
 f 34 33 36
 
 # obj10
@@ -95,9 +95,9 @@ v 29.78376389 167.02275085 5.90551186
 v 29.78376389 160.723526 23.4251976
 v 29.78376389 160.723526 5.90551186
 v 29.78376389 167.02275085 23.4251976
-usemtl Patch_19_Mat_mat0
+usemtl Patch_19_Mat_CR2_concrete
 f 37 38 39
-usemtl Patch_20_Mat_mat0
+usemtl Patch_20_Mat_CR2_concrete
 f 38 37 40
 
 # obj11
@@ -105,9 +105,9 @@ v -30.05875587 167.02275085 23.4251976
 v -30.05875587 160.723526 5.90551186
 v -30.05875587 160.723526 23.4251976
 v -30.05875587 167.02275085 5.90551186
-usemtl Patch_21_Mat_mat0
+usemtl Patch_21_Mat_CR2_concrete
 f 41 42 43
-usemtl Patch_22_Mat_mat0
+usemtl Patch_22_Mat_CR2_concrete
 f 42 41 44
 
 # obj12
@@ -115,9 +115,9 @@ v -30.05875587 167.02275085 23.4251976
 v 29.78376389 167.02275085 5.90551186
 v -30.05875587 167.02275085 5.90551186
 v 29.78376389 167.02275085 23.4251976
-usemtl Patch_23_Mat_mat0
+usemtl Patch_23_Mat_CR2_concrete
 f 45 46 47
-usemtl Patch_24_Mat_mat0
+usemtl Patch_24_Mat_CR2_concrete
 f 46 45 48
 
 # obj13
@@ -125,9 +125,9 @@ v 110.37431335 170.76290894 101.10236359
 v 49.62628555 164.93612671 101.10236359
 v 49.62628555 170.76290894 101.10236359
 v 110.37431335 164.93612671 101.10236359
-usemtl Patch_25_Mat_mat0
+usemtl Patch_25_Mat_CR2_concrete
 f 49 50 51
-usemtl Patch_26_Mat_mat0
+usemtl Patch_26_Mat_CR2_concrete
 f 50 49 52
 
 # obj14
@@ -135,9 +135,9 @@ v 110.37431335 170.76290894 17.71653557
 v 49.62628555 170.76290894 101.10236359
 v 49.62628555 170.76290894 17.71653557
 v 110.37431335 170.76290894 101.10236359
-usemtl Patch_27_Mat_mat1
+usemtl Patch_27_Mat_CR2_windows
 f 53 54 55
-usemtl Patch_28_Mat_mat1
+usemtl Patch_28_Mat_CR2_windows
 f 54 53 56
 
 # obj15
@@ -145,9 +145,9 @@ v 112.9333725 150.2117157 44.33070755
 v 112.9333725 135.6842804 36.0629921
 v 112.9333725 135.6842804 44.33070755
 v 112.9333725 150.2117157 24.01574898
-usemtl Patch_29_Mat_mat0
+usemtl Patch_29_Mat_CR2_concrete
 f 57 58 59
-usemtl Patch_30_Mat_mat0
+usemtl Patch_30_Mat_CR2_concrete
 f 58 57 60
 
 # obj16
@@ -159,17 +159,17 @@ v 124.15383911 150.054245 24.01574898
 v 124.15383911 150.054245 117.63779449
 v 123.28770447 -66.71741486 117.63779449
 v 124.15383911 150.054245 44.33070755
-usemtl Patch_31_Mat_mat0
+usemtl Patch_31_Mat_CR2_concrete
 f 61 62 63
-usemtl Patch_32_Mat_mat0
+usemtl Patch_32_Mat_CR2_concrete
 f 62 61 64
-usemtl Patch_33_Mat_mat0
+usemtl Patch_33_Mat_CR2_concrete
 f 63 62 65
-usemtl Patch_34_Mat_mat0
+usemtl Patch_34_Mat_CR2_concrete
 f 66 61 67
-usemtl Patch_35_Mat_mat0
+usemtl Patch_35_Mat_CR2_concrete
 f 61 66 64
-usemtl Patch_36_Mat_mat0
+usemtl Patch_36_Mat_CR2_concrete
 f 64 66 68
 
 # obj17
@@ -177,9 +177,9 @@ v 124.09642792 135.6842804 44.33070755
 v 112.9333725 150.2117157 44.33070755
 v 112.9333725 135.6842804 44.33070755
 v 124.15383911 150.054245 44.33070755
-usemtl Patch_37_Mat_mat0
+usemtl Patch_37_Mat_CR2_concrete
 f 69 70 71
-usemtl Patch_38_Mat_mat0
+usemtl Patch_38_Mat_CR2_concrete
 f 70 69 72
 
 # obj18
@@ -187,16 +187,16 @@ v 124.15383911 150.054245 24.01574898
 v 112.9333725 150.2117157 0
 v 124.15383911 150.054245 0
 v 112.9333725 150.2117157 24.01574898
-usemtl Patch_39_Mat_mat0
+usemtl Patch_39_Mat_CR2_concrete
 f 73 74 75
-usemtl Patch_40_Mat_mat0
+usemtl Patch_40_Mat_CR2_concrete
 f 74 73 76
 
 # obj19
 v 124.15383911 150.054245 24.01574898
 v 112.9333725 135.6842804 36.0629921
 v 112.9333725 150.2117157 24.01574898
-usemtl Patch_41_Mat_mat0
+usemtl Patch_41_Mat_CR2_concrete
 f 77 78 79
 
 # obj20
@@ -204,9 +204,9 @@ v 124.09642792 135.6842804 44.33070755
 v 112.9333725 135.6842804 36.0629921
 v 124.09642792 135.6842804 36.0629921
 v 112.9333725 135.6842804 44.33070755
-usemtl Patch_42_Mat_mat0
+usemtl Patch_42_Mat_CR2_concrete
 f 80 81 82
-usemtl Patch_43_Mat_mat0
+usemtl Patch_43_Mat_CR2_concrete
 f 81 80 83
 
 # obj21
@@ -214,16 +214,16 @@ v 104.27774811 86.74715424 113.70079041
 v 104.27774811 78.87313843 117.63779449
 v 104.27774811 78.87313843 113.70079041
 v 104.27774811 86.74715424 117.63779449
-usemtl Patch_44_Mat_mat0
+usemtl Patch_44_Mat_CR2_concrete
 f 84 85 86
-usemtl Patch_45_Mat_mat0
+usemtl Patch_45_Mat_CR2_concrete
 f 85 84 87
 
 # obj22
 v 124.15383911 150.054245 24.01574898
 v 124.09642792 135.6842804 36.0629921
 v 112.9333725 135.6842804 36.0629921
-usemtl Patch_46_Mat_mat0
+usemtl Patch_46_Mat_CR2_concrete
 f 88 89 90
 
 # obj23
@@ -234,15 +234,15 @@ v 0.61632711 86.74715424 113.70079041
 v 51.79742813 86.74715424 113.70079041
 v 104.27774811 86.74715424 113.70079041
 v 104.27774811 86.74715424 117.63779449
-usemtl Patch_47_Mat_mat2
+usemtl Patch_47_Mat_CR2_ceiling
 f 91 92 93
-usemtl Patch_48_Mat_mat2
+usemtl Patch_48_Mat_CR2_ceiling
 f 92 91 94
-usemtl Patch_49_Mat_mat2
+usemtl Patch_49_Mat_CR2_ceiling
 f 94 91 95
-usemtl Patch_50_Mat_mat2
+usemtl Patch_50_Mat_CR2_ceiling
 f 95 91 96
-usemtl Patch_51_Mat_mat2
+usemtl Patch_51_Mat_CR2_ceiling
 f 96 91 97
 
 # obj24
@@ -250,9 +250,9 @@ v -101.74588013 86.74715424 117.63779449
 v -101.74588013 78.87313843 113.70079041
 v -101.74588013 78.87313843 117.63779449
 v -101.74588013 86.74715424 113.70079041
-usemtl Patch_52_Mat_mat0
+usemtl Patch_52_Mat_CR2_concrete
 f 98 99 100
-usemtl Patch_53_Mat_mat0
+usemtl Patch_53_Mat_CR2_concrete
 f 99 98 101
 
 # obj25
@@ -262,13 +262,13 @@ v 112.9333725 150.2117157 117.63779449
 v 112.9333725 150.2117157 24.01574898
 v 112.9333725 150.2117157 0
 v 112.9333725 164.93612671 0
-usemtl Patch_54_Mat_mat0
+usemtl Patch_54_Mat_CR2_concrete
 f 102 103 104
-usemtl Patch_55_Mat_mat0
+usemtl Patch_55_Mat_CR2_concrete
 f 103 102 105
-usemtl Patch_56_Mat_mat0
+usemtl Patch_56_Mat_CR2_concrete
 f 105 102 106
-usemtl Patch_57_Mat_mat0
+usemtl Patch_57_Mat_CR2_concrete
 f 106 102 107
 
 # obj26
@@ -279,15 +279,15 @@ v 0.61632711 78.87313843 113.70079041
 v -50.56477356 78.87313843 113.70079041
 v -101.74588013 78.87313843 113.70079041
 v -101.74588013 78.87313843 117.63779449
-usemtl Patch_58_Mat_mat2
+usemtl Patch_58_Mat_CR2_ceiling
 f 108 109 110
-usemtl Patch_59_Mat_mat2
+usemtl Patch_59_Mat_CR2_ceiling
 f 109 108 111
-usemtl Patch_60_Mat_mat2
+usemtl Patch_60_Mat_CR2_ceiling
 f 111 108 112
-usemtl Patch_61_Mat_mat2
+usemtl Patch_61_Mat_CR2_ceiling
 f 112 108 113
-usemtl Patch_62_Mat_mat2
+usemtl Patch_62_Mat_CR2_ceiling
 f 113 108 114
 
 # obj27
@@ -295,9 +295,9 @@ v 119.03573608 -145.45756531 25.90551186
 v 119.03573608 -154.31584167 30.70866203
 v 119.03573608 -154.31584167 25.90551186
 v 119.03573608 -145.45756531 30.70866203
-usemtl Patch_63_Mat_mat0
+usemtl Patch_63_Mat_CR2_concrete
 f 115 116 117
-usemtl Patch_64_Mat_mat0
+usemtl Patch_64_Mat_CR2_concrete
 f 116 115 118
 
 # obj28
@@ -305,9 +305,9 @@ v 124.15383911 150.054245 117.63779449
 v 112.9333725 150.2117157 44.33070755
 v 124.15383911 150.054245 44.33070755
 v 112.9333725 150.2117157 117.63779449
-usemtl Patch_65_Mat_mat0
+usemtl Patch_65_Mat_CR2_concrete
 f 119 120 121
-usemtl Patch_66_Mat_mat0
+usemtl Patch_66_Mat_CR2_concrete
 f 120 119 122
 
 # obj29
@@ -315,9 +315,9 @@ v -113.56269073 149.03062439 0
 v -119.54694366 149.03062439 98.42519379
 v -119.54694366 149.03062439 0
 v -113.56269073 149.03062439 98.42519379
-usemtl Patch_67_Mat_mat0
+usemtl Patch_67_Mat_CR2_concrete
 f 123 124 125
-usemtl Patch_68_Mat_mat0
+usemtl Patch_68_Mat_CR2_concrete
 f 124 123 126
 
 # obj30
@@ -325,9 +325,9 @@ v -113.56269073 149.03062439 98.42519379
 v -119.54694366 -113.80402374 98.42519379
 v -119.54694366 149.03062439 98.42519379
 v -113.56269073 -113.80402374 98.42519379
-usemtl Patch_69_Mat_mat0
+usemtl Patch_69_Mat_CR2_concrete
 f 127 128 129
-usemtl Patch_70_Mat_mat0
+usemtl Patch_70_Mat_CR2_concrete
 f 128 127 130
 
 # obj31
@@ -335,9 +335,9 @@ v -119.54694366 149.03062439 0
 v -119.54694366 -113.80402374 98.42519379
 v -119.54694366 -113.80402374 0
 v -119.54694366 149.03062439 98.42519379
-usemtl Patch_71_Mat_mat3
+usemtl Patch_71_Mat_CR2_plaster
 f 131 132 133
-usemtl Patch_72_Mat_mat3
+usemtl Patch_72_Mat_CR2_plaster
 f 132 131 134
 
 # obj32
@@ -372,63 +372,63 @@ v -113.20835876 -113.01662445 0
 v -111.39733887 164.93612671 0
 v -111.39733887 169.58180237 0
 v -51.08237839 169.58180237 0
-usemtl Patch_73_Mat_mat4
+usemtl Patch_73_Mat_CR2_floor
 f 135 136 137
-usemtl Patch_74_Mat_mat4
+usemtl Patch_74_Mat_CR2_floor
 f 138 135 139
-usemtl Patch_75_Mat_mat4
+usemtl Patch_75_Mat_CR2_floor
 f 135 138 140
-usemtl Patch_76_Mat_mat4
+usemtl Patch_76_Mat_CR2_floor
 f 135 140 141
-usemtl Patch_77_Mat_mat4
+usemtl Patch_77_Mat_CR2_floor
 f 141 140 142
-usemtl Patch_78_Mat_mat4
+usemtl Patch_78_Mat_CR2_floor
 f 142 140 143
-usemtl Patch_79_Mat_mat4
+usemtl Patch_79_Mat_CR2_floor
 f 143 140 144
-usemtl Patch_80_Mat_mat4
+usemtl Patch_80_Mat_CR2_floor
 f 144 140 145
-usemtl Patch_81_Mat_mat4
+usemtl Patch_81_Mat_CR2_floor
 f 145 140 146
-usemtl Patch_82_Mat_mat4
+usemtl Patch_82_Mat_CR2_floor
 f 140 138 147
-usemtl Patch_83_Mat_mat4
+usemtl Patch_83_Mat_CR2_floor
 f 147 138 148
-usemtl Patch_84_Mat_mat4
+usemtl Patch_84_Mat_CR2_floor
 f 149 150 151
-usemtl Patch_85_Mat_mat4
+usemtl Patch_85_Mat_CR2_floor
 f 150 149 152
-usemtl Patch_86_Mat_mat4
+usemtl Patch_86_Mat_CR2_floor
 f 152 149 153
-usemtl Patch_87_Mat_mat4
+usemtl Patch_87_Mat_CR2_floor
 f 154 150 152
-usemtl Patch_88_Mat_mat4
+usemtl Patch_88_Mat_CR2_floor
 f 146 151 155
-usemtl Patch_89_Mat_mat4
+usemtl Patch_89_Mat_CR2_floor
 f 151 146 140
-usemtl Patch_90_Mat_mat4
+usemtl Patch_90_Mat_CR2_floor
 f 155 151 150
-usemtl Patch_91_Mat_mat4
+usemtl Patch_91_Mat_CR2_floor
 f 156 143 144
-usemtl Patch_92_Mat_mat4
+usemtl Patch_92_Mat_CR2_floor
 f 157 158 159
-usemtl Patch_93_Mat_mat4
+usemtl Patch_93_Mat_CR2_floor
 f 158 157 160
-usemtl Patch_94_Mat_mat4
+usemtl Patch_94_Mat_CR2_floor
 f 160 157 161
-usemtl Patch_95_Mat_mat4
+usemtl Patch_95_Mat_CR2_floor
 f 161 157 162
-usemtl Patch_96_Mat_mat4
+usemtl Patch_96_Mat_CR2_floor
 f 161 162 163
-usemtl Patch_97_Mat_mat4
+usemtl Patch_97_Mat_CR2_floor
 f 163 162 136
-usemtl Patch_98_Mat_mat4
+usemtl Patch_98_Mat_CR2_floor
 f 163 136 164
-usemtl Patch_99_Mat_mat4
+usemtl Patch_99_Mat_CR2_floor
 f 164 136 165
-usemtl Patch_100_Mat_mat4
+usemtl Patch_100_Mat_CR2_floor
 f 165 136 135
-usemtl Patch_101_Mat_mat4
+usemtl Patch_101_Mat_CR2_floor
 f 165 135 141
 
 # obj33
@@ -440,17 +440,17 @@ v 121.79164124 -155.18197632 35.70866013
 v 121.79164124 -167.50480652 0
 v 121.79164124 -167.50480652 22.75590515
 v 121.79164124 -145.45756531 0
-usemtl Patch_102_Mat_mat0
+usemtl Patch_102_Mat_CR2_concrete
 f 166 167 168
-usemtl Patch_103_Mat_mat0
+usemtl Patch_103_Mat_CR2_concrete
 f 167 166 169
-usemtl Patch_104_Mat_mat0
+usemtl Patch_104_Mat_CR2_concrete
 f 169 166 170
-usemtl Patch_105_Mat_mat0
+usemtl Patch_105_Mat_CR2_concrete
 f 170 171 172
-usemtl Patch_106_Mat_mat0
+usemtl Patch_106_Mat_CR2_concrete
 f 171 170 173
-usemtl Patch_107_Mat_mat0
+usemtl Patch_107_Mat_CR2_concrete
 f 173 170 166
 
 # obj34
@@ -461,15 +461,15 @@ v 0.61632711 -1.7961514 113.70079041
 v 51.79742813 -1.7961514 113.70079041
 v 104.27774811 -1.7961514 113.70079041
 v 104.27774811 -1.7961514 117.63779449
-usemtl Patch_108_Mat_mat2
+usemtl Patch_108_Mat_CR2_ceiling
 f 174 175 176
-usemtl Patch_109_Mat_mat2
+usemtl Patch_109_Mat_CR2_ceiling
 f 175 174 177
-usemtl Patch_110_Mat_mat2
+usemtl Patch_110_Mat_CR2_ceiling
 f 177 174 178
-usemtl Patch_111_Mat_mat2
+usemtl Patch_111_Mat_CR2_ceiling
 f 178 174 179
-usemtl Patch_112_Mat_mat2
+usemtl Patch_112_Mat_CR2_ceiling
 f 179 174 180
 
 # obj35
@@ -477,9 +477,9 @@ v 51.79742813 -1.7961514 113.70079041
 v 0.61632711 -9.67016697 113.70079041
 v 0.61632711 -1.7961514 113.70079041
 v 51.79742813 -9.67016697 113.70079041
-usemtl Patch_113_Mat_mat2
+usemtl Patch_113_Mat_CR2_ceiling
 f 181 182 183
-usemtl Patch_114_Mat_mat2
+usemtl Patch_114_Mat_CR2_ceiling
 f 182 181 184
 
 # obj36
@@ -492,23 +492,23 @@ v 119.03573608 -145.45756531 30.70866203
 v 100.92549896 -145.45756531 30.70866203
 v 100.92549896 -145.45756531 25.90551186
 v 97.97274017 -145.45756531 117.63779449
-usemtl Patch_115_Mat_mat0
+usemtl Patch_115_Mat_CR2_concrete
 f 185 186 187
-usemtl Patch_116_Mat_mat0
+usemtl Patch_116_Mat_CR2_concrete
 f 186 185 188
-usemtl Patch_117_Mat_mat0
+usemtl Patch_117_Mat_CR2_concrete
 f 187 186 189
-usemtl Patch_118_Mat_mat0
+usemtl Patch_118_Mat_CR2_concrete
 f 186 188 190
-usemtl Patch_119_Mat_mat0
+usemtl Patch_119_Mat_CR2_concrete
 f 190 188 191
-usemtl Patch_120_Mat_mat0
+usemtl Patch_120_Mat_CR2_concrete
 f 189 192 193
-usemtl Patch_121_Mat_mat0
+usemtl Patch_121_Mat_CR2_concrete
 f 192 189 186
-usemtl Patch_122_Mat_mat0
+usemtl Patch_122_Mat_CR2_concrete
 f 193 192 191
-usemtl Patch_123_Mat_mat0
+usemtl Patch_123_Mat_CR2_concrete
 f 193 191 188
 
 # obj37
@@ -516,9 +516,9 @@ v 99.15383911 -66.71741486 117.63779449
 v 97.97274017 -145.45756531 0
 v 97.97274017 -145.45756531 117.63779449
 v 99.15383911 -66.71741486 0
-usemtl Patch_124_Mat_mat0
+usemtl Patch_124_Mat_CR2_concrete
 f 194 195 196
-usemtl Patch_125_Mat_mat0
+usemtl Patch_125_Mat_CR2_concrete
 f 195 194 197
 
 # obj38
@@ -526,9 +526,9 @@ v 99.15383911 -66.71741486 117.63779449
 v 123.28770447 -66.71741486 0
 v 99.15383911 -66.71741486 0
 v 123.28770447 -66.71741486 117.63779449
-usemtl Patch_126_Mat_mat0
+usemtl Patch_126_Mat_CR2_concrete
 f 198 199 200
-usemtl Patch_127_Mat_mat0
+usemtl Patch_127_Mat_CR2_concrete
 f 199 198 201
 
 # obj39
@@ -540,17 +540,17 @@ v 114.23258209 -167.50480652 43.74015808
 v 121.79164124 -167.50480652 43.74015808
 v 121.79164124 -167.50480652 117.63779449
 v 121.79164124 -167.50480652 22.75590515
-usemtl Patch_128_Mat_mat3
+usemtl Patch_128_Mat_CR2_plaster
 f 202 203 204
-usemtl Patch_129_Mat_mat3
+usemtl Patch_129_Mat_CR2_plaster
 f 203 202 205
-usemtl Patch_130_Mat_mat3
+usemtl Patch_130_Mat_CR2_plaster
 f 205 202 206
-usemtl Patch_131_Mat_mat3
+usemtl Patch_131_Mat_CR2_plaster
 f 206 202 207
-usemtl Patch_132_Mat_mat3
+usemtl Patch_132_Mat_CR2_plaster
 f 207 202 208
-usemtl Patch_133_Mat_mat3
+usemtl Patch_133_Mat_CR2_plaster
 f 209 203 205
 
 # obj40
@@ -558,9 +558,9 @@ v -63.64143372 -113.80402374 0
 v -63.64143372 -167.50480652 117.63779449
 v -63.64143372 -167.50480652 0
 v -63.64143372 -113.4103241 117.63779449
-usemtl Patch_134_Mat_mat0
+usemtl Patch_134_Mat_CR2_concrete
 f 210 211 212
-usemtl Patch_135_Mat_mat0
+usemtl Patch_135_Mat_CR2_concrete
 f 211 210 213
 
 # obj41
@@ -570,13 +570,13 @@ v -113.56269073 149.03062439 0
 v -113.56269073 -113.4103241 117.63779449
 v -113.56269073 -113.80402374 98.42519379
 v -113.56269073 164.93612671 117.63779449
-usemtl Patch_136_Mat_mat0
+usemtl Patch_136_Mat_CR2_concrete
 f 214 215 216
-usemtl Patch_137_Mat_mat0
+usemtl Patch_137_Mat_CR2_concrete
 f 215 217 218
-usemtl Patch_138_Mat_mat0
+usemtl Patch_138_Mat_CR2_concrete
 f 217 215 219
-usemtl Patch_139_Mat_mat0
+usemtl Patch_139_Mat_CR2_concrete
 f 219 215 214
 
 # obj42
@@ -584,9 +584,9 @@ v -50.56477356 -1.7961514 113.70079041
 v -101.74588013 -9.67016697 113.70079041
 v -101.74588013 -1.7961514 113.70079041
 v -50.56477356 -9.67016697 113.70079041
-usemtl Patch_140_Mat_mat2
+usemtl Patch_140_Mat_CR2_ceiling
 f 220 221 222
-usemtl Patch_141_Mat_mat2
+usemtl Patch_141_Mat_CR2_ceiling
 f 221 220 223
 
 # obj43
@@ -594,9 +594,9 @@ v -101.74588013 -1.7961514 117.63779449
 v -101.74588013 -9.67016697 113.70079041
 v -101.74588013 -9.67016697 117.63779449
 v -101.74588013 -1.7961514 113.70079041
-usemtl Patch_142_Mat_mat0
+usemtl Patch_142_Mat_CR2_concrete
 f 224 225 226
-usemtl Patch_143_Mat_mat0
+usemtl Patch_143_Mat_CR2_concrete
 f 225 224 227
 
 # obj44
@@ -607,15 +607,15 @@ v -3.32068086 -98.21347046 113.70079041
 v -52.53327942 -98.21347046 113.70079041
 v -101.74588013 -98.21347046 113.70079041
 v -101.74588013 -98.21347046 117.63779449
-usemtl Patch_144_Mat_mat2
+usemtl Patch_144_Mat_CR2_ceiling
 f 228 229 230
-usemtl Patch_145_Mat_mat2
+usemtl Patch_145_Mat_CR2_ceiling
 f 229 228 231
-usemtl Patch_146_Mat_mat2
+usemtl Patch_146_Mat_CR2_ceiling
 f 231 228 232
-usemtl Patch_147_Mat_mat2
+usemtl Patch_147_Mat_CR2_ceiling
 f 232 228 233
-usemtl Patch_148_Mat_mat2
+usemtl Patch_148_Mat_CR2_ceiling
 f 233 228 234
 
 # obj45
@@ -623,9 +623,9 @@ v 98.37223053 -90.33946228 113.70079041
 v 98.37223053 -98.21347046 117.63779449
 v 98.37223053 -98.21347046 113.70079041
 v 98.37223053 -90.33946228 117.63779449
-usemtl Patch_149_Mat_mat0
+usemtl Patch_149_Mat_CR2_concrete
 f 235 236 237
-usemtl Patch_150_Mat_mat0
+usemtl Patch_150_Mat_CR2_concrete
 f 236 235 238
 
 # obj46
@@ -636,15 +636,15 @@ v 0.61632711 -9.67016697 113.70079041
 v -50.56477356 -9.67016697 113.70079041
 v -101.74588013 -9.67016697 113.70079041
 v -101.74588013 -9.67016697 117.63779449
-usemtl Patch_151_Mat_mat2
+usemtl Patch_151_Mat_CR2_ceiling
 f 239 240 241
-usemtl Patch_152_Mat_mat2
+usemtl Patch_152_Mat_CR2_ceiling
 f 240 239 242
-usemtl Patch_153_Mat_mat2
+usemtl Patch_153_Mat_CR2_ceiling
 f 242 239 243
-usemtl Patch_154_Mat_mat2
+usemtl Patch_154_Mat_CR2_ceiling
 f 243 239 244
-usemtl Patch_155_Mat_mat2
+usemtl Patch_155_Mat_CR2_ceiling
 f 244 239 245
 
 # obj47
@@ -652,9 +652,9 @@ v -101.74588013 -90.33946228 117.63779449
 v -101.74588013 -98.21347046 113.70079041
 v -101.74588013 -98.21347046 117.63779449
 v -101.74588013 -90.33946228 113.70079041
-usemtl Patch_156_Mat_mat0
+usemtl Patch_156_Mat_CR2_concrete
 f 246 247 248
-usemtl Patch_157_Mat_mat0
+usemtl Patch_157_Mat_CR2_concrete
 f 247 246 249
 
 # obj48
@@ -665,15 +665,15 @@ v -3.32068086 -90.33946228 113.70079041
 v 45.89191818 -90.33946228 113.70079041
 v 98.37223053 -90.33946228 113.70079041
 v 98.37223053 -90.33946228 117.63779449
-usemtl Patch_158_Mat_mat2
+usemtl Patch_158_Mat_CR2_ceiling
 f 250 251 252
-usemtl Patch_159_Mat_mat2
+usemtl Patch_159_Mat_CR2_ceiling
 f 251 250 253
-usemtl Patch_160_Mat_mat2
+usemtl Patch_160_Mat_CR2_ceiling
 f 253 250 254
-usemtl Patch_161_Mat_mat2
+usemtl Patch_161_Mat_CR2_ceiling
 f 254 250 255
-usemtl Patch_162_Mat_mat2
+usemtl Patch_162_Mat_CR2_ceiling
 f 255 250 256
 
 # obj49
@@ -681,9 +681,9 @@ v 45.89191818 -90.33946228 113.70079041
 v -3.32068086 -98.21347046 113.70079041
 v -3.32068086 -90.33946228 113.70079041
 v 45.89191818 -98.21347046 113.70079041
-usemtl Patch_163_Mat_mat2
+usemtl Patch_163_Mat_CR2_ceiling
 f 257 258 259
-usemtl Patch_164_Mat_mat2
+usemtl Patch_164_Mat_CR2_ceiling
 f 258 257 260
 
 # obj50
@@ -715,57 +715,57 @@ v 118.79598236 -155.52113342 25.90551186
 v 118.92841339 -155.13101196 25.90551186
 v 119.00878906 -154.72694397 25.90551186
 v 119.03573608 -154.31584167 25.90551186
-usemtl Patch_165_Mat_mat0
+usemtl Patch_165_Mat_CR2_concrete
 f 261 262 263
-usemtl Patch_166_Mat_mat0
+usemtl Patch_166_Mat_CR2_concrete
 f 262 261 264
-usemtl Patch_167_Mat_mat0
+usemtl Patch_167_Mat_CR2_concrete
 f 264 261 265
-usemtl Patch_168_Mat_mat0
+usemtl Patch_168_Mat_CR2_concrete
 f 265 261 266
-usemtl Patch_169_Mat_mat0
+usemtl Patch_169_Mat_CR2_concrete
 f 266 261 267
-usemtl Patch_170_Mat_mat0
+usemtl Patch_170_Mat_CR2_concrete
 f 267 261 268
-usemtl Patch_171_Mat_mat0
+usemtl Patch_171_Mat_CR2_concrete
 f 268 261 269
-usemtl Patch_172_Mat_mat0
+usemtl Patch_172_Mat_CR2_concrete
 f 269 261 270
-usemtl Patch_173_Mat_mat0
+usemtl Patch_173_Mat_CR2_concrete
 f 270 261 271
-usemtl Patch_174_Mat_mat0
+usemtl Patch_174_Mat_CR2_concrete
 f 271 261 272
-usemtl Patch_175_Mat_mat0
+usemtl Patch_175_Mat_CR2_concrete
 f 272 261 273
-usemtl Patch_176_Mat_mat0
+usemtl Patch_176_Mat_CR2_concrete
 f 273 261 274
-usemtl Patch_177_Mat_mat0
+usemtl Patch_177_Mat_CR2_concrete
 f 274 261 275
-usemtl Patch_178_Mat_mat0
+usemtl Patch_178_Mat_CR2_concrete
 f 275 261 276
-usemtl Patch_179_Mat_mat0
+usemtl Patch_179_Mat_CR2_concrete
 f 276 261 277
-usemtl Patch_180_Mat_mat0
+usemtl Patch_180_Mat_CR2_concrete
 f 277 261 278
-usemtl Patch_181_Mat_mat0
+usemtl Patch_181_Mat_CR2_concrete
 f 278 261 279
-usemtl Patch_182_Mat_mat0
+usemtl Patch_182_Mat_CR2_concrete
 f 279 261 280
-usemtl Patch_183_Mat_mat0
+usemtl Patch_183_Mat_CR2_concrete
 f 280 261 281
-usemtl Patch_184_Mat_mat0
+usemtl Patch_184_Mat_CR2_concrete
 f 281 261 282
-usemtl Patch_185_Mat_mat0
+usemtl Patch_185_Mat_CR2_concrete
 f 282 261 283
-usemtl Patch_186_Mat_mat0
+usemtl Patch_186_Mat_CR2_concrete
 f 283 261 284
-usemtl Patch_187_Mat_mat0
+usemtl Patch_187_Mat_CR2_concrete
 f 284 261 285
-usemtl Patch_188_Mat_mat0
+usemtl Patch_188_Mat_CR2_concrete
 f 285 261 286
-usemtl Patch_189_Mat_mat0
+usemtl Patch_189_Mat_CR2_concrete
 f 286 261 287
-usemtl Patch_190_Mat_mat0
+usemtl Patch_190_Mat_CR2_concrete
 f 287 261 288
 
 # obj51
@@ -773,9 +773,9 @@ v 0.61632711 -1.7961514 113.70079041
 v -50.56477356 -9.67016697 113.70079041
 v -50.56477356 -1.7961514 113.70079041
 v 0.61632711 -9.67016697 113.70079041
-usemtl Patch_191_Mat_mat2
+usemtl Patch_191_Mat_CR2_ceiling
 f 289 290 291
-usemtl Patch_192_Mat_mat2
+usemtl Patch_192_Mat_CR2_ceiling
 f 290 289 292
 
 # obj52
@@ -783,9 +783,9 @@ v 121.79164124 -167.50480652 43.74015808
 v 114.23258209 -155.18197632 43.74015808
 v 114.23258209 -167.50480652 43.74015808
 v 121.79164124 -155.18197632 43.74015808
-usemtl Patch_193_Mat_mat0
+usemtl Patch_193_Mat_CR2_concrete
 f 293 294 295
-usemtl Patch_194_Mat_mat0
+usemtl Patch_194_Mat_CR2_concrete
 f 294 293 296
 
 # obj53
@@ -793,9 +793,9 @@ v 114.23258209 -155.18197632 43.74015808
 v 114.23258209 -167.50480652 22.75590515
 v 114.23258209 -167.50480652 43.74015808
 v 114.23258209 -155.18197632 35.70866013
-usemtl Patch_195_Mat_mat0
+usemtl Patch_195_Mat_CR2_concrete
 f 297 298 299
-usemtl Patch_196_Mat_mat0
+usemtl Patch_196_Mat_CR2_concrete
 f 298 297 300
 
 # obj54
@@ -803,9 +803,9 @@ v 114.23258209 -155.18197632 43.74015808
 v 121.79164124 -155.18197632 35.70866013
 v 114.23258209 -155.18197632 35.70866013
 v 121.79164124 -155.18197632 43.74015808
-usemtl Patch_197_Mat_mat0
+usemtl Patch_197_Mat_CR2_concrete
 f 301 302 303
-usemtl Patch_198_Mat_mat0
+usemtl Patch_198_Mat_CR2_concrete
 f 302 301 304
 
 # obj55
@@ -813,9 +813,9 @@ v 100.92549896 -145.45756531 30.70866203
 v 100.92549896 -154.31584167 25.90551186
 v 100.92549896 -154.31584167 30.70866203
 v 100.92549896 -145.45756531 25.90551186
-usemtl Patch_199_Mat_mat0
+usemtl Patch_199_Mat_CR2_concrete
 f 305 306 307
-usemtl Patch_200_Mat_mat0
+usemtl Patch_200_Mat_CR2_concrete
 f 306 305 308
 
 # obj56
@@ -847,57 +847,57 @@ v 118.79598236 -155.52113342 30.70866203
 v 118.92841339 -155.13101196 30.70866203
 v 119.00878906 -154.72694397 30.70866203
 v 119.03573608 -154.31584167 30.70866203
-usemtl Patch_201_Mat_mat0
+usemtl Patch_201_Mat_CR2_concrete
 f 309 310 311
-usemtl Patch_202_Mat_mat0
+usemtl Patch_202_Mat_CR2_concrete
 f 310 309 312
-usemtl Patch_203_Mat_mat0
+usemtl Patch_203_Mat_CR2_concrete
 f 312 309 313
-usemtl Patch_204_Mat_mat0
+usemtl Patch_204_Mat_CR2_concrete
 f 312 313 314
-usemtl Patch_205_Mat_mat0
+usemtl Patch_205_Mat_CR2_concrete
 f 312 314 315
-usemtl Patch_206_Mat_mat0
+usemtl Patch_206_Mat_CR2_concrete
 f 312 315 316
-usemtl Patch_207_Mat_mat0
+usemtl Patch_207_Mat_CR2_concrete
 f 312 316 317
-usemtl Patch_208_Mat_mat0
+usemtl Patch_208_Mat_CR2_concrete
 f 312 317 318
-usemtl Patch_209_Mat_mat0
+usemtl Patch_209_Mat_CR2_concrete
 f 312 318 319
-usemtl Patch_210_Mat_mat0
+usemtl Patch_210_Mat_CR2_concrete
 f 312 319 320
-usemtl Patch_211_Mat_mat0
+usemtl Patch_211_Mat_CR2_concrete
 f 312 320 321
-usemtl Patch_212_Mat_mat0
+usemtl Patch_212_Mat_CR2_concrete
 f 312 321 322
-usemtl Patch_213_Mat_mat0
+usemtl Patch_213_Mat_CR2_concrete
 f 312 322 323
-usemtl Patch_214_Mat_mat0
+usemtl Patch_214_Mat_CR2_concrete
 f 312 323 324
-usemtl Patch_215_Mat_mat0
+usemtl Patch_215_Mat_CR2_concrete
 f 312 324 325
-usemtl Patch_216_Mat_mat0
+usemtl Patch_216_Mat_CR2_concrete
 f 312 325 326
-usemtl Patch_217_Mat_mat0
+usemtl Patch_217_Mat_CR2_concrete
 f 312 326 327
-usemtl Patch_218_Mat_mat0
+usemtl Patch_218_Mat_CR2_concrete
 f 312 327 328
-usemtl Patch_219_Mat_mat0
+usemtl Patch_219_Mat_CR2_concrete
 f 312 328 329
-usemtl Patch_220_Mat_mat0
+usemtl Patch_220_Mat_CR2_concrete
 f 312 329 330
-usemtl Patch_221_Mat_mat0
+usemtl Patch_221_Mat_CR2_concrete
 f 312 330 331
-usemtl Patch_222_Mat_mat0
+usemtl Patch_222_Mat_CR2_concrete
 f 312 331 332
-usemtl Patch_223_Mat_mat0
+usemtl Patch_223_Mat_CR2_concrete
 f 312 332 333
-usemtl Patch_224_Mat_mat0
+usemtl Patch_224_Mat_CR2_concrete
 f 312 333 334
-usemtl Patch_225_Mat_mat0
+usemtl Patch_225_Mat_CR2_concrete
 f 312 334 335
-usemtl Patch_226_Mat_mat0
+usemtl Patch_226_Mat_CR2_concrete
 f 312 335 336
 
 # obj57
@@ -905,9 +905,9 @@ v 98.37223053 -90.33946228 113.70079041
 v 45.89191818 -98.21347046 113.70079041
 v 45.89191818 -90.33946228 113.70079041
 v 98.37223053 -98.21347046 113.70079041
-usemtl Patch_227_Mat_mat2
+usemtl Patch_227_Mat_CR2_ceiling
 f 337 338 339
-usemtl Patch_228_Mat_mat2
+usemtl Patch_228_Mat_CR2_ceiling
 f 338 337 340
 
 # obj58
@@ -915,9 +915,9 @@ v 114.23258209 -155.18197632 35.70866013
 v 121.79164124 -167.50480652 22.75590515
 v 114.23258209 -167.50480652 22.75590515
 v 121.79164124 -155.18197632 35.70866013
-usemtl Patch_229_Mat_mat0
+usemtl Patch_229_Mat_CR2_concrete
 f 341 342 343
-usemtl Patch_230_Mat_mat0
+usemtl Patch_230_Mat_CR2_concrete
 f 342 341 344
 
 # obj59
@@ -925,9 +925,9 @@ v 104.27774811 -1.7961514 113.70079041
 v 51.79742813 -9.67016697 113.70079041
 v 51.79742813 -1.7961514 113.70079041
 v 104.27774811 -9.67016697 113.70079041
-usemtl Patch_231_Mat_mat2
+usemtl Patch_231_Mat_CR2_ceiling
 f 345 346 347
-usemtl Patch_232_Mat_mat2
+usemtl Patch_232_Mat_CR2_ceiling
 f 346 345 348
 
 # obj60
@@ -935,9 +935,9 @@ v 104.27774811 -1.7961514 113.70079041
 v 104.27774811 -9.67016697 117.63779449
 v 104.27774811 -9.67016697 113.70079041
 v 104.27774811 -1.7961514 117.63779449
-usemtl Patch_233_Mat_mat0
+usemtl Patch_233_Mat_CR2_concrete
 f 349 350 351
-usemtl Patch_234_Mat_mat0
+usemtl Patch_234_Mat_CR2_concrete
 f 350 349 352
 
 # obj61
@@ -945,9 +945,9 @@ v 0.61632711 86.74715424 113.70079041
 v -50.56477356 78.87313843 113.70079041
 v -50.56477356 86.74715424 113.70079041
 v 0.61632711 78.87313843 113.70079041
-usemtl Patch_235_Mat_mat2
+usemtl Patch_235_Mat_CR2_ceiling
 f 353 354 355
-usemtl Patch_236_Mat_mat2
+usemtl Patch_236_Mat_CR2_ceiling
 f 354 353 356
 
 # obj62
@@ -955,9 +955,9 @@ v 104.07510376 -157.46543884 30.70866203
 v 103.66399384 -157.43849182 25.90551186
 v 104.07510376 -157.46543884 25.90551186
 v 103.66399384 -157.43849182 30.70866203
-usemtl Patch_237_Mat_mat0
+usemtl Patch_237_Mat_CR2_concrete
 f 357 358 359
-usemtl Patch_238_Mat_mat0
+usemtl Patch_238_Mat_CR2_concrete
 f 358 357 360
 
 # obj63
@@ -965,9 +965,9 @@ v 102.50029755 -157.04347229 30.70866203
 v 102.15774536 -156.81459045 25.90551186
 v 102.50029755 -157.04347229 25.90551186
 v 102.15774536 -156.81459045 30.70866203
-usemtl Patch_239_Mat_mat0
+usemtl Patch_239_Mat_CR2_concrete
 f 361 362 363
-usemtl Patch_240_Mat_mat0
+usemtl Patch_240_Mat_CR2_concrete
 f 362 361 364
 
 # obj64
@@ -975,9 +975,9 @@ v 115.88612366 -157.46543884 30.70866203
 v 104.07510376 -157.46543884 25.90551186
 v 115.88612366 -157.46543884 25.90551186
 v 104.07510376 -157.46543884 30.70866203
-usemtl Patch_241_Mat_mat0
+usemtl Patch_241_Mat_CR2_concrete
 f 365 366 367
-usemtl Patch_242_Mat_mat0
+usemtl Patch_242_Mat_CR2_concrete
 f 366 365 368
 
 # obj65
@@ -985,9 +985,9 @@ v 102.86979675 -157.22569275 30.70866203
 v 102.50029755 -157.04347229 25.90551186
 v 102.86979675 -157.22569275 25.90551186
 v 102.50029755 -157.04347229 30.70866203
-usemtl Patch_243_Mat_mat0
+usemtl Patch_243_Mat_CR2_concrete
 f 369 370 371
-usemtl Patch_244_Mat_mat0
+usemtl Patch_244_Mat_CR2_concrete
 f 370 369 372
 
 # obj66
@@ -995,9 +995,9 @@ v 103.66399384 -157.43849182 30.70866203
 v 103.25992584 -157.35812378 25.90551186
 v 103.66399384 -157.43849182 25.90551186
 v 103.25992584 -157.35812378 30.70866203
-usemtl Patch_245_Mat_mat0
+usemtl Patch_245_Mat_CR2_concrete
 f 373 374 375
-usemtl Patch_246_Mat_mat0
+usemtl Patch_246_Mat_CR2_concrete
 f 374 373 376
 
 # obj67
@@ -1005,9 +1005,9 @@ v 103.25992584 -157.35812378 30.70866203
 v 102.86979675 -157.22569275 25.90551186
 v 103.25992584 -157.35812378 25.90551186
 v 102.86979675 -157.22569275 30.70866203
-usemtl Patch_247_Mat_mat0
+usemtl Patch_247_Mat_CR2_concrete
 f 377 378 379
-usemtl Patch_248_Mat_mat0
+usemtl Patch_248_Mat_CR2_concrete
 f 378 377 380
 
 # obj68
@@ -1015,9 +1015,9 @@ v 102.15774536 -156.81459045 30.70866203
 v 101.84799194 -156.54293823 25.90551186
 v 102.15774536 -156.81459045 25.90551186
 v 101.84799194 -156.54293823 30.70866203
-usemtl Patch_249_Mat_mat0
+usemtl Patch_249_Mat_CR2_concrete
 f 381 382 383
-usemtl Patch_250_Mat_mat0
+usemtl Patch_250_Mat_CR2_concrete
 f 382 381 384
 
 # obj69
@@ -1025,9 +1025,9 @@ v 101.57635498 -156.23320007 30.70866203
 v 101.84799194 -156.54293823 25.90551186
 v 101.84799194 -156.54293823 30.70866203
 v 101.57635498 -156.23320007 25.90551186
-usemtl Patch_251_Mat_mat0
+usemtl Patch_251_Mat_CR2_concrete
 f 385 386 387
-usemtl Patch_252_Mat_mat0
+usemtl Patch_252_Mat_CR2_concrete
 f 386 385 388
 
 # obj70
@@ -1035,9 +1035,9 @@ v 101.34746552 -155.89064026 30.70866203
 v 101.57635498 -156.23320007 25.90551186
 v 101.57635498 -156.23320007 30.70866203
 v 101.34746552 -155.89064026 25.90551186
-usemtl Patch_253_Mat_mat0
+usemtl Patch_253_Mat_CR2_concrete
 f 389 390 391
-usemtl Patch_254_Mat_mat0
+usemtl Patch_254_Mat_CR2_concrete
 f 390 389 392
 
 # obj71
@@ -1045,9 +1045,9 @@ v 101.16524506 -155.52113342 30.70866203
 v 101.34746552 -155.89064026 25.90551186
 v 101.34746552 -155.89064026 30.70866203
 v 101.16524506 -155.52113342 25.90551186
-usemtl Patch_255_Mat_mat0
+usemtl Patch_255_Mat_CR2_concrete
 f 393 394 395
-usemtl Patch_256_Mat_mat0
+usemtl Patch_256_Mat_CR2_concrete
 f 394 393 396
 
 # obj72
@@ -1055,9 +1055,9 @@ v 101.03281403 -155.13101196 30.70866203
 v 101.16524506 -155.52113342 25.90551186
 v 101.16524506 -155.52113342 30.70866203
 v 101.03281403 -155.13101196 25.90551186
-usemtl Patch_257_Mat_mat0
+usemtl Patch_257_Mat_CR2_concrete
 f 397 398 399
-usemtl Patch_258_Mat_mat0
+usemtl Patch_258_Mat_CR2_concrete
 f 398 397 400
 
 # obj73
@@ -1065,9 +1065,9 @@ v 100.95243835 -154.72694397 30.70866203
 v 101.03281403 -155.13101196 25.90551186
 v 101.03281403 -155.13101196 30.70866203
 v 100.95243835 -154.72694397 25.90551186
-usemtl Patch_259_Mat_mat0
+usemtl Patch_259_Mat_CR2_concrete
 f 401 402 403
-usemtl Patch_260_Mat_mat0
+usemtl Patch_260_Mat_CR2_concrete
 f 402 401 404
 
 # obj74
@@ -1075,9 +1075,9 @@ v 100.92549896 -154.31584167 30.70866203
 v 100.95243835 -154.72694397 25.90551186
 v 100.95243835 -154.72694397 30.70866203
 v 100.92549896 -154.31584167 25.90551186
-usemtl Patch_261_Mat_mat0
+usemtl Patch_261_Mat_CR2_concrete
 f 405 406 407
-usemtl Patch_262_Mat_mat0
+usemtl Patch_262_Mat_CR2_concrete
 f 406 405 408
 
 # obj75
@@ -1087,13 +1087,13 @@ v 49.62628555 164.93612671 0
 v 49.62628555 169.58180237 17.71653557
 v 49.62628555 170.76290894 101.10236359
 v 49.62628555 170.76290894 17.71653557
-usemtl Patch_263_Mat_mat0
+usemtl Patch_263_Mat_CR2_concrete
 f 409 410 411
-usemtl Patch_264_Mat_mat0
+usemtl Patch_264_Mat_CR2_concrete
 f 410 409 412
-usemtl Patch_265_Mat_mat0
+usemtl Patch_265_Mat_CR2_concrete
 f 410 412 413
-usemtl Patch_266_Mat_mat0
+usemtl Patch_266_Mat_CR2_concrete
 f 413 412 414
 
 # obj76
@@ -1101,9 +1101,9 @@ v 29.82313347 170.76290894 101.10236359
 v -30.29497528 164.93612671 101.10236359
 v -30.29497528 170.76290894 101.10236359
 v 29.82313347 164.93612671 101.10236359
-usemtl Patch_267_Mat_mat0
+usemtl Patch_267_Mat_CR2_concrete
 f 415 416 417
-usemtl Patch_268_Mat_mat0
+usemtl Patch_268_Mat_CR2_concrete
 f 416 415 418
 
 # obj77
@@ -1113,13 +1113,13 @@ v -111.39733887 164.93612671 0
 v -111.39733887 169.58180237 17.71653557
 v -111.39733887 170.76290894 101.10236359
 v -111.39733887 170.76290894 17.71653557
-usemtl Patch_269_Mat_mat0
+usemtl Patch_269_Mat_CR2_concrete
 f 419 420 421
-usemtl Patch_270_Mat_mat0
+usemtl Patch_270_Mat_CR2_concrete
 f 420 419 422
-usemtl Patch_271_Mat_mat0
+usemtl Patch_271_Mat_CR2_concrete
 f 420 422 423
-usemtl Patch_272_Mat_mat0
+usemtl Patch_272_Mat_CR2_concrete
 f 423 422 424
 
 # obj78
@@ -1129,13 +1129,13 @@ v 29.82313347 164.93612671 101.10236359
 v 29.82313347 169.58180237 17.71653557
 v 29.82313347 170.76290894 17.71653557
 v 29.82313347 169.58180237 -0
-usemtl Patch_273_Mat_mat0
+usemtl Patch_273_Mat_CR2_concrete
 f 425 426 427
-usemtl Patch_274_Mat_mat0
+usemtl Patch_274_Mat_CR2_concrete
 f 426 425 428
-usemtl Patch_275_Mat_mat0
+usemtl Patch_275_Mat_CR2_concrete
 f 428 425 429
-usemtl Patch_276_Mat_mat0
+usemtl Patch_276_Mat_CR2_concrete
 f 430 426 428
 
 # obj79
@@ -1145,13 +1145,13 @@ v -51.08237839 164.93612671 101.10236359
 v -51.08237839 169.58180237 17.71653557
 v -51.08237839 170.76290894 17.71653557
 v -51.08237839 169.58180237 0
-usemtl Patch_277_Mat_mat0
+usemtl Patch_277_Mat_CR2_concrete
 f 431 432 433
-usemtl Patch_278_Mat_mat0
+usemtl Patch_278_Mat_CR2_concrete
 f 432 431 434
-usemtl Patch_279_Mat_mat0
+usemtl Patch_279_Mat_CR2_concrete
 f 434 431 435
-usemtl Patch_280_Mat_mat0
+usemtl Patch_280_Mat_CR2_concrete
 f 436 432 434
 
 # obj80
@@ -1161,13 +1161,13 @@ v -30.29497528 164.93612671 0
 v -30.29497528 169.58180237 17.71653557
 v -30.29497528 170.76290894 101.10236359
 v -30.29497528 170.76290894 17.71653557
-usemtl Patch_281_Mat_mat0
+usemtl Patch_281_Mat_CR2_concrete
 f 437 438 439
-usemtl Patch_282_Mat_mat0
+usemtl Patch_282_Mat_CR2_concrete
 f 438 437 440
-usemtl Patch_283_Mat_mat0
+usemtl Patch_283_Mat_CR2_concrete
 f 438 440 441
-usemtl Patch_284_Mat_mat0
+usemtl Patch_284_Mat_CR2_concrete
 f 441 440 442
 
 # obj81
@@ -1175,9 +1175,9 @@ v -51.08237839 170.76290894 101.10236359
 v -111.39733887 164.93612671 101.10236359
 v -111.39733887 170.76290894 101.10236359
 v -51.08237839 164.93612671 101.10236359
-usemtl Patch_285_Mat_mat0
+usemtl Patch_285_Mat_CR2_concrete
 f 443 444 445
-usemtl Patch_286_Mat_mat0
+usemtl Patch_286_Mat_CR2_concrete
 f 444 443 446
 
 # obj82
@@ -1187,13 +1187,13 @@ v 110.37431335 164.93612671 101.10236359
 v 110.37431335 169.58180237 17.71653557
 v 110.37431335 170.76290894 17.71653557
 v 110.37431335 169.58180237 0
-usemtl Patch_287_Mat_mat0
+usemtl Patch_287_Mat_CR2_concrete
 f 447 448 449
-usemtl Patch_288_Mat_mat0
+usemtl Patch_288_Mat_CR2_concrete
 f 448 447 450
-usemtl Patch_289_Mat_mat0
+usemtl Patch_289_Mat_CR2_concrete
 f 450 447 451
-usemtl Patch_290_Mat_mat0
+usemtl Patch_290_Mat_CR2_concrete
 f 452 448 450
 
 # obj83
@@ -1201,9 +1201,9 @@ v 29.82313347 170.76290894 101.10236359
 v -30.29497528 170.76290894 17.71653557
 v 29.82313347 170.76290894 17.71653557
 v -30.29497528 170.76290894 101.10236359
-usemtl Patch_291_Mat_mat1
+usemtl Patch_291_Mat_CR2_windows
 f 453 454 455
-usemtl Patch_292_Mat_mat1
+usemtl Patch_292_Mat_CR2_windows
 f 454 453 456
 
 # obj84
@@ -1223,33 +1223,33 @@ v -30.29497528 164.93612671 0
 v -51.08237839 164.93612671 0
 v 49.62628555 164.93612671 0
 v 29.82313347 164.93612671 -0
-usemtl Patch_293_Mat_mat0
+usemtl Patch_293_Mat_CR2_concrete
 f 457 458 459
-usemtl Patch_294_Mat_mat0
+usemtl Patch_294_Mat_CR2_concrete
 f 458 457 460
-usemtl Patch_295_Mat_mat0
+usemtl Patch_295_Mat_CR2_concrete
 f 460 457 461
-usemtl Patch_296_Mat_mat0
+usemtl Patch_296_Mat_CR2_concrete
 f 461 457 462
-usemtl Patch_297_Mat_mat0
+usemtl Patch_297_Mat_CR2_concrete
 f 462 457 463
-usemtl Patch_298_Mat_mat0
+usemtl Patch_298_Mat_CR2_concrete
 f 463 457 464
-usemtl Patch_299_Mat_mat0
+usemtl Patch_299_Mat_CR2_concrete
 f 464 457 465
-usemtl Patch_300_Mat_mat0
+usemtl Patch_300_Mat_CR2_concrete
 f 465 466 467
-usemtl Patch_301_Mat_mat0
+usemtl Patch_301_Mat_CR2_concrete
 f 466 465 468
-usemtl Patch_302_Mat_mat0
+usemtl Patch_302_Mat_CR2_concrete
 f 468 465 457
-usemtl Patch_303_Mat_mat0
+usemtl Patch_303_Mat_CR2_concrete
 f 469 464 470
-usemtl Patch_304_Mat_mat0
+usemtl Patch_304_Mat_CR2_concrete
 f 464 469 463
-usemtl Patch_305_Mat_mat0
+usemtl Patch_305_Mat_CR2_concrete
 f 471 462 472
-usemtl Patch_306_Mat_mat0
+usemtl Patch_306_Mat_CR2_concrete
 f 462 471 461
 
 # obj85
@@ -1257,9 +1257,9 @@ v 117.80348206 -156.81459045 30.70866203
 v 117.46092987 -157.04347229 25.90551186
 v 117.80348206 -156.81459045 25.90551186
 v 117.46092987 -157.04347229 30.70866203
-usemtl Patch_307_Mat_mat0
+usemtl Patch_307_Mat_CR2_concrete
 f 473 474 475
-usemtl Patch_308_Mat_mat0
+usemtl Patch_308_Mat_CR2_concrete
 f 474 473 476
 
 # obj86
@@ -1267,9 +1267,9 @@ v 104.27774811 86.74715424 113.70079041
 v 51.79742813 78.87313843 113.70079041
 v 51.79742813 86.74715424 113.70079041
 v 104.27774811 78.87313843 113.70079041
-usemtl Patch_309_Mat_mat2
+usemtl Patch_309_Mat_CR2_ceiling
 f 477 478 479
-usemtl Patch_310_Mat_mat2
+usemtl Patch_310_Mat_CR2_ceiling
 f 478 477 480
 
 # obj87
@@ -1277,9 +1277,9 @@ v -52.53327942 -90.33946228 113.70079041
 v -101.74588013 -98.21347046 113.70079041
 v -101.74588013 -90.33946228 113.70079041
 v -52.53327942 -98.21347046 113.70079041
-usemtl Patch_311_Mat_mat2
+usemtl Patch_311_Mat_CR2_ceiling
 f 481 482 483
-usemtl Patch_312_Mat_mat2
+usemtl Patch_312_Mat_CR2_ceiling
 f 482 481 484
 
 # obj88
@@ -1287,9 +1287,9 @@ v -3.32068086 -90.33946228 113.70079041
 v -52.53327942 -98.21347046 113.70079041
 v -52.53327942 -90.33946228 113.70079041
 v -3.32068086 -98.21347046 113.70079041
-usemtl Patch_313_Mat_mat2
+usemtl Patch_313_Mat_CR2_ceiling
 f 485 486 487
-usemtl Patch_314_Mat_mat2
+usemtl Patch_314_Mat_CR2_ceiling
 f 486 485 488
 
 # obj89
@@ -1297,9 +1297,9 @@ v -50.56477356 86.74715424 113.70079041
 v -101.74588013 78.87313843 113.70079041
 v -101.74588013 86.74715424 113.70079041
 v -50.56477356 78.87313843 113.70079041
-usemtl Patch_315_Mat_mat2
+usemtl Patch_315_Mat_CR2_ceiling
 f 489 490 491
-usemtl Patch_316_Mat_mat2
+usemtl Patch_316_Mat_CR2_ceiling
 f 490 489 492
 
 # obj90
@@ -1307,9 +1307,9 @@ v 118.79598236 -155.52113342 25.90551186
 v 118.6137619 -155.89064026 30.70866203
 v 118.6137619 -155.89064026 25.90551186
 v 118.79598236 -155.52113342 30.70866203
-usemtl Patch_317_Mat_mat0
+usemtl Patch_317_Mat_CR2_concrete
 f 493 494 495
-usemtl Patch_318_Mat_mat0
+usemtl Patch_318_Mat_CR2_concrete
 f 494 493 496
 
 # obj91
@@ -1317,9 +1317,9 @@ v 116.70130157 -157.35812378 30.70866203
 v 116.29723358 -157.43849182 25.90551186
 v 116.70130157 -157.35812378 25.90551186
 v 116.29723358 -157.43849182 30.70866203
-usemtl Patch_319_Mat_mat0
+usemtl Patch_319_Mat_CR2_concrete
 f 497 498 499
-usemtl Patch_320_Mat_mat0
+usemtl Patch_320_Mat_CR2_concrete
 f 498 497 500
 
 # obj92
@@ -1327,9 +1327,9 @@ v 117.46092987 -157.04347229 30.70866203
 v 117.09143066 -157.22569275 25.90551186
 v 117.46092987 -157.04347229 25.90551186
 v 117.09143066 -157.22569275 30.70866203
-usemtl Patch_321_Mat_mat0
+usemtl Patch_321_Mat_CR2_concrete
 f 501 502 503
-usemtl Patch_322_Mat_mat0
+usemtl Patch_322_Mat_CR2_concrete
 f 502 501 504
 
 # obj93
@@ -1337,9 +1337,9 @@ v 118.6137619 -155.89064026 25.90551186
 v 118.38488007 -156.23320007 30.70866203
 v 118.38488007 -156.23320007 25.90551186
 v 118.6137619 -155.89064026 30.70866203
-usemtl Patch_323_Mat_mat0
+usemtl Patch_323_Mat_CR2_concrete
 f 505 506 507
-usemtl Patch_324_Mat_mat0
+usemtl Patch_324_Mat_CR2_concrete
 f 506 505 508
 
 # obj94
@@ -1347,9 +1347,9 @@ v 118.11323547 -156.54293823 30.70866203
 v 117.80348206 -156.81459045 25.90551186
 v 118.11323547 -156.54293823 25.90551186
 v 117.80348206 -156.81459045 30.70866203
-usemtl Patch_325_Mat_mat0
+usemtl Patch_325_Mat_CR2_concrete
 f 509 510 511
-usemtl Patch_326_Mat_mat0
+usemtl Patch_326_Mat_CR2_concrete
 f 510 509 512
 
 # obj95
@@ -1357,9 +1357,9 @@ v 119.00878906 -154.72694397 25.90551186
 v 118.92841339 -155.13101196 30.70866203
 v 118.92841339 -155.13101196 25.90551186
 v 119.00878906 -154.72694397 30.70866203
-usemtl Patch_327_Mat_mat0
+usemtl Patch_327_Mat_CR2_concrete
 f 513 514 515
-usemtl Patch_328_Mat_mat0
+usemtl Patch_328_Mat_CR2_concrete
 f 514 513 516
 
 # obj96
@@ -1367,9 +1367,9 @@ v 118.92841339 -155.13101196 25.90551186
 v 118.79598236 -155.52113342 30.70866203
 v 118.79598236 -155.52113342 25.90551186
 v 118.92841339 -155.13101196 30.70866203
-usemtl Patch_329_Mat_mat0
+usemtl Patch_329_Mat_CR2_concrete
 f 517 518 519
-usemtl Patch_330_Mat_mat0
+usemtl Patch_330_Mat_CR2_concrete
 f 518 517 520
 
 # obj97
@@ -1377,9 +1377,9 @@ v 51.79742813 86.74715424 113.70079041
 v 0.61632711 78.87313843 113.70079041
 v 0.61632711 86.74715424 113.70079041
 v 51.79742813 78.87313843 113.70079041
-usemtl Patch_331_Mat_mat2
+usemtl Patch_331_Mat_CR2_ceiling
 f 521 522 523
-usemtl Patch_332_Mat_mat2
+usemtl Patch_332_Mat_CR2_ceiling
 f 522 521 524
 
 # obj98
@@ -1387,9 +1387,9 @@ v 117.09143066 -157.22569275 30.70866203
 v 116.70130157 -157.35812378 25.90551186
 v 117.09143066 -157.22569275 25.90551186
 v 116.70130157 -157.35812378 30.70866203
-usemtl Patch_333_Mat_mat0
+usemtl Patch_333_Mat_CR2_concrete
 f 525 526 527
-usemtl Patch_334_Mat_mat0
+usemtl Patch_334_Mat_CR2_concrete
 f 526 525 528
 
 # obj99
@@ -1397,9 +1397,9 @@ v 118.38488007 -156.23320007 25.90551186
 v 118.11323547 -156.54293823 30.70866203
 v 118.11323547 -156.54293823 25.90551186
 v 118.38488007 -156.23320007 30.70866203
-usemtl Patch_335_Mat_mat0
+usemtl Patch_335_Mat_CR2_concrete
 f 529 530 531
-usemtl Patch_336_Mat_mat0
+usemtl Patch_336_Mat_CR2_concrete
 f 530 529 532
 
 # obj100
@@ -1407,9 +1407,9 @@ v 119.03573608 -154.31584167 25.90551186
 v 119.00878906 -154.72694397 30.70866203
 v 119.00878906 -154.72694397 25.90551186
 v 119.03573608 -154.31584167 30.70866203
-usemtl Patch_337_Mat_mat0
+usemtl Patch_337_Mat_CR2_concrete
 f 533 534 535
-usemtl Patch_338_Mat_mat0
+usemtl Patch_338_Mat_CR2_concrete
 f 534 533 536
 
 # obj101
@@ -1417,9 +1417,9 @@ v 116.29723358 -157.43849182 30.70866203
 v 115.88612366 -157.46543884 25.90551186
 v 116.29723358 -157.43849182 25.90551186
 v 115.88612366 -157.46543884 30.70866203
-usemtl Patch_339_Mat_mat0
+usemtl Patch_339_Mat_CR2_concrete
 f 537 538 539
-usemtl Patch_340_Mat_mat0
+usemtl Patch_340_Mat_CR2_concrete
 f 538 537 540
 
 # obj102
@@ -1427,9 +1427,9 @@ v -51.08237839 170.76290894 101.10236359
 v -111.39733887 170.76290894 17.71653557
 v -51.08237839 170.76290894 17.71653557
 v -111.39733887 170.76290894 101.10236359
-usemtl Patch_341_Mat_mat1
+usemtl Patch_341_Mat_CR2_windows
 f 541 542 543
-usemtl Patch_342_Mat_mat1
+usemtl Patch_342_Mat_CR2_windows
 f 542 541 544
 
 # obj103
@@ -1481,125 +1481,125 @@ v -63.64143372 -167.50480652 117.63779449
 v 97.97274017 -145.45756531 117.63779449
 v 121.79164124 -167.50480652 117.63779449
 v 121.79164124 -145.45756531 117.63779449
-usemtl Patch_343_Mat_mat2
+usemtl Patch_343_Mat_CR2_ceiling
 f 545 546 547
-usemtl Patch_344_Mat_mat2
+usemtl Patch_344_Mat_CR2_ceiling
 f 546 545 548
-usemtl Patch_345_Mat_mat2
+usemtl Patch_345_Mat_CR2_ceiling
 f 546 548 549
-usemtl Patch_346_Mat_mat2
+usemtl Patch_346_Mat_CR2_ceiling
 f 549 548 550
-usemtl Patch_347_Mat_mat2
+usemtl Patch_347_Mat_CR2_ceiling
 f 550 548 551
-usemtl Patch_348_Mat_mat2
+usemtl Patch_348_Mat_CR2_ceiling
 f 551 548 552
-usemtl Patch_349_Mat_mat2
+usemtl Patch_349_Mat_CR2_ceiling
 f 552 548 553
-usemtl Patch_350_Mat_mat2
+usemtl Patch_350_Mat_CR2_ceiling
 f 553 548 554
-usemtl Patch_351_Mat_mat2
+usemtl Patch_351_Mat_CR2_ceiling
 f 554 548 555
-usemtl Patch_352_Mat_mat2
+usemtl Patch_352_Mat_CR2_ceiling
 f 555 548 556
-usemtl Patch_353_Mat_mat2
+usemtl Patch_353_Mat_CR2_ceiling
 f 557 558 559
-usemtl Patch_354_Mat_mat2
+usemtl Patch_354_Mat_CR2_ceiling
 f 558 557 560
-usemtl Patch_355_Mat_mat2
+usemtl Patch_355_Mat_CR2_ceiling
 f 559 558 561
-usemtl Patch_356_Mat_mat2
+usemtl Patch_356_Mat_CR2_ceiling
 f 559 561 562
-usemtl Patch_357_Mat_mat2
+usemtl Patch_357_Mat_CR2_ceiling
 f 562 561 563
-usemtl Patch_358_Mat_mat2
+usemtl Patch_358_Mat_CR2_ceiling
 f 559 562 564
-usemtl Patch_359_Mat_mat2
+usemtl Patch_359_Mat_CR2_ceiling
 f 559 564 565
-usemtl Patch_360_Mat_mat2
+usemtl Patch_360_Mat_CR2_ceiling
 f 565 564 566
-usemtl Patch_361_Mat_mat2
+usemtl Patch_361_Mat_CR2_ceiling
 f 559 565 567
-usemtl Patch_362_Mat_mat2
+usemtl Patch_362_Mat_CR2_ceiling
 f 568 569 570
-usemtl Patch_363_Mat_mat2
+usemtl Patch_363_Mat_CR2_ceiling
 f 569 568 571
-usemtl Patch_364_Mat_mat2
+usemtl Patch_364_Mat_CR2_ceiling
 f 571 568 548
-usemtl Patch_365_Mat_mat2
+usemtl Patch_365_Mat_CR2_ceiling
 f 548 568 572
-usemtl Patch_366_Mat_mat2
+usemtl Patch_366_Mat_CR2_ceiling
 f 572 568 573
-usemtl Patch_367_Mat_mat2
+usemtl Patch_367_Mat_CR2_ceiling
 f 574 560 557
-usemtl Patch_368_Mat_mat2
+usemtl Patch_368_Mat_CR2_ceiling
 f 560 574 573
-usemtl Patch_369_Mat_mat2
+usemtl Patch_369_Mat_CR2_ceiling
 f 560 573 575
-usemtl Patch_370_Mat_mat2
+usemtl Patch_370_Mat_CR2_ceiling
 f 575 573 561
-usemtl Patch_371_Mat_mat2
+usemtl Patch_371_Mat_CR2_ceiling
 f 561 573 563
-usemtl Patch_372_Mat_mat2
+usemtl Patch_372_Mat_CR2_ceiling
 f 563 573 576
-usemtl Patch_373_Mat_mat2
+usemtl Patch_373_Mat_CR2_ceiling
 f 576 573 564
-usemtl Patch_374_Mat_mat2
+usemtl Patch_374_Mat_CR2_ceiling
 f 564 573 566
-usemtl Patch_375_Mat_mat2
+usemtl Patch_375_Mat_CR2_ceiling
 f 566 573 577
-usemtl Patch_376_Mat_mat2
+usemtl Patch_376_Mat_CR2_ceiling
 f 577 573 567
-usemtl Patch_377_Mat_mat2
+usemtl Patch_377_Mat_CR2_ceiling
 f 567 573 578
-usemtl Patch_378_Mat_mat2
+usemtl Patch_378_Mat_CR2_ceiling
 f 567 578 559
-usemtl Patch_379_Mat_mat2
+usemtl Patch_379_Mat_CR2_ceiling
 f 559 578 579
-usemtl Patch_380_Mat_mat2
+usemtl Patch_380_Mat_CR2_ceiling
 f 578 573 580
-usemtl Patch_381_Mat_mat2
+usemtl Patch_381_Mat_CR2_ceiling
 f 580 573 581
-usemtl Patch_382_Mat_mat2
+usemtl Patch_382_Mat_CR2_ceiling
 f 581 573 568
-usemtl Patch_383_Mat_mat2
+usemtl Patch_383_Mat_CR2_ceiling
 f 580 581 582
-usemtl Patch_384_Mat_mat2
+usemtl Patch_384_Mat_CR2_ceiling
 f 547 583 572
-usemtl Patch_385_Mat_mat2
+usemtl Patch_385_Mat_CR2_ceiling
 f 583 547 546
-usemtl Patch_386_Mat_mat2
+usemtl Patch_386_Mat_CR2_ceiling
 f 572 583 550
-usemtl Patch_387_Mat_mat2
+usemtl Patch_387_Mat_CR2_ceiling
 f 572 550 584
-usemtl Patch_388_Mat_mat2
+usemtl Patch_388_Mat_CR2_ceiling
 f 584 550 551
-usemtl Patch_389_Mat_mat2
+usemtl Patch_389_Mat_CR2_ceiling
 f 572 584 553
-usemtl Patch_390_Mat_mat2
+usemtl Patch_390_Mat_CR2_ceiling
 f 572 553 585
-usemtl Patch_391_Mat_mat2
+usemtl Patch_391_Mat_CR2_ceiling
 f 585 553 554
-usemtl Patch_392_Mat_mat2
+usemtl Patch_392_Mat_CR2_ceiling
 f 572 585 556
-usemtl Patch_393_Mat_mat2
+usemtl Patch_393_Mat_CR2_ceiling
 f 572 556 548
-usemtl Patch_394_Mat_mat2
+usemtl Patch_394_Mat_CR2_ceiling
 f 586 587 588
-usemtl Patch_395_Mat_mat2
+usemtl Patch_395_Mat_CR2_ceiling
 f 587 586 570
-usemtl Patch_396_Mat_mat2
+usemtl Patch_396_Mat_CR2_ceiling
 f 587 570 569
-usemtl Patch_397_Mat_mat2
+usemtl Patch_397_Mat_CR2_ceiling
 f 588 587 579
-usemtl Patch_398_Mat_mat2
+usemtl Patch_398_Mat_CR2_ceiling
 f 588 579 589
-usemtl Patch_399_Mat_mat2
+usemtl Patch_399_Mat_CR2_ceiling
 f 589 579 590
-usemtl Patch_400_Mat_mat2
+usemtl Patch_400_Mat_CR2_ceiling
 f 590 579 578
-usemtl Patch_401_Mat_mat2
+usemtl Patch_401_Mat_CR2_ceiling
 f 590 591 589
-usemtl Patch_402_Mat_mat2
+usemtl Patch_402_Mat_CR2_ceiling
 f 591 590 592
 
 # obj104
@@ -1607,9 +1607,9 @@ v 73.07076263 43.7806282 112.71653748
 v 62.04714203 32.7570076 112.71653748
 v 62.04714203 43.7806282 112.71653748
 v 73.07076263 32.7570076 112.71653748
-usemtl Patch_403_Mat_mat2
+usemtl Patch_403_Mat_CR2_ceiling
 f 593 594 595
-usemtl Patch_404_Mat_mat2
+usemtl Patch_404_Mat_CR2_ceiling
 f 594 593 596
 
 # obj105
@@ -1617,9 +1617,9 @@ v 73.07076263 32.7570076 117.63779449
 v 62.04714203 32.7570076 112.71653748
 v 73.07076263 32.7570076 112.71653748
 v 62.04714203 32.7570076 117.63779449
-usemtl Patch_405_Mat_mat2
+usemtl Patch_405_Mat_CR2_ceiling
 f 597 598 599
-usemtl Patch_406_Mat_mat2
+usemtl Patch_406_Mat_CR2_ceiling
 f 598 597 600
 
 # obj106
@@ -1627,9 +1627,9 @@ v 62.04714203 43.7806282 117.63779449
 v 62.04714203 32.7570076 112.71653748
 v 62.04714203 32.7570076 117.63779449
 v 62.04714203 43.7806282 112.71653748
-usemtl Patch_407_Mat_mat2
+usemtl Patch_407_Mat_CR2_ceiling
 f 601 602 603
-usemtl Patch_408_Mat_mat2
+usemtl Patch_408_Mat_CR2_ceiling
 f 602 601 604
 
 # obj107
@@ -1637,9 +1637,9 @@ v 62.04714203 43.7806282 117.63779449
 v 73.07076263 43.7806282 112.71653748
 v 62.04714203 43.7806282 112.71653748
 v 73.07076263 43.7806282 117.63779449
-usemtl Patch_409_Mat_mat2
+usemtl Patch_409_Mat_CR2_ceiling
 f 605 606 607
-usemtl Patch_410_Mat_mat2
+usemtl Patch_410_Mat_CR2_ceiling
 f 606 605 608
 
 # obj108
@@ -1647,9 +1647,9 @@ v 73.07076263 43.7806282 112.71653748
 v 73.07076263 32.7570076 117.63779449
 v 73.07076263 32.7570076 112.71653748
 v 73.07076263 43.7806282 117.63779449
-usemtl Patch_411_Mat_mat0
+usemtl Patch_411_Mat_CR2_concrete
 f 609 610 611
-usemtl Patch_412_Mat_mat0
+usemtl Patch_412_Mat_CR2_concrete
 f 610 609 612
 
 # obj109
@@ -1657,9 +1657,9 @@ v 12.12588024 43.7806282 112.71653748
 v 1.10225832 32.7570076 112.71653748
 v 1.10225832 43.7806282 112.71653748
 v 12.12588024 32.7570076 112.71653748
-usemtl Patch_413_Mat_mat2
+usemtl Patch_413_Mat_CR2_ceiling
 f 613 614 615
-usemtl Patch_414_Mat_mat2
+usemtl Patch_414_Mat_CR2_ceiling
 f 614 613 616
 
 # obj110
@@ -1667,9 +1667,9 @@ v 12.12588024 32.7570076 117.63779449
 v 1.10225832 32.7570076 112.71653748
 v 12.12588024 32.7570076 112.71653748
 v 1.10225832 32.7570076 117.63779449
-usemtl Patch_415_Mat_mat2
+usemtl Patch_415_Mat_CR2_ceiling
 f 617 618 619
-usemtl Patch_416_Mat_mat2
+usemtl Patch_416_Mat_CR2_ceiling
 f 618 617 620
 
 # obj111
@@ -1677,9 +1677,9 @@ v 1.10225832 43.7806282 117.63779449
 v 1.10225832 32.7570076 112.71653748
 v 1.10225832 32.7570076 117.63779449
 v 1.10225832 43.7806282 112.71653748
-usemtl Patch_417_Mat_mat2
+usemtl Patch_417_Mat_CR2_ceiling
 f 621 622 623
-usemtl Patch_418_Mat_mat2
+usemtl Patch_418_Mat_CR2_ceiling
 f 622 621 624
 
 # obj112
@@ -1687,9 +1687,9 @@ v 1.10225832 43.7806282 117.63779449
 v 12.12588024 43.7806282 112.71653748
 v 1.10225832 43.7806282 112.71653748
 v 12.12588024 43.7806282 117.63779449
-usemtl Patch_419_Mat_mat2
+usemtl Patch_419_Mat_CR2_ceiling
 f 625 626 627
-usemtl Patch_420_Mat_mat2
+usemtl Patch_420_Mat_CR2_ceiling
 f 626 625 628
 
 # obj113
@@ -1697,9 +1697,9 @@ v 12.12588024 43.7806282 112.71653748
 v 12.12588024 32.7570076 117.63779449
 v 12.12588024 32.7570076 112.71653748
 v 12.12588024 43.7806282 117.63779449
-usemtl Patch_421_Mat_mat2
+usemtl Patch_421_Mat_CR2_ceiling
 f 629 630 631
-usemtl Patch_422_Mat_mat2
+usemtl Patch_422_Mat_CR2_ceiling
 f 630 629 632
 
 # obj114
@@ -1707,9 +1707,9 @@ v -48.58278275 43.7806282 112.71653748
 v -59.60640335 32.7570076 112.71653748
 v -59.60640335 43.7806282 112.71653748
 v -48.58278275 32.7570076 112.71653748
-usemtl Patch_423_Mat_mat2
+usemtl Patch_423_Mat_CR2_ceiling
 f 633 634 635
-usemtl Patch_424_Mat_mat2
+usemtl Patch_424_Mat_CR2_ceiling
 f 634 633 636
 
 # obj115
@@ -1717,9 +1717,9 @@ v -48.58278275 32.7570076 117.63779449
 v -59.60640335 32.7570076 112.71653748
 v -48.58278275 32.7570076 112.71653748
 v -59.60640335 32.7570076 117.63779449
-usemtl Patch_425_Mat_mat2
+usemtl Patch_425_Mat_CR2_ceiling
 f 637 638 639
-usemtl Patch_426_Mat_mat2
+usemtl Patch_426_Mat_CR2_ceiling
 f 638 637 640
 
 # obj116
@@ -1727,9 +1727,9 @@ v -59.60640335 43.7806282 117.63779449
 v -59.60640335 32.7570076 112.71653748
 v -59.60640335 32.7570076 117.63779449
 v -59.60640335 43.7806282 112.71653748
-usemtl Patch_427_Mat_mat2
+usemtl Patch_427_Mat_CR2_ceiling
 f 641 642 643
-usemtl Patch_428_Mat_mat2
+usemtl Patch_428_Mat_CR2_ceiling
 f 642 641 644
 
 # obj117
@@ -1737,9 +1737,9 @@ v -59.60640335 43.7806282 117.63779449
 v -48.58278275 43.7806282 112.71653748
 v -59.60640335 43.7806282 112.71653748
 v -48.58278275 43.7806282 117.63779449
-usemtl Patch_429_Mat_mat2
+usemtl Patch_429_Mat_CR2_ceiling
 f 645 646 647
-usemtl Patch_430_Mat_mat2
+usemtl Patch_430_Mat_CR2_ceiling
 f 646 645 648
 
 # obj118
@@ -1747,9 +1747,9 @@ v -48.58278275 43.7806282 112.71653748
 v -48.58278275 32.7570076 117.63779449
 v -48.58278275 32.7570076 112.71653748
 v -48.58278275 43.7806282 117.63779449
-usemtl Patch_431_Mat_mat2
+usemtl Patch_431_Mat_CR2_ceiling
 f 649 650 651
-usemtl Patch_432_Mat_mat2
+usemtl Patch_432_Mat_CR2_ceiling
 f 650 649 652
 
 # obj119
@@ -1757,9 +1757,9 @@ v 73.07076263 -45.47134018 112.71653748
 v 62.04714203 -56.49496078 112.71653748
 v 62.04714203 -45.47134018 112.71653748
 v 73.07076263 -56.49496078 112.71653748
-usemtl Patch_433_Mat_mat2
+usemtl Patch_433_Mat_CR2_ceiling
 f 653 654 655
-usemtl Patch_434_Mat_mat2
+usemtl Patch_434_Mat_CR2_ceiling
 f 654 653 656
 
 # obj120
@@ -1767,9 +1767,9 @@ v 73.07076263 -56.49496078 117.63779449
 v 62.04714203 -56.49496078 112.71653748
 v 73.07076263 -56.49496078 112.71653748
 v 62.04714203 -56.49496078 117.63779449
-usemtl Patch_435_Mat_mat2
+usemtl Patch_435_Mat_CR2_ceiling
 f 657 658 659
-usemtl Patch_436_Mat_mat2
+usemtl Patch_436_Mat_CR2_ceiling
 f 658 657 660
 
 # obj121
@@ -1777,9 +1777,9 @@ v 62.04714203 -45.47134018 117.63779449
 v 62.04714203 -56.49496078 112.71653748
 v 62.04714203 -56.49496078 117.63779449
 v 62.04714203 -45.47134018 112.71653748
-usemtl Patch_437_Mat_mat2
+usemtl Patch_437_Mat_CR2_ceiling
 f 661 662 663
-usemtl Patch_438_Mat_mat2
+usemtl Patch_438_Mat_CR2_ceiling
 f 662 661 664
 
 # obj122
@@ -1787,9 +1787,9 @@ v 62.04714203 -45.47134018 117.63779449
 v 73.07076263 -45.47134018 112.71653748
 v 62.04714203 -45.47134018 112.71653748
 v 73.07076263 -45.47134018 117.63779449
-usemtl Patch_439_Mat_mat2
+usemtl Patch_439_Mat_CR2_ceiling
 f 665 666 667
-usemtl Patch_440_Mat_mat2
+usemtl Patch_440_Mat_CR2_ceiling
 f 666 665 668
 
 # obj123
@@ -1797,9 +1797,9 @@ v 73.07076263 -45.47134018 112.71653748
 v 73.07076263 -56.49496078 117.63779449
 v 73.07076263 -56.49496078 112.71653748
 v 73.07076263 -45.47134018 117.63779449
-usemtl Patch_441_Mat_mat0
+usemtl Patch_441_Mat_CR2_concrete
 f 669 670 671
-usemtl Patch_442_Mat_mat0
+usemtl Patch_442_Mat_CR2_concrete
 f 670 669 672
 
 # obj124
@@ -1807,9 +1807,9 @@ v 12.12588024 -45.47134018 112.71653748
 v 1.10225832 -56.49496078 112.71653748
 v 1.10225832 -45.47134018 112.71653748
 v 12.12588024 -56.49496078 112.71653748
-usemtl Patch_443_Mat_mat2
+usemtl Patch_443_Mat_CR2_ceiling
 f 673 674 675
-usemtl Patch_444_Mat_mat2
+usemtl Patch_444_Mat_CR2_ceiling
 f 674 673 676
 
 # obj125
@@ -1817,9 +1817,9 @@ v 12.12588024 -56.49496078 117.63779449
 v 1.10225832 -56.49496078 112.71653748
 v 12.12588024 -56.49496078 112.71653748
 v 1.10225832 -56.49496078 117.63779449
-usemtl Patch_445_Mat_mat2
+usemtl Patch_445_Mat_CR2_ceiling
 f 677 678 679
-usemtl Patch_446_Mat_mat2
+usemtl Patch_446_Mat_CR2_ceiling
 f 678 677 680
 
 # obj126
@@ -1827,9 +1827,9 @@ v 1.10225832 -45.47134018 117.63779449
 v 1.10225832 -56.49496078 112.71653748
 v 1.10225832 -56.49496078 117.63779449
 v 1.10225832 -45.47134018 112.71653748
-usemtl Patch_447_Mat_mat2
+usemtl Patch_447_Mat_CR2_ceiling
 f 681 682 683
-usemtl Patch_448_Mat_mat2
+usemtl Patch_448_Mat_CR2_ceiling
 f 682 681 684
 
 # obj127
@@ -1837,9 +1837,9 @@ v 1.10225832 -45.47134018 117.63779449
 v 12.12588024 -45.47134018 112.71653748
 v 1.10225832 -45.47134018 112.71653748
 v 12.12588024 -45.47134018 117.63779449
-usemtl Patch_449_Mat_mat2
+usemtl Patch_449_Mat_CR2_ceiling
 f 685 686 687
-usemtl Patch_450_Mat_mat2
+usemtl Patch_450_Mat_CR2_ceiling
 f 686 685 688
 
 # obj128
@@ -1847,9 +1847,9 @@ v 12.12588024 -45.47134018 112.71653748
 v 12.12588024 -56.49496078 117.63779449
 v 12.12588024 -56.49496078 112.71653748
 v 12.12588024 -45.47134018 117.63779449
-usemtl Patch_451_Mat_mat2
+usemtl Patch_451_Mat_CR2_ceiling
 f 689 690 691
-usemtl Patch_452_Mat_mat2
+usemtl Patch_452_Mat_CR2_ceiling
 f 690 689 692
 
 # obj129
@@ -1857,9 +1857,9 @@ v -48.58278275 -45.47134018 112.71653748
 v -59.60640335 -56.49496078 112.71653748
 v -59.60640335 -45.47134018 112.71653748
 v -48.58278275 -56.49496078 112.71653748
-usemtl Patch_453_Mat_mat2
+usemtl Patch_453_Mat_CR2_ceiling
 f 693 694 695
-usemtl Patch_454_Mat_mat2
+usemtl Patch_454_Mat_CR2_ceiling
 f 694 693 696
 
 # obj130
@@ -1867,9 +1867,9 @@ v -48.58278275 -56.49496078 117.63779449
 v -59.60640335 -56.49496078 112.71653748
 v -48.58278275 -56.49496078 112.71653748
 v -59.60640335 -56.49496078 117.63779449
-usemtl Patch_455_Mat_mat2
+usemtl Patch_455_Mat_CR2_ceiling
 f 697 698 699
-usemtl Patch_456_Mat_mat2
+usemtl Patch_456_Mat_CR2_ceiling
 f 698 697 700
 
 # obj131
@@ -1877,9 +1877,9 @@ v -59.60640335 -45.47134018 117.63779449
 v -59.60640335 -56.49496078 112.71653748
 v -59.60640335 -56.49496078 117.63779449
 v -59.60640335 -45.47134018 112.71653748
-usemtl Patch_457_Mat_mat2
+usemtl Patch_457_Mat_CR2_ceiling
 f 701 702 703
-usemtl Patch_458_Mat_mat2
+usemtl Patch_458_Mat_CR2_ceiling
 f 702 701 704
 
 # obj132
@@ -1887,9 +1887,9 @@ v -59.60640335 -45.47134018 117.63779449
 v -48.58278275 -45.47134018 112.71653748
 v -59.60640335 -45.47134018 112.71653748
 v -48.58278275 -45.47134018 117.63779449
-usemtl Patch_459_Mat_mat2
+usemtl Patch_459_Mat_CR2_ceiling
 f 705 706 707
-usemtl Patch_460_Mat_mat2
+usemtl Patch_460_Mat_CR2_ceiling
 f 706 705 708
 
 # obj133
@@ -1897,9 +1897,9 @@ v -48.58278275 -45.47134018 112.71653748
 v -48.58278275 -56.49496078 117.63779449
 v -48.58278275 -56.49496078 112.71653748
 v -48.58278275 -45.47134018 117.63779449
-usemtl Patch_461_Mat_mat2
+usemtl Patch_461_Mat_CR2_ceiling
 f 709 710 711
-usemtl Patch_462_Mat_mat2
+usemtl Patch_462_Mat_CR2_ceiling
 f 710 709 712
 
 # obj134
@@ -1907,9 +1907,9 @@ v -51.08237839 169.58180237 17.71653557
 v -111.39733887 169.58180237 0
 v -51.08237839 169.58180237 0
 v -111.39733887 169.58180237 17.71653557
-usemtl Patch_463_Mat_mat0
+usemtl Patch_463_Mat_CR2_concrete
 f 713 714 715
-usemtl Patch_464_Mat_mat0
+usemtl Patch_464_Mat_CR2_concrete
 f 714 713 716
 
 # obj135
@@ -1917,9 +1917,9 @@ v -51.08237839 169.58180237 17.71653557
 v -111.39733887 170.76290894 17.71653557
 v -111.39733887 169.58180237 17.71653557
 v -51.08237839 170.76290894 17.71653557
-usemtl Patch_465_Mat_mat0
+usemtl Patch_465_Mat_CR2_concrete
 f 717 718 719
-usemtl Patch_466_Mat_mat0
+usemtl Patch_466_Mat_CR2_concrete
 f 718 717 720
 
 # obj136
@@ -1927,9 +1927,9 @@ v 29.82313347 169.58180237 17.71653557
 v -30.29497528 169.58180237 0
 v 29.82313347 169.58180237 -0
 v -30.29497528 169.58180237 17.71653557
-usemtl Patch_467_Mat_mat0
+usemtl Patch_467_Mat_CR2_concrete
 f 721 722 723
-usemtl Patch_468_Mat_mat0
+usemtl Patch_468_Mat_CR2_concrete
 f 722 721 724
 
 # obj137
@@ -1937,9 +1937,9 @@ v 29.82313347 169.58180237 17.71653557
 v -30.29497528 170.76290894 17.71653557
 v -30.29497528 169.58180237 17.71653557
 v 29.82313347 170.76290894 17.71653557
-usemtl Patch_469_Mat_mat0
+usemtl Patch_469_Mat_CR2_concrete
 f 725 726 727
-usemtl Patch_470_Mat_mat0
+usemtl Patch_470_Mat_CR2_concrete
 f 726 725 728
 
 # obj138
@@ -1947,9 +1947,9 @@ v 110.37431335 169.58180237 17.71653557
 v 49.62628555 169.58180237 0
 v 110.37431335 169.58180237 0
 v 49.62628555 169.58180237 17.71653557
-usemtl Patch_471_Mat_mat0
+usemtl Patch_471_Mat_CR2_concrete
 f 729 730 731
-usemtl Patch_472_Mat_mat0
+usemtl Patch_472_Mat_CR2_concrete
 f 730 729 732
 
 # obj139
@@ -1957,9 +1957,9 @@ v 110.37431335 169.58180237 17.71653557
 v 49.62628555 170.76290894 17.71653557
 v 49.62628555 169.58180237 17.71653557
 v 110.37431335 170.76290894 17.71653557
-usemtl Patch_473_Mat_mat0
+usemtl Patch_473_Mat_CR2_concrete
 f 733 734 735
-usemtl Patch_474_Mat_mat0
+usemtl Patch_474_Mat_CR2_concrete
 f 734 733 736
 
 # obj140
@@ -1967,9 +1967,9 @@ v 49.86250305 167.02275085 23.4251976
 v 49.86250305 160.723526 5.90551186
 v 49.86250305 160.723526 23.4251976
 v 49.86250305 167.02275085 5.90551186
-usemtl Patch_475_Mat_mat0
+usemtl Patch_475_Mat_CR2_concrete
 f 737 738 739
-usemtl Patch_476_Mat_mat0
+usemtl Patch_476_Mat_CR2_concrete
 f 738 737 740
 
 # obj141
@@ -1977,9 +1977,9 @@ v 109.70502472 167.02275085 5.90551186
 v 49.86250305 160.723526 5.90551186
 v 49.86250305 167.02275085 5.90551186
 v 109.70502472 160.723526 5.90551186
-usemtl Patch_477_Mat_mat0
+usemtl Patch_477_Mat_CR2_concrete
 f 741 742 743
-usemtl Patch_478_Mat_mat0
+usemtl Patch_478_Mat_CR2_concrete
 f 742 741 744
 
 # obj142
@@ -1987,9 +1987,9 @@ v 109.70502472 160.723526 23.4251976
 v 49.86250305 160.723526 5.90551186
 v 109.70502472 160.723526 5.90551186
 v 49.86250305 160.723526 23.4251976
-usemtl Patch_479_Mat_mat0
+usemtl Patch_479_Mat_CR2_concrete
 f 745 746 747
-usemtl Patch_480_Mat_mat0
+usemtl Patch_480_Mat_CR2_concrete
 f 746 745 748
 
 # obj143
@@ -1997,9 +1997,9 @@ v 109.70502472 160.723526 23.4251976
 v 49.86250305 167.02275085 23.4251976
 v 49.86250305 160.723526 23.4251976
 v 109.70502472 167.02275085 23.4251976
-usemtl Patch_481_Mat_mat0
+usemtl Patch_481_Mat_CR2_concrete
 f 749 750 751
-usemtl Patch_482_Mat_mat0
+usemtl Patch_482_Mat_CR2_concrete
 f 750 749 752
 
 # obj144
@@ -2007,9 +2007,9 @@ v 49.86250305 167.02275085 23.4251976
 v 109.70502472 167.02275085 5.90551186
 v 49.86250305 167.02275085 5.90551186
 v 109.70502472 167.02275085 23.4251976
-usemtl Patch_483_Mat_mat0
+usemtl Patch_483_Mat_CR2_concrete
 f 753 754 755
-usemtl Patch_484_Mat_mat0
+usemtl Patch_484_Mat_CR2_concrete
 f 754 753 756
 
 # obj145
@@ -2017,9 +2017,9 @@ v 109.70502472 167.02275085 5.90551186
 v 109.70502472 160.723526 23.4251976
 v 109.70502472 160.723526 5.90551186
 v 109.70502472 167.02275085 23.4251976
-usemtl Patch_485_Mat_mat0
+usemtl Patch_485_Mat_CR2_concrete
 f 757 758 759
-usemtl Patch_486_Mat_mat0
+usemtl Patch_486_Mat_CR2_concrete
 f 758 757 760
 
 # obj146
@@ -2027,9 +2027,9 @@ v -113.56269073 -113.4103241 117.63779449
 v -112.85403442 -113.80402374 98.42519379
 v -113.56269073 -113.80402374 98.42519379
 v -63.64143372 -113.4103241 117.63779449
-usemtl Patch_487_Mat_mat3
+usemtl Patch_487_Mat_CR2_plaster
 f 761 762 763
-usemtl Patch_488_Mat_mat3
+usemtl Patch_488_Mat_CR2_plaster
 f 762 761 764
 
 # obj147
@@ -2037,9 +2037,9 @@ v -71.47608185 -113.80402374 79.52755737
 v -113.20835876 -113.01662445 79.52755737
 v -113.20835876 -113.80402374 79.52755737
 v -71.47608185 -113.01662445 79.52755737
-usemtl Patch_489_Mat_mat3
+usemtl Patch_489_Mat_CR2_plaster
 f 765 766 767
-usemtl Patch_490_Mat_mat3
+usemtl Patch_490_Mat_CR2_plaster
 f 766 765 768
 
 # obj148
@@ -2047,9 +2047,9 @@ v -71.47608185 -113.01662445 0
 v -71.47608185 -113.80402374 79.52755737
 v -71.47608185 -113.80402374 0
 v -71.47608185 -113.01662445 79.52755737
-usemtl Patch_491_Mat_mat3
+usemtl Patch_491_Mat_CR2_plaster
 f 769 770 771
-usemtl Patch_492_Mat_mat3
+usemtl Patch_492_Mat_CR2_plaster
 f 770 769 772
 
 # obj149
@@ -2057,9 +2057,9 @@ v -113.20835876 -113.01662445 79.52755737
 v -71.47608185 -113.01662445 0
 v -113.20835876 -113.01662445 0
 v -71.47608185 -113.01662445 79.52755737
-usemtl Patch_493_Mat_mat3
+usemtl Patch_493_Mat_CR2_plaster
 f 773 774 775
-usemtl Patch_494_Mat_mat3
+usemtl Patch_494_Mat_CR2_plaster
 f 774 773 776
 
 # obj150
@@ -2067,9 +2067,9 @@ v -113.20835876 -113.01662445 79.52755737
 v -113.20835876 -113.80402374 0
 v -113.20835876 -113.80402374 79.52755737
 v -113.20835876 -113.01662445 0
-usemtl Patch_495_Mat_mat3
+usemtl Patch_495_Mat_CR2_plaster
 f 777 778 779
-usemtl Patch_496_Mat_mat3
+usemtl Patch_496_Mat_CR2_plaster
 f 778 777 780
 
 # obj151
@@ -2078,11 +2078,11 @@ v -113.20835876 -113.80402374 0
 v -119.54694366 -113.80402374 0
 v -113.20835876 -113.80402374 79.52755737
 v -113.56269073 -113.80402374 98.42519379
-usemtl Patch_497_Mat_mat3
+usemtl Patch_497_Mat_CR2_plaster
 f 781 782 783
-usemtl Patch_498_Mat_mat3
+usemtl Patch_498_Mat_CR2_plaster
 f 782 781 784
-usemtl Patch_499_Mat_mat3
+usemtl Patch_499_Mat_CR2_plaster
 f 784 781 785
 
 # obj152
@@ -2090,28 +2090,28 @@ v -113.56269073 -113.80402374 98.42519379
 v -71.47608185 -113.80402374 79.52755737
 v -113.20835876 -113.80402374 79.52755737
 v -112.85403442 -113.80402374 98.42519379
-usemtl Patch_500_Mat_mat3
+usemtl Patch_500_Mat_CR2_plaster
 f 786 787 788
-usemtl Patch_501_Mat_mat3
+usemtl Patch_501_Mat_CR2_plaster
 f 787 786 789
 
 # obj153
 v -63.64143372 -113.4103241 117.63779449
 v -71.47608185 -113.80402374 79.52755737
 v -112.85403442 -113.80402374 98.42519379
-usemtl Patch_502_Mat_mat3
+usemtl Patch_502_Mat_CR2_plaster
 f 790 791 792
 
 # obj154
 v -63.64143372 -113.4103241 117.63779449
 v -63.64143372 -113.80402374 0
 v -71.47608185 -113.80402374 79.52755737
-usemtl Patch_503_Mat_mat3
+usemtl Patch_503_Mat_CR2_plaster
 f 793 794 795
 
 # obj155
 v -71.47608185 -113.80402374 79.52755737
 v -63.64143372 -113.80402374 0
 v -71.47608185 -113.80402374 0
-usemtl Patch_504_Mat_mat3
+usemtl Patch_504_Mat_CR2_plaster
 f 796 797 798

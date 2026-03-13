@@ -1,10 +1,52 @@
 import os
+import shutil
 import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 
 from raves.src.utils import load_mesh, visualize_mesh
 
+material_names = {'CR1_DoorAngle1': {'mat0': 'tablesEquipment',
+                                     'mat1': 'paintedConcrete',
+                                     'mat2': 'concrete',
+                                     'mat3': 'concrete',
+                                     'mat4': 'absorber',
+                                     'mat5': 'unknown',
+                                     },
+                  'CR1_DoorAngle3': {'mat0': 'paintedConcrete',
+                                     'mat1': 'concrete',
+                                     'mat2': 'tablesEquipment',
+                                     'mat3': 'absorber',
+                                     'mat4': 'unknown',
+                                     'mat5': 'unknown',
+                                     },
+                  'CR2': {'mat0': 'concrete',
+                          'mat1': 'windows',
+                          'mat2': 'ceiling',
+                          'mat3': 'plaster',
+                          'mat4': 'floor',
+                          'mat5': 'unknown',
+                          },
+                  'CR3': {'mat0': 'plaster',
+                          'mat1': 'stagePanels',
+                          'mat2': 'structuredPlaster',
+                          'mat3': 'floor',
+                          'mat4': 'ceiling',
+                          'mat5': 'windows',
+                          'mat6': 'seating',
+                          'mat7': 'unknown',
+                          },
+                  'CR4': {'mat0': 'concrete',
+                          'mat1': 'linoleum',
+                          'mat2': 'woodPanels',
+                          'mat3': 'parquet',
+                          'mat4': 'seating',
+                          'mat5': 'whitePanels',
+                          'mat6': 'brickwall',
+                          'mat7': 'windows',
+                          'mat8': 'unknown',
+                          },
+                  }
 
 def reformat_mesh(input_path: str, output_path: str,
                   strategy: str,
@@ -60,10 +102,10 @@ def reformat_mesh(input_path: str, output_path: str,
 
     mtl_file_name = None
     old_obj = 0
-    old_mat = ''
+    old_obj_mat = ''
     
     output_lines = list()
-    patch_names = list()
+    all_patch_names = list()
     
     # Keep track of vertices; this is only used to check for "0 area" faces.
     vertex_list = list()
@@ -93,12 +135,13 @@ def reformat_mesh(input_path: str, output_path: str,
                 output_lines.append(f'# {split_line[1]}\n')
                 
             elif split_line[0] == 'usemtl':
-                old_mat = split_line[1]
+                old_obj_mat = split_line[1]
                 
                 if strategy == 'naive_obj':
-                    new_mat = f'Patch_{len(patch_names)+1}_Mat_{old_mat}'
-                    patch_names.append(new_mat)
-                    output_lines.append(f'usemtl {new_mat}\n')
+                    mat_name = mtl_file_name[:3] + '_' + material_names[mtl_file_name[:-4]][old_obj_mat]
+                    patch_name = f'Patch_{len(all_patch_names)+1}_Mat_{mat_name}'
+                    all_patch_names.append(patch_name)
+                    output_lines.append(f'usemtl {patch_name}\n')
     
             elif split_line[0] == 'v':
                 if len(split_line) == 5:
@@ -124,9 +167,10 @@ def reformat_mesh(input_path: str, output_path: str,
                     continue
                 
                 if strategy == 'naive_trng':
-                    new_mat = f'Patch_{len(patch_names)+1}_Mat_{old_mat}'
-                    patch_names.append(new_mat)
-                    output_lines.append(f'usemtl {new_mat}\n')
+                    mat_name = mtl_file_name[:3] + '_' + material_names[mtl_file_name[:-4]][old_obj_mat]
+                    patch_name = f'Patch_{len(all_patch_names)+1}_Mat_{mat_name}'
+                    all_patch_names.append(patch_name)
+                    output_lines.append(f'usemtl {patch_name}\n')
 
                 output_lines.append(line)
     
@@ -136,7 +180,7 @@ def reformat_mesh(input_path: str, output_path: str,
             file.write(line)
     
     if mtl_file_name is not None:
-        old_mat = ''
+        old_obj_mat = ''
         output_lines = list()
         
         with open(os.path.join(os.path.dirname(input_path),
@@ -153,7 +197,8 @@ def reformat_mesh(input_path: str, output_path: str,
         
                 if split_line[0] == 'newmtl':
                     # Beginning of a material definition.
-                    old_mat = split_line[1]
+                    old_obj_mat = split_line[1]
+                    mat_name = mtl_file_name[:3] + '_' + material_names[mtl_file_name[:-4]][old_obj_mat]
                     
                     # Store all visual parameters of the old definition.
                     old_parameters = list()
@@ -161,10 +206,10 @@ def reformat_mesh(input_path: str, output_path: str,
                     while next_line != '\n':
                         old_parameters.append(next_line)
                         next_line = next(file_iterator)
-                
-                    for new_mat in patch_names:
-                        if old_mat in new_mat:
-                            output_lines.append(f'newmtl {new_mat}\n')
+                    
+                    for patch_name in all_patch_names:
+                        if mat_name in patch_name:
+                            output_lines.append(f'newmtl {patch_name}\n')
                             for param in old_parameters:
                                 output_lines.append(param)
                             output_lines.append('\n')
@@ -186,6 +231,8 @@ def plot_loghist(ax, data, bins):
 
 
 root_folder = os.path.join('..', 'BRAS meshes')
+# materials_file = 'materials_all_bands.csv'
+materials_file = 'materials_oct_bands.csv'
 
 for root, dirs, files in os.walk(root_folder):
     for old_file in files:
@@ -202,13 +249,20 @@ for root, dirs, files in os.walk(root_folder):
                 reformat_mesh(os.path.join(root, old_file),
                               os.path.join(new_dir, 'mesh.obj'),
                               remeshing_strategy)
-    
+
+                shutil.copy(os.path.join(root_folder, materials_file),
+                            os.path.join(new_dir, 'materials.csv'))
+                
                 mesh, patch_materials, _ = load_mesh(new_dir,
                                                      assert_coplanarity=False)
                 
                 print(new_name, 'has',
                       mesh.size(count_patches=True), 'patches,',
                       mesh.size(count_patches=False), 'triangles.')
+                
+                for mat, count in zip(*np.unique(patch_materials, return_counts=True)):
+                    print('\t', count, 'out of', mesh.size(count_patches=True),
+                          'patches have material', mat)
                 
                 areas = mesh.area
                 perimeters = mesh.perimeter()
