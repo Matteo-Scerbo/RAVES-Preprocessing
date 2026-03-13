@@ -66,58 +66,59 @@ source_types = ['Dodecahedron',
                 'Genelec8020c_LSorientation-04'
                 ]
 
-# https://stackoverflow.com/a/5029958
-rirs_per_room = defaultdict(lambda: defaultdict(list))
-
-for short_name, full_name in full_room_names.items():
-    rir_folder = os.path.join(response_folder, full_name, 'RIRs', 'wav')
-    if '_' in short_name:
-        rir_prefix = short_name.replace('_', '_RIR_')
-    else:
-        rir_prefix = short_name + '_RIR'
+if __name__ == '__main__':
+    # https://stackoverflow.com/a/5029958
+    rirs_per_room = defaultdict(lambda: defaultdict(list))
     
-    for src, src_pos in source_positions[short_name].items():
-        for lst, lst_pos in listener_positions[short_name].items():
-            for src_typ in source_types:
-                rir_name = '_'.join([rir_prefix, src, lst, src_typ])
-                rir_path = os.path.join(rir_folder, rir_name) + '.wav'
-                
-                try:
-                    fs, rir_data = read(rir_path)
-                except FileNotFoundError:
-                    # print(f'Missing RIR file:\n\t{rir_name}\nFull path:\n\t{rir_path}\n')
-                    continue
-
-                rirs_per_room[short_name][(src, lst)].append(rir_data)
-
-for short_name, rirs_dict in rirs_per_room.items():
-    fig, ax = plt.subplots(dpi=200, figsize=(8, 4))
-
-    for (src, lst), rirs in rirs_dict.items():
-        print('Found', len(rirs), 'recordings in room', short_name,
-              'with source', src, 'and listener', lst)
+    for short_name, full_name in full_room_names.items():
+        rir_folder = os.path.join(response_folder, full_name, 'RIRs', 'wav')
+        if '_' in short_name:
+            rir_prefix = short_name.replace('_', '_RIR_')
+        else:
+            rir_prefix = short_name + '_RIR'
         
-        first = True
-        for rir in rirs:
-            energy = rir**2
-            # Reverse integration
-            edc = np.cumsum(energy[::-1])[::-1]
-            # dB scale
-            edc = 10 * np.log10(edc)
-            # Normalize by total energy
-            edc -= edc[0]
-            # Decimate (speeds up rendering)
-            edc = edc[::100]
-            
-            if first:
-                plt.plot(edc, label = src + ' ' + lst)
-                first = False
-            else:
-                plt.plot(edc, color = plt.gca().lines[-1].get_color())
+        for src, src_pos in source_positions[short_name].items():
+            for lst, lst_pos in listener_positions[short_name].items():
+                for src_typ in source_types:
+                    rir_name = '_'.join([rir_prefix, src, lst, src_typ])
+                    rir_path = os.path.join(rir_folder, rir_name) + '.wav'
+                    
+                    try:
+                        fs, rir_data = read(rir_path)
+                    except FileNotFoundError:
+                        # print(f'Missing RIR file:\n\t{rir_name}\nFull path:\n\t{rir_path}\n')
+                        continue
     
-    plt.ylim(-60, 0)
-    plt.title('Mesh name: ' + short_name)
-
-    plt.tight_layout()
-    plt.legend()
-    plt.show()
+                    rirs_per_room[short_name][(src, lst)].append(rir_data)
+    
+    for short_name, rirs_dict in rirs_per_room.items():
+        fig, ax = plt.subplots(dpi=200, figsize=(8, 4))
+    
+        for (src, lst), rirs in rirs_dict.items():
+            print('Found', len(rirs), 'recordings in room', short_name,
+                  'with source', src, 'and listener', lst)
+            
+            first = True
+            for rir in rirs:
+                energy = rir**2
+                # Reverse integration
+                edc = np.cumsum(energy[::-1])[::-1]
+                # dB scale
+                edc = 10 * np.log10(edc)
+                # Normalize by total energy
+                edc -= edc[0]
+                # Decimate (speeds up rendering)
+                edc = edc[::100]
+                
+                if first:
+                    plt.plot(edc, label = src + ' ' + lst)
+                    first = False
+                else:
+                    plt.plot(edc, color = plt.gca().lines[-1].get_color())
+        
+        plt.ylim(-60, 0)
+        plt.title('Mesh name: ' + short_name)
+    
+        plt.tight_layout()
+        plt.legend()
+        plt.show()

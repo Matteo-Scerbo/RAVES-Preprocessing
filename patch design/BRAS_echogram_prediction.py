@@ -56,38 +56,51 @@ listener_positions = {'CR1_DoorAngle1': {'MP3': [-1.205, 0.68, 1.235],
                               'MP5': [11.83, 8.43, 1.43],
                               },
                       }
+air_parameters = {'CR1_DoorAngle1': (18.2, 47.6),
+                  'CR1_DoorAngle3': (18.2, 47.6),
+                  'CR2': (19.5, 41.7),
+                  'CR3': (22.4, 40.9),
+                  'CR4': (20.9, 37.5),
+                  }
 
-for room_name in source_positions.keys():
-    for remeshing_strategy in ['naive_obj', 'naive_trng']:
-        env_name = room_name + '_' + remeshing_strategy
-        env_folder = os.path.join(mesh_folder, room_name, env_name)
-        
-        # Results of the echogram comparison will be saved to this subfolder.
-        echograms_subfolder = os.path.join(env_folder, 'Echograms')
-        os.makedirs(echograms_subfolder, exist_ok=True)
-        
-        print('\nPrecomputing environment', env_name, '...\n')
-        
-        compute_ART(env_folder, assert_coplanarity=False)
-        
-        print('\nRunning environment', env_name, '...\n')
-        
-        # Need to put positions into arrays, ensuring the correct order.
-        # https://stackoverflow.com/a/36634885
-        sorted_source_keys = sorted(source_positions[room_name].keys())
-        sources_array = np.array([source_positions[room_name][key]
-                                  for key in sorted_source_keys])
-        sorted_listener_keys = sorted(listener_positions[room_name].keys())
-        listeners_array = np.array([listener_positions[room_name][key]
-                                    for key in sorted_listener_keys])
+if __name__ == '__main__':
+    # for room_name in source_positions.keys():
+    for room_name in ['CR2']:
+        for remeshing_strategy in ['naive_obj', 'naive_trng']:
+            env_name = room_name + '_' + remeshing_strategy
+            env_folder = os.path.join(mesh_folder, room_name, env_name)
             
-        echograms, freqs = run_ART(env_folder, sources_array, listeners_array,
-                                   echogram_sample_rate=echogram_sample_rate,
-                                   echogram_duration=shown_duration,
-                                   output_folder_path=echograms_subfolder,
-                                   assert_coplanarity=False)
-        
-        for src_idx, src in enumerate(sorted_source_keys):
-            for lst_idx, lst in enumerate(sorted_listener_keys):
-                write(os.path.join(echograms_subfolder, src + lst + '.wav'),
-                      echogram_sample_rate, echograms[src_idx, lst_idx])
+            # Results of the echogram comparison will be saved to this subfolder.
+            echograms_subfolder = os.path.join(env_folder, 'Echograms')
+            os.makedirs(echograms_subfolder, exist_ok=True)
+            
+            print('\nPrecomputing environment', env_name, '...\n')
+            
+            compute_ART(env_folder, assert_coplanarity=False,
+                        points_per_square_meter=10.0,
+                        rays_per_hemisphere=1000,
+                        multiprocess_pool_size=2,
+                        temperature=air_parameters[room_name][0],
+                        humidity=air_parameters[room_name][1])
+            
+            print('\nRunning environment', env_name, '...\n')
+            
+            # Need to put positions into arrays, ensuring the correct order.
+            # https://stackoverflow.com/a/36634885
+            sorted_source_keys = sorted(source_positions[room_name].keys())
+            sources_array = np.array([source_positions[room_name][key]
+                                      for key in sorted_source_keys])
+            sorted_listener_keys = sorted(listener_positions[room_name].keys())
+            listeners_array = np.array([listener_positions[room_name][key]
+                                        for key in sorted_listener_keys])
+                
+            echograms, freqs = run_ART(env_folder, sources_array, listeners_array,
+                                       echogram_sample_rate=echogram_sample_rate,
+                                       echogram_duration=shown_duration,
+                                       output_folder_path=echograms_subfolder,
+                                       assert_coplanarity=False)
+            
+            for src_idx, src in enumerate(sorted_source_keys):
+                for lst_idx, lst in enumerate(sorted_listener_keys):
+                    write(os.path.join(echograms_subfolder, src + lst + '.wav'),
+                          echogram_sample_rate, echograms[src_idx, lst_idx])
