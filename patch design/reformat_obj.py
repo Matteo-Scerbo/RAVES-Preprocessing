@@ -1,6 +1,5 @@
 import os
 import shutil
-import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -48,13 +47,17 @@ material_names = {'CR1_DoorAngle1': {'mat0': 'tablesEquipment',
                           },
                   }
 
+inches_per_meter = 39.3700787402
+
 def reformat_mesh(input_path: str, output_path: str,
                   strategy: str,
-                  area_threshold: float = 1e-9):
+                  area_threshold: float = 1e-4,
+                  verbose: bool = False):
     """
     The website ImageToStl.com can convert SketchUp files into OBJ/MTL meshes.
     This function is meant to take the resulting files and re-format them to
-    match the input format of MoD-ART. Triangles with 0 area are removed.
+    match the input format of MoD-ART. Triangles with area below the threshold
+    are removed. All vertex coordinates are converted from inches to meters.
     
     SketchUp items are grouped into objects, like this:
         o obj1
@@ -73,27 +76,27 @@ def reformat_mesh(input_path: str, output_path: str,
     
     With strategy 'naive_obj', the object above would be translated into
         # obj1
-        v 19.88647461 -1.65458953 86.22047424
-        v 22.6277256 -1.45809424 1.96850395
-        v 19.88647461 -1.65458953 1.96850395
-        v 22.83167267 -1.44347501 86.22047424
-        v 22.83167267 -1.44347501 1.96850395
-        usemtl Patch_1_Mat_mat0
+        v 0.505 -0.042 2.19
+        v 0.575 -0.037 0.05
+        v 0.505 -0.042 0.05
+        v 0.58 -0.037 2.19
+        v 0.58 -0.037 0.05
+        usemtl Patch_1_Mat_CR1_tablesEquipment
         f 1 2 3
         f 2 4 5
         f 4 2 1
     With strategy 'naive_trng', the object above would be translated into
         # obj1
-        v 19.88647461 -1.65458953 86.22047424
-        v 22.6277256 -1.45809424 1.96850395
-        v 19.88647461 -1.65458953 1.96850395
-        v 22.83167267 -1.44347501 86.22047424
-        v 22.83167267 -1.44347501 1.96850395
-        usemtl Patch_1_Mat_mat0
+        v 0.505 -0.042 2.19
+        v 0.575 -0.037 0.05
+        v 0.505 -0.042 0.05
+        v 0.58 -0.037 2.19
+        v 0.58 -0.037 0.05
+        usemtl Patch_1_Mat_CR1_tablesEquipment
         f 1 2 3
-        usemtl Patch_2_Mat_mat0
+        usemtl Patch_2_Mat_CR1_tablesEquipment
         f 2 4 5
-        usemtl Patch_3_Mat_mat0
+        usemtl Patch_3_Mat_CR1_tablesEquipment
         f 4 2 1
     """
     
@@ -103,9 +106,12 @@ def reformat_mesh(input_path: str, output_path: str,
     mtl_file_name = None
     old_obj = 0
     old_obj_mat = ''
-    
+
     output_lines = list()
     all_patch_names = list()
+
+    # This flag prevents the creation of patches which do not contain any faces.
+    current_patch_is_empty = True
     
     # Keep track of vertices; this is only used to check for "0 area" faces.
     vertex_list = list()
@@ -125,8 +131,8 @@ def reformat_mesh(input_path: str, output_path: str,
             if split_line[0] == 'mtllib':
                 if mtl_file_name is None:
                     mtl_file_name = split_line[1]
-                else:
-                    warnings.warn('More than one material library specified!')
+                elif verbose:
+                    print('\tMore than one material library specified!')
             
             elif split_line[0] == 'o':
                 old_obj += 1
@@ -136,25 +142,43 @@ def reformat_mesh(input_path: str, output_path: str,
                 
             elif split_line[0] == 'usemtl':
                 old_obj_mat = split_line[1]
-                
+
                 if strategy == 'naive_obj':
+                    # Sometimes, by removing faces with small areas, all faces of an object are removed.
+                    # When this happens, the empty object must be deleted to avoid skipping patch IDs.
+                    if current_patch_is_empty and len(all_patch_names) > 0:
+                        dropped_patch_name = all_patch_names[-1]
+                        all_patch_names = all_patch_names[:-1]
+                        output_lines.remove(f'usemtl {dropped_patch_name}\n')
+                    
                     mat_name = mtl_file_name[:3] + '_' + material_names[mtl_file_name[:-4]][old_obj_mat]
                     patch_name = f'Patch_{len(all_patch_names)+1}_Mat_{mat_name}'
                     all_patch_names.append(patch_name)
                     output_lines.append(f'usemtl {patch_name}\n')
-    
+                    current_patch_is_empty = True
+
             elif split_line[0] == 'v':
                 if len(split_line) == 5:
-                    warnings.warn('`w` coordinates are ignored.')
+                    if verbose:
+                        print('\t`w` coordinates are ignored.')
                     split_line = split_line[:-1]
 
                 if len(split_line) != 4:
                     raise ValueError('All vertex coordinates must have three dimensions.'
                                      + ' Bad line:\n\t' + line)
 
-                vertex_list.append([float(c) for c in split_line[1:]])
-                
-                output_lines.append(line)
+                # Convert from inches to meters (blame SketchUp).
+                converted_coords = [float(c) / inches_per_meter
+                                    for c in split_line[1:]]
+                # Round to fewer digits. Otherwise, some of the following operations
+                #  on the floats will not match what actually gets written in the files.
+                converted_coords = [np.round(c, 3)
+                                    for c in converted_coords]
+                converted_line = 'v ' + ' '.join([str(c)
+                                                  for c in converted_coords]) + '\n'
+
+                vertex_list.append(converted_coords)
+                output_lines.append(converted_line)
                 
             elif split_line[0] == 'f':
                 # Check the face's area and ignore if zero.
@@ -163,7 +187,8 @@ def reformat_mesh(input_path: str, output_path: str,
                 area = np.linalg.norm(np.cross(triangle[1] - triangle[0],
                                                triangle[2] - triangle[0]))
                 if area < area_threshold:
-                    warnings.warn(f'Ignoring triangle with area {area}.')
+                    if verbose:
+                        print(f'\tIgnoring triangle with area {area}.')
                     continue
                 
                 if strategy == 'naive_trng':
@@ -173,6 +198,7 @@ def reformat_mesh(input_path: str, output_path: str,
                     output_lines.append(f'usemtl {patch_name}\n')
 
                 output_lines.append(line)
+                current_patch_is_empty = False
     
     with open(output_path,
               mode='w') as file:
@@ -245,6 +271,8 @@ for root, dirs, files in os.walk(root_folder):
                 new_name = old_file[:-4] + '_' + remeshing_strategy
                 new_dir = os.path.join(root, new_name)
                 os.makedirs(new_dir, exist_ok=True)
+
+                print('Preparing mesh', new_dir)
                 
                 reformat_mesh(os.path.join(root, old_file),
                               os.path.join(new_dir, 'mesh.obj'),
@@ -252,6 +280,8 @@ for root, dirs, files in os.walk(root_folder):
 
                 shutil.copy(os.path.join(root_folder, materials_file),
                             os.path.join(new_dir, 'materials.csv'))
+                
+                # visualize_mesh(new_dir)
                 
                 mesh, patch_materials, _ = load_mesh(new_dir,
                                                      assert_coplanarity=False)
@@ -285,5 +315,3 @@ for root, dirs, files in os.walk(root_folder):
             
                 plt.tight_layout()
                 plt.show()
-                
-                # visualize_mesh(new_dir)

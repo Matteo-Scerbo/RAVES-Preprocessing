@@ -64,9 +64,8 @@ air_parameters = {'CR1_DoorAngle1': (18.2, 47.6),
                   }
 
 if __name__ == '__main__':
-    # for room_name in source_positions.keys():
-    for room_name in ['CR2']:
-        for remeshing_strategy in ['naive_obj', 'naive_trng']:
+    for room_name in source_positions.keys():
+        for remeshing_strategy in ['naive_trng', 'naive_obj']:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
             
@@ -77,9 +76,9 @@ if __name__ == '__main__':
             print('\nPrecomputing environment', env_name, '...\n')
             
             compute_ART(env_folder, assert_coplanarity=False,
-                        points_per_square_meter=10.0,
-                        rays_per_hemisphere=1000,
-                        multiprocess_pool_size=2,
+                        # points_per_square_meter=10.0,
+                        # rays_per_hemisphere=1000,
+                        multiprocess_pool_size=16,
                         temperature=air_parameters[room_name][0],
                         humidity=air_parameters[room_name][1])
             
