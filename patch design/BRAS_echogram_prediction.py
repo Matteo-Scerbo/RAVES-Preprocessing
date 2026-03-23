@@ -97,7 +97,8 @@ if __name__ == '__main__':
                                        echogram_sample_rate=echogram_sample_rate,
                                        echogram_duration=shown_duration,
                                        output_folder_path=echograms_subfolder,
-                                       assert_coplanarity=False)
+                                       assert_coplanarity=False,
+                                       assert_min_delays=False)
             
             for src_idx, src in enumerate(sorted_source_keys):
                 for lst_idx, lst in enumerate(sorted_listener_keys):

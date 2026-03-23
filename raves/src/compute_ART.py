@@ -548,6 +548,8 @@ def compute_ART(folder_path: str,
         Air temperature (deg C) used for air absorption and sound speed.
     pressure
         Atmospheric pressure (kPa) used for air absorption.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
 
     Returns
     -------

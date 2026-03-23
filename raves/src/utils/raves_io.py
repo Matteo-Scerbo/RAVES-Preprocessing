@@ -353,6 +353,8 @@ def load_all_inputs(folder_path: str,
         If greater than 0, patches may be merged by ``load_mesh``.
     thoroughness : float, default 0.0
         Passed to ``load_mesh`` to control merge candidate selection.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
 
     Returns
     -------

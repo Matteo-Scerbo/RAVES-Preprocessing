@@ -234,7 +234,7 @@ def run_ART(folder_path: str,
             num_rays: int = 1000,
             output_folder_path: str = None,
             humidity: float = 50., temperature: float = 20., pressure: float = 100.,
-            assert_coplanarity: bool = True
+            assert_coplanarity: bool = True, assert_min_delays: bool = True
             ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Build echograms using TD-ART.
@@ -271,6 +271,11 @@ def run_ART(folder_path: str,
         Air temperature (deg C) used for speed-of-sound computation.
     pressure : float, default: 100.0
         Atmospheric pressure (kPa) used for speed-of-sound computation.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
+    assert_min_delays : bool, default True
+        If False, lift the restriction for all delay lines to be at least one sample.
+        Delay lengths of 0 samples are artificially extended to be 1 sample long.
 
     Returns
     -------
@@ -335,9 +340,15 @@ def run_ART(folder_path: str,
     min_valid_rate = 1. / np.min(path_delays)
     min_recommended_rate = 10. / np.min(path_delays)
     if np.min(integer_delays) < 1:
-        raise ValueError('The echogram sample rate {:.0f} is too low for this environment. '.format(np.floor(echogram_sample_rate)) +
-                         'It needs to be at least {:.0f} in order for all integer delays to be at least 1 sample. '.format(np.ceil(min_valid_rate)) +
-                         'A value above {:.0f} is recommended. '.format(np.ceil(min_recommended_rate)))
+        if assert_min_delays:
+            raise ValueError('The echogram sample rate {:.0f} is too low for this environment. '.format(np.floor(echogram_sample_rate)) +
+                            'It needs to be at least {:.0f} in order for all integer delays to be at least 1 sample. '.format(np.ceil(min_valid_rate)) +
+                            'A value above {:.0f} is recommended. '.format(np.ceil(min_recommended_rate)))
+        else:
+            integer_delays = np.clip(integer_delays, 1, None)
+            warnings.warn('The echogram sample rate {:.0f} is very low for this environment. '.format(np.floor(echogram_sample_rate)) +
+                        'Consider increasing it to avoid excessive rounding of propagation delays. ' +
+                        'A value above {:.0f} is recommended. '.format(np.ceil(min_recommended_rate)))
     elif np.min(integer_delays) < 10:
         warnings.warn('The echogram sample rate {:.0f} is very low for this environment. '.format(np.floor(echogram_sample_rate)) +
                       'Consider increasing it to avoid excessive rounding of propagation delays. ' +
@@ -588,6 +599,8 @@ def run_MoDART(folder_path: str,
         Air temperature (deg C) used for speed-of-sound computation.
     pressure : float, default: 100.0
         Atmospheric pressure (kPa) used for speed-of-sound computation.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
 
     Returns
     -------
