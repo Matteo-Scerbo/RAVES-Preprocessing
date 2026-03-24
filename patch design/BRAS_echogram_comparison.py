@@ -7,102 +7,144 @@ from collections import defaultdict
 
 from raves.src.utils import load_frequencies
 
-mesh_folder = os.path.join('..', 'BRAS meshes')
-response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
-
-audio_sample_rate = 44.1e3
-echo_sample_rate = 1e4
-# Choose a low sample rate for plotting and evaluating energy results.
-# In order to avoid having to do any resampling, choose a common divider of
-#  the recording and ART sample rates.
-downsampled_rate = np.gcd(int(audio_sample_rate),
-                          int(echo_sample_rate))
-# If the downsampled rate is still too high, choose a lower common divider.
-while downsampled_rate > 1e3:
-    success = False
-    for prime in [2, 3, 5, 7, 11]:
-        if downsampled_rate % prime == 0:
-            downsampled_rate /= prime
-            success = True
-            break
-    if not success:
-        break
-audio_stride = int(audio_sample_rate / downsampled_rate)
-echo_stride = int(echo_sample_rate / downsampled_rate)
-
-plotted_band_idx = 4
-backwards_integration = False
-
-full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                   'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                   'CR2': 'CR2 small room (seminar room)',
-                   'CR3': 'CR3 medium room (chamber music hall)',
-                   'CR4': 'CR4 large room (auditorium)',
-                   }
-source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
-                                       'LS2': [-1.77, -2.28, 1.189],
-                                       },
-                    'CR1_DoorAngle3': {'LS1': [1.5, -2.225, 1.239],
-                                       'LS2': [-1.77, -2.28, 1.189],
-                                       },
-                    'CR2': {'LS1': [0.931, -2.547, 1.23],
-                            'LS2': [0.119, 2.88, 1.23],
-                            },
-                    'CR3': {'LS1': [-2.02, 2.0, 2.76],
-                            'LS2': [-3.32, 2.0, 2.76],
-                            'LS3': [4.812, 2.358, 1.76], # Only Genelec
-                            },
-                    'CR4': {'LS1': [-2.8, -4.5, 1.79],
-                            'LS2': [0.0, 4.5, 1.79],
-                            },
-                    }
-listener_positions = {'CR1_DoorAngle1': {'MP3': [-1.205, 0.68, 1.235],
-                                         'MP4': [-4.35, 0.695, 1.235],
-                                         },
-                      'CR1_DoorAngle3': {'MP3': [-1.205, 0.68, 1.235],
-                                         'MP4': [-4.35, 0.695, 1.235],
-                                         },
-                      'CR2': {'MP1': [-0.993, -1.426, 1.23],
-                              'MP2': [0.439, -0.147, 1.23],
-                              'MP3': [1.361, -0.603, 1.23],
-                              'MP4': [-1.11, -0.256, 1.23],
-                              'MP5': [-0.998, -1.409, 1.23],
-                              },
-                      'CR3': {'MP1': [7.84, 0.0, 1.23],
-                              'MP2': [2.165, 3.441, 1.23],
-                              'MP3': [9.227, 2.366, 1.23],
-                              'MP4': [5.86, -2.359, 1.23],
-                              'MP5': [12.726, -3.24, 1.23],
-                              },
-                      'CR4': {'MP1': [8.5, 0.0, 1.09],
-                              'MP2': [3.33, -7.95, 0.57],
-                              'MP3': [9.33, -6.96, 1.18],
-                              'MP4': [5.91, 6.34, 0.83],
-                              'MP5': [11.83, 8.43, 1.43],
-                              },
-                      }
-source_types = ['Dodecahedron',
-                'Genelec8020c_LSorientation-negativeX',
-                'Genelec8020c_LSorientation-negativeY',
-                'Genelec8020c_LSorientation-positiveX',
-                'Genelec8020c_LSorientation-positiveY',
-                'Genelec8020c_LSorientation-01',
-                'Genelec8020c_LSorientation-02',
-                'Genelec8020c_LSorientation-03',
-                'Genelec8020c_LSorientation-04'
-                ]
-
 if __name__ == '__main__':
+    mesh_folder = os.path.join('..', 'BRAS meshes')
+    response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
+
+    audio_sample_rate = 44.1e3
+    echo_sample_rate = 1e4
+    # Choose a low sample rate for plotting and evaluating energy results.
+    # In order to avoid having to do any resampling, choose a common divider of
+    #  the recording and ART sample rates.
+    downsampled_rate = np.gcd(int(audio_sample_rate),
+                            int(echo_sample_rate))
+    # If the downsampled rate is still too high, choose a lower common divider.
+    while downsampled_rate > 1e3:
+        success = False
+        for prime in [2, 3, 5, 7, 11]:
+            if downsampled_rate % prime == 0:
+                downsampled_rate /= prime
+                success = True
+                break
+        if not success:
+            break
+    audio_stride = int(audio_sample_rate / downsampled_rate)
+    echo_stride = int(echo_sample_rate / downsampled_rate)
+    audio_nyquist = audio_sample_rate / 2
+
+    plotted_band_idx = 3
+    backwards_integration = False
+
+    full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    'CR2': 'CR2 small room (seminar room)',
+                    'CR3': 'CR3 medium room (chamber music hall)',
+                    'CR4': 'CR4 large room (auditorium)',
+                    }
+    source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
+                                        'LS2': [-1.77, -2.28, 1.189],
+                                        },
+                        'CR1_DoorAngle3': {'LS1': [1.5, -2.225, 1.239],
+                                        'LS2': [-1.77, -2.28, 1.189],
+                                        },
+                        'CR2': {'LS1': [0.931, -2.547, 1.23],
+                                'LS2': [0.119, 2.88, 1.23],
+                                },
+                        'CR3': {'LS1': [-2.02, 2.0, 2.76],
+                                'LS2': [-3.32, 2.0, 2.76],
+                                'LS3': [4.812, 2.358, 1.76], # Only Genelec
+                                },
+                        'CR4': {'LS1': [-2.8, -4.5, 1.79],
+                                'LS2': [0.0, 4.5, 1.79],
+                                },
+                        }
+    listener_positions = {'CR1_DoorAngle1': {'MP3': [-1.205, 0.68, 1.235],
+                                            'MP4': [-4.35, 0.695, 1.235],
+                                            },
+                        'CR1_DoorAngle3': {'MP3': [-1.205, 0.68, 1.235],
+                                            'MP4': [-4.35, 0.695, 1.235],
+                                            },
+                        'CR2': {'MP1': [-0.993, -1.426, 1.23],
+                                'MP2': [0.439, -0.147, 1.23],
+                                'MP3': [1.361, -0.603, 1.23],
+                                'MP4': [-1.11, -0.256, 1.23],
+                                'MP5': [-0.998, -1.409, 1.23],
+                                },
+                        'CR3': {'MP1': [7.84, 0.0, 1.23],
+                                'MP2': [2.165, 3.441, 1.23],
+                                'MP3': [9.227, 2.366, 1.23],
+                                'MP4': [5.86, -2.359, 1.23],
+                                'MP5': [12.726, -3.24, 1.23],
+                                },
+                        'CR4': {'MP1': [8.5, 0.0, 1.09],
+                                'MP2': [3.33, -7.95, 0.57],
+                                'MP3': [9.33, -6.96, 1.18],
+                                'MP4': [5.91, 6.34, 0.83],
+                                'MP5': [11.83, 8.43, 1.43],
+                                },
+                        }
+    source_types = ['Dodecahedron',
+                    'Genelec8020c_LSorientation-negativeX',
+                    'Genelec8020c_LSorientation-negativeY',
+                    'Genelec8020c_LSorientation-positiveX',
+                    'Genelec8020c_LSorientation-positiveY',
+                    'Genelec8020c_LSorientation-01',
+                    'Genelec8020c_LSorientation-02',
+                    'Genelec8020c_LSorientation-03',
+                    'Genelec8020c_LSorientation-04'
+                    ]
+    noise_floors = {'CR1_DoorAngle1': {125.0: -71,
+                                       250.0: -77,
+                                       500.0: -78,
+                                       1000.0: -79,
+                                       2000.0: -81,
+                                       4000.0: -79,
+                                       8000.0: -73,
+                                       16000.0: -70},
+                    'CR1_DoorAngle3': {125.0: -77,
+                                       250.0: -76,
+                                       500.0: -77,
+                                       1000.0: -78,
+                                       2000.0: -80,
+                                       4000.0: -79,
+                                       8000.0: -74,
+                                       16000.0: -69},
+                    'CR2': {125.0: -81,
+                            250.0: -76,
+                            500.0: -75,
+                            1000.0: -72,
+                            2000.0: -72,
+                            4000.0: -73,
+                            8000.0: -69,
+                            16000.0: -64},
+                    'CR3': {125.0: -93,
+                            250.0: -97,
+                            500.0: -98,
+                            1000.0: -96,
+                            2000.0: -91,
+                            4000.0: -87,
+                            8000.0: -81,
+                            16000.0: -76},
+                    'CR4': {125.0: -86,
+                            250.0: -87,
+                            500.0: -88,
+                            1000.0: -88,
+                            2000.0: -87,
+                            4000.0: -85,
+                            8000.0: -80,
+                            16000.0: -75}
+                    }
+
     # Consider the frequency band centers provided alongside the input data.
     band_centers = load_frequencies(mesh_folder, 'materials_oct_bands.csv')
     num_bands = len(band_centers)
     # Factor for octave-band boundaries.
     band_bound = np.sqrt(2)
     # Ensure that all frequencies support band-pass filtering.
-    if np.any(band_centers * band_bound >= audio_sample_rate / 2):
+    if np.any(band_centers >= audio_nyquist):
         print('Warning: the audio sample rate is too low for some frequency bands.')
         # Select only acceptable bands.
-        band_centers = band_centers[band_centers * band_bound < audio_sample_rate / 2]
+        band_centers = band_centers[band_centers < audio_nyquist]
         # Update the number of rendered bands.
         num_bands = len(band_centers)
 
@@ -157,20 +199,25 @@ if __name__ == '__main__':
 
     for short_name, rirs_dict in rirs_per_room.items():
         fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
-    
+
         for (src, lst), rirs in rirs_dict.items():
-            print(f'Found {len(rirs)} recordings in room {short_name} '
-                  f'with source {src} and listener {lst}.')
-            
+            # print(f'Found {len(rirs)} recordings in room {short_name} '
+            #       f'with source {src} and listener {lst}.')
+
             first = True
             for rir in rirs:
                 # Prepare an array for the band-pass filtered response.
                 banded_rir = np.zeros((num_bands, len(rir)))
 
                 for b in range(num_bands):
+                    if band_centers[b] * band_bound >= audio_nyquist:
+                        upper_lim = audio_nyquist * 0.999
+                    else:
+                        upper_lim = band_centers[b] * band_bound
+                    lower_lim = band_centers[b] / band_bound
+                    
                     # Prepare the suitable band-pass filter...
-                    sos = butter(6, (band_centers[b] / band_bound,
-                                     band_centers[b] * band_bound),
+                    sos = butter(6, (lower_lim, upper_lim),
                                  btype='bandpass', output='sos',
                                  fs=audio_sample_rate)
                     # ...and apply it to the room impulse response.
@@ -179,8 +226,6 @@ if __name__ == '__main__':
                 banded_energy = banded_rir**2
                 # Normalize to energy-per-second, matching our echogram convention.
                 banded_energy *= audio_sample_rate
-                # Our convention also normalizes by 4 pi.
-                banded_energy *= 4 * np.pi
 
                 if backwards_integration:
                     # Reverse integration
@@ -197,7 +242,7 @@ if __name__ == '__main__':
                     banded_energy = np.array(np.array_split(banded_energy,
                                                             num_windows,
                                                             axis=-1)
-                                             ).sum(axis=-1).T
+                                             ).mean(axis=-1).T
                     # dB scale
                     banded_energy = 10 * np.log10(banded_energy)
 
@@ -219,6 +264,15 @@ if __name__ == '__main__':
                 if short_name in echos_per_room:
                     if (src, lst, remeshing_strategy) in echos_per_room[short_name]:
                         echogram = echos_per_room[short_name][(src, lst, remeshing_strategy)]
+
+                        # Our convention normalizes by 4 pi; match the recordings instead.
+                        echogram /= (4 * np.pi) ** 2
+                        
+                        echogram = np.pad(echogram, ((0, 0), (0, int(echo_sample_rate))))
+
+                        for b in range(num_bands):
+                            floor_db = noise_floors[short_name][band_centers[b]]
+                            echogram[b] += 10 ** (floor_db / 10)
                 
                         if backwards_integration:
                             # Reverse integration
@@ -233,9 +287,9 @@ if __name__ == '__main__':
                             num_windows = echogram.shape[-1] // echo_stride
                             # https://stackoverflow.com/a/71800940
                             echogram = np.array(np.array_split(echogram,
-                                                                    num_windows,
-                                                                    axis=-1)
-                                                     ).sum(axis=-1).T
+                                                               num_windows,
+                                                               axis=-1)
+                                                ).mean(axis=-1).T
                             # dB scale
                             echogram = 10 * np.log10(echogram)
 
@@ -244,13 +298,23 @@ if __name__ == '__main__':
                         plt.plot(time_axis,
                                  echogram[plotted_band_idx],
                                  label = f'{src} {lst} {remeshing_strategy}')
-                    
-        plt.xlim(0, 2.5)
-        # plt.ylim(-60, 0)
-        plt.ylim(-120, None)
-        plt.title(f'Mesh name {short_name}, with source {src} and listener {lst}; '
+    
+        plt.xlim(0, 3.5)
+        if backwards_integration:
+            plt.ylim(-60, 0)
+        else:
+            floor_db = noise_floors[short_name][band_centers[plotted_band_idx]]
+
+            plt.ylim(floor_db-10, None)
+
+            plt.hlines(floor_db, xmin=0, xmax=5,
+                       color='black', ls='--', linewidth=1,
+                       label='Noise floor')
+        
+        plt.title(f'Mesh name {short_name}; '
                   f'results for {band_centers[plotted_band_idx]} octave band.')
     
         plt.tight_layout()
         plt.legend()
         plt.show()
+
