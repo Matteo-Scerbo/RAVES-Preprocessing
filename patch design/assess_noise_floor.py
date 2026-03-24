@@ -74,7 +74,7 @@ if __name__ == '__main__':
                     'Genelec8020c_LSorientation-04'
                     ]
     # https://stackoverflow.com/a/5029958
-    noise_floors = defaultdict(lambda: defaultdict(list))
+    noise_floors = defaultdict(list)
     
     # Consider the frequency band centers provided alongside the input data.
     band_centers = load_frequencies(mesh_folder, 'materials_oct_bands.csv')
@@ -133,18 +133,18 @@ if __name__ == '__main__':
                         # Consider values from 2 seconds and onwards.
                         late_values = band_energy[int(2*audio_sample_rate):]
                         # Accumulate the flattened values for all recordings in the room.
-                        late_energy_data[band_centers[b]].append(list(late_values))
+                        late_energy_data[b].append(list(late_values))
 
-        for freq in band_centers:
-            hist, bin_edges = np.histogram(late_energy_data[freq],
+        for b in range(num_bands):
+            hist, bin_edges = np.histogram(late_energy_data[b],
                                            bins=75, range=(-125.5, -50.5))
             bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
             noise_floor = bin_centers[np.argmax(hist)]
-            noise_floors[short_name][freq] = noise_floor
+            noise_floors[short_name].append(int(noise_floor))
 
             plt.plot(bin_centers, hist,
-                     label=f'{freq}Hz -> {noise_floor}dB')
+                     label=f'{band_centers[b]}Hz -> {noise_floor}dB')
 
         plt.xlim(-125, -50)
         
@@ -154,7 +154,5 @@ if __name__ == '__main__':
         plt.legend()
         plt.show()
     
-    pprint({k: {float(f): int(v)
-                for f, v in d.items()}
-            for k, d in noise_floors.items()})
+    pprint(noise_floors)
 

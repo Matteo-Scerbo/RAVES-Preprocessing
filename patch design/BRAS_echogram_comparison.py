@@ -1,6 +1,10 @@
 import os
+import itertools
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+
 from scipy.io.wavfile import read
 from scipy.signal import butter, sosfilt
 from collections import defaultdict
@@ -10,6 +14,7 @@ from raves.src.utils import load_frequencies
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
     response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
+    mesh_strategies = ['naive_trng', 'naive_obj']
 
     audio_sample_rate = 44.1e3
     echo_sample_rate = 1e4
@@ -32,8 +37,8 @@ if __name__ == '__main__':
     echo_stride = int(echo_sample_rate / downsampled_rate)
     audio_nyquist = audio_sample_rate / 2
 
-    plotted_band_idx = 3
-    backwards_integration = False
+    plotted_band_idx = 2
+    backwards_integration = True
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -93,47 +98,11 @@ if __name__ == '__main__':
                     'Genelec8020c_LSorientation-03',
                     'Genelec8020c_LSorientation-04'
                     ]
-    noise_floors = {'CR1_DoorAngle1': {125.0: -71,
-                                       250.0: -77,
-                                       500.0: -78,
-                                       1000.0: -79,
-                                       2000.0: -81,
-                                       4000.0: -79,
-                                       8000.0: -73,
-                                       16000.0: -70},
-                    'CR1_DoorAngle3': {125.0: -77,
-                                       250.0: -76,
-                                       500.0: -77,
-                                       1000.0: -78,
-                                       2000.0: -80,
-                                       4000.0: -79,
-                                       8000.0: -74,
-                                       16000.0: -69},
-                    'CR2': {125.0: -81,
-                            250.0: -76,
-                            500.0: -75,
-                            1000.0: -72,
-                            2000.0: -72,
-                            4000.0: -73,
-                            8000.0: -69,
-                            16000.0: -64},
-                    'CR3': {125.0: -93,
-                            250.0: -97,
-                            500.0: -98,
-                            1000.0: -96,
-                            2000.0: -91,
-                            4000.0: -87,
-                            8000.0: -81,
-                            16000.0: -76},
-                    'CR4': {125.0: -86,
-                            250.0: -87,
-                            500.0: -88,
-                            1000.0: -88,
-                            2000.0: -87,
-                            4000.0: -85,
-                            8000.0: -80,
-                            16000.0: -75}
-                    }
+    noise_floors = {'CR1_DoorAngle1': [-71, -77, -78, -79, -81, -79, -73, -70],
+                    'CR1_DoorAngle3': [-77, -76, -77, -78, -80, -79, -74, -69],
+                    'CR2': [-81, -76, -75, -72, -72, -73, -69, -64],
+                    'CR3': [-93, -97, -98, -96, -91, -87, -81, -76],
+                    'CR4': [-86, -87, -88, -88, -87, -85, -80, -75]}
 
     # Consider the frequency band centers provided alongside the input data.
     band_centers = load_frequencies(mesh_folder, 'materials_oct_bands.csv')
@@ -174,8 +143,8 @@ if __name__ == '__main__':
     
                     rirs_per_room[short_name][(src, lst)].append(rir_data)
     
-                for remeshing_strategy in ['naive_trng', 'naive_obj']:
-                    env_name = short_name + '_' + remeshing_strategy
+                for mesh_strat in mesh_strategies:
+                    env_name = short_name + '_' + mesh_strat
                     env_folder = os.path.join(mesh_folder, short_name, env_name)
                     echo_subfolder = os.path.join(env_folder, 'Echograms')
                     echo_path = os.path.join(echo_subfolder, src + lst + '.wav')
@@ -189,13 +158,15 @@ if __name__ == '__main__':
                         continue
                     assert fs == echo_sample_rate, (fs, echo_sample_rate)
     
-                    echos_per_room[short_name][(src, lst, remeshing_strategy)] = echo_data.T
+                    echos_per_room[short_name][(src, lst, mesh_strat)] = echo_data.T
     
         # num_rirs = sum([len(d) for k, d in rirs_per_room[short_name].items()])
         # print(f'Found {num_rirs} recordings in total in room {short_name}.')
 
         # num_echos = sum([len(d) for k, d in echos_per_room[short_name].items()])
         # print(f'Found {num_echos} ART echograms in total in room {short_name}.')
+    
+    specgrams_per_room = defaultdict(dict)
 
     for short_name, rirs_dict in rirs_per_room.items():
         fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
@@ -203,6 +174,10 @@ if __name__ == '__main__':
         for (src, lst), rirs in rirs_dict.items():
             # print(f'Found {len(rirs)} recordings in room {short_name} '
             #       f'with source {src} and listener {lst}.')
+
+            # List the spectrograms of all loudspeaker types,
+            #  in order to average them together.
+            specgram_list = list()
 
             first = True
             for rir in rirs:
@@ -245,7 +220,9 @@ if __name__ == '__main__':
                                              ).mean(axis=-1).T
                     # dB scale
                     banded_energy = 10 * np.log10(banded_energy)
-
+                
+                specgram_list.append(banded_energy)
+                
                 time_axis = np.arange(banded_energy.shape[-1]) / downsampled_rate
 
                 if first:
@@ -259,19 +236,33 @@ if __name__ == '__main__':
                              banded_energy[plotted_band_idx],
                              color = plt.gca().lines[-1].get_color(),
                              ls=':')
-            
-            for remeshing_strategy in ['naive_trng', 'naive_obj']:
+
+            # Average over all loudspeaker types.
+            min_reference_len = min([spec.shape[-1]
+                                     for spec in specgram_list])
+            min_reference_len = min(min_reference_len, int(2.5 * downsampled_rate))
+            mean_specgram = np.mean([spec[:, :min_reference_len]
+                                     for spec in specgram_list],
+                                     axis=0)
+            specgrams_per_room[short_name][(src, lst, 'reference')] = mean_specgram
+
+            for mesh_strat in mesh_strategies:
                 if short_name in echos_per_room:
-                    if (src, lst, remeshing_strategy) in echos_per_room[short_name]:
-                        echogram = echos_per_room[short_name][(src, lst, remeshing_strategy)]
+                    if (src, lst, mesh_strat) in echos_per_room[short_name]:
+                        echogram = echos_per_room[short_name][(src, lst, mesh_strat)]
 
                         # Our convention normalizes by 4 pi; match the recordings instead.
                         echogram /= (4 * np.pi) ** 2
                         
-                        echogram = np.pad(echogram, ((0, 0), (0, int(echo_sample_rate))))
-
+                        # Extend the duration of the echogram,
+                        #  providing more room for the backwards integration.
+                        echogram = np.pad(echogram,
+                                          ((0, 0),  # No padding over first dimension (freqs)
+                                           (0, int(2*echo_sample_rate))))
+                        # Add a noise floor matching the recordings,
+                        #  especially important for the backwards integration comparison.
                         for b in range(num_bands):
-                            floor_db = noise_floors[short_name][band_centers[b]]
+                            floor_db = noise_floors[short_name][b]
                             echogram[b] += 10 ** (floor_db / 10)
                 
                         if backwards_integration:
@@ -292,18 +283,20 @@ if __name__ == '__main__':
                                                 ).mean(axis=-1).T
                             # dB scale
                             echogram = 10 * np.log10(echogram)
+                        
+                        specgrams_per_room[short_name][(src, lst, mesh_strat)] = echogram[:, :min_reference_len]
 
                         time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
 
                         plt.plot(time_axis,
                                  echogram[plotted_band_idx],
-                                 label = f'{src} {lst} {remeshing_strategy}')
+                                 label = f'{src} {lst} {mesh_strat}')
     
-        plt.xlim(0, 3.5)
+        plt.xlim(0, 2.5)
         if backwards_integration:
             plt.ylim(-60, 0)
         else:
-            floor_db = noise_floors[short_name][band_centers[plotted_band_idx]]
+            floor_db = noise_floors[short_name][plotted_band_idx]
 
             plt.ylim(floor_db-10, None)
 
@@ -311,10 +304,63 @@ if __name__ == '__main__':
                        color='black', ls='--', linewidth=1,
                        label='Noise floor')
         
-        plt.title(f'Mesh name {short_name}; '
-                  f'results for {band_centers[plotted_band_idx]} octave band.')
-    
+        # https://stackoverflow.com/a/10101532
+        def flip(items, ncol):
+            return itertools.chain(*[items[i::ncol]
+                                     for i in range(ncol)])
+        handles, labels = ax.get_legend_handles_labels()
+        plt.legend(flip(handles, 3),
+                   flip(labels, 3),
+                   ncol=3)
+
+        plt.title(f'Room {short_name}; {band_centers[plotted_band_idx]}Hz octave band.')
         plt.tight_layout()
-        plt.legend()
         plt.show()
 
+        # Plot the energy differences.
+
+        # Diverging colormap to differentiate positive and negative values.
+        contour_levels = np.linspace(-10, 10, 21)
+        cmap = plt.get_cmap('RdBu', len(contour_levels) + 1)
+        norm = mpl.colors.BoundaryNorm(contour_levels, ncolors=cmap.N, extend='both')
+
+        fig, axes = plt.subplots(len(rirs_dict), len(mesh_strategies),
+                                 figsize=(4*len(mesh_strategies), 3*len(rirs_dict)),
+                                 squeeze=False, constrained_layout=True)
+
+        cs = None
+        for i, mesh_strat in enumerate(mesh_strategies):
+            for j, (src, lst) in enumerate(rirs_dict.keys()):
+                reference = specgrams_per_room[short_name][(src, lst, 'reference')]
+                                                        
+                X, Y = np.meshgrid(np.arange(reference.shape[-1]) / downsampled_rate,
+                                   np.arange(len(band_centers)))
+
+                error = (reference - specgrams_per_room[short_name][(src, lst, mesh_strat)])
+                cs = axes[j, i].pcolormesh(X, Y, error,
+                                           norm=norm, cmap=cmap)
+                
+                def tick_label_func(val, pos=None):
+                    if val >= num_bands:
+                        return 'error'
+                    elif band_centers[int(val)] < 1e3:
+                        return f'{int(band_centers[int(val)])}'
+                    else:
+                        return f'{int(band_centers[int(val)] / 1e3)}k'
+            
+                axes[j, i].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+            
+                axes[j, i].set_title(f'{src} {lst} {mesh_strat}')
+                if i == 0:
+                    axes[j, i].set_ylabel('Octave band center [Hz]')
+                else:
+                    axes[j, i].set_ylabel('')
+                if j == len(rirs_dict)-1:
+                    axes[j, i].set_xlabel('Time [s]')
+                else:
+                    axes[j, i].set_xlabel('')
+
+        cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
+
+        plt.suptitle(f'Room {short_name}')
+        plt.show()
