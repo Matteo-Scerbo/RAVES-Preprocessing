@@ -11,12 +11,12 @@ mesh_folder = os.path.join('..', 'BRAS meshes')
 response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
 
 audio_sample_rate = 44.1e3
-echogram_sample_rate = 1e4
+echo_sample_rate = 1e4
 # Choose a low sample rate for plotting and evaluating energy results.
 # In order to avoid having to do any resampling, choose a common divider of
 #  the recording and ART sample rates.
 downsampled_rate = np.gcd(int(audio_sample_rate),
-                          int(echogram_sample_rate))
+                          int(echo_sample_rate))
 # If the downsampled rate is still too high, choose a lower common divider.
 while downsampled_rate > 1e3:
     success = False
@@ -28,9 +28,10 @@ while downsampled_rate > 1e3:
     if not success:
         break
 audio_stride = int(audio_sample_rate / downsampled_rate)
-echogram_stride = int(echogram_sample_rate / downsampled_rate)
+echo_stride = int(echo_sample_rate / downsampled_rate)
 
 plotted_band_idx = 4
+backwards_integration = False
 
 full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                    'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -107,6 +108,7 @@ if __name__ == '__main__':
 
     # https://stackoverflow.com/a/5029958
     rirs_per_room = defaultdict(lambda: defaultdict(list))
+    echos_per_room = defaultdict(dict)
     
     for short_name, full_name in full_room_names.items():
         rir_folder = os.path.join(response_folder, full_name, 'RIRs', 'wav')
@@ -115,8 +117,8 @@ if __name__ == '__main__':
         else:
             rir_prefix = short_name + '_RIR'
         
-        for src, src_pos in source_positions[short_name].items():
-            for lst, lst_pos in listener_positions[short_name].items():
+        for src in source_positions[short_name].keys():
+            for lst in listener_positions[short_name].keys():
                 for src_typ in source_types:
                     rir_name = '_'.join([rir_prefix, src, lst, src_typ])
                     rir_path = os.path.join(rir_folder, rir_name) + '.wav'
@@ -130,9 +132,29 @@ if __name__ == '__main__':
     
                     rirs_per_room[short_name][(src, lst)].append(rir_data)
     
-        num_rirs = sum([len(d) for k, d in rirs_per_room[short_name].items()])
-        print(f'Found {num_rirs} recordings in total in room {short_name}.')
+                for remeshing_strategy in ['naive_trng', 'naive_obj']:
+                    env_name = short_name + '_' + remeshing_strategy
+                    env_folder = os.path.join(mesh_folder, short_name, env_name)
+                    echo_subfolder = os.path.join(env_folder, 'Echograms')
+                    echo_path = os.path.join(echo_subfolder, src + lst + '.wav')
+                    
+                    try:
+                        fs, echo_data = read(echo_path)
+                    except FileNotFoundError:
+                        print(f'Missing RIR file:\n\t{echo_path}\n')
+                        continue
+                    if fs != echo_sample_rate:
+                        continue
+                    assert fs == echo_sample_rate, (fs, echo_sample_rate)
     
+                    echos_per_room[short_name][(src, lst, remeshing_strategy)] = echo_data.T
+    
+        # num_rirs = sum([len(d) for k, d in rirs_per_room[short_name].items()])
+        # print(f'Found {num_rirs} recordings in total in room {short_name}.')
+
+        # num_echos = sum([len(d) for k, d in echos_per_room[short_name].items()])
+        # print(f'Found {num_echos} ART echograms in total in room {short_name}.')
+
     for short_name, rirs_dict in rirs_per_room.items():
         fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
     
@@ -155,42 +177,74 @@ if __name__ == '__main__':
                     banded_rir[b] = sosfilt(sos, rir)
                 
                 banded_energy = banded_rir**2
-                """
-                # Reverse integration
-                banded_edc = np.cumsum(banded_energy[:, ::-1], axis=-1)[:, ::-1]
-                # Decimate (speeds up rendering)
-                banded_edc = banded_edc[:, ::audio_stride]
-                # dB scale
-                banded_edc = 10 * np.log10(banded_edc)
-                # Normalize by total energy
-                banded_edc -= banded_edc[:, 0, None]
-                """
-                num_windows = banded_energy.shape[-1] // audio_stride
-                # https://stackoverflow.com/a/71800940
-                downsampled_energy = np.array(np.array_split(banded_energy,
-                                                             num_windows,
-                                                             axis=-1)
-                                              ).sum(axis=-1).T
-                # dB scale
-                downsampled_energy = 10 * np.log10(downsampled_energy)
+                # Normalize to energy-per-second, matching our echogram convention.
+                banded_energy *= audio_sample_rate
+                # Our convention also normalizes by 4 pi.
+                banded_energy *= 4 * np.pi
 
-                time_axis = np.arange(downsampled_energy.shape[-1]) / downsampled_rate
+                if backwards_integration:
+                    # Reverse integration
+                    banded_energy = np.cumsum(banded_energy[:, ::-1], axis=-1)[:, ::-1]
+                    # Decimate (speeds up rendering)
+                    banded_energy = banded_energy[:, ::audio_stride]
+                    # dB scale
+                    banded_energy = 10 * np.log10(banded_energy)
+                    # Normalize by total energy
+                    banded_energy -= banded_energy[:, 0, None]
+                else:
+                    num_windows = banded_energy.shape[-1] // audio_stride
+                    # https://stackoverflow.com/a/71800940
+                    banded_energy = np.array(np.array_split(banded_energy,
+                                                            num_windows,
+                                                            axis=-1)
+                                             ).sum(axis=-1).T
+                    # dB scale
+                    banded_energy = 10 * np.log10(banded_energy)
+
+                time_axis = np.arange(banded_energy.shape[-1]) / downsampled_rate
 
                 if first:
                     plt.plot(time_axis,
-                             downsampled_energy[plotted_band_idx],
+                             banded_energy[plotted_band_idx],
                              label = src + ' ' + lst,
                              ls=':')
                     first = False
                 else:
                     plt.plot(time_axis,
-                             downsampled_energy[plotted_band_idx],
+                             banded_energy[plotted_band_idx],
                              color = plt.gca().lines[-1].get_color(),
                              ls=':')
             
-            # for remeshing_strategy in ['naive_trng', 'naive_obj']:
-            #     print('TODO: load and plot results')
-        
+            for remeshing_strategy in ['naive_trng', 'naive_obj']:
+                if short_name in echos_per_room:
+                    if (src, lst, remeshing_strategy) in echos_per_room[short_name]:
+                        echogram = echos_per_room[short_name][(src, lst, remeshing_strategy)]
+                
+                        if backwards_integration:
+                            # Reverse integration
+                            echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
+                            # Decimate (speeds up rendering)
+                            echogram = echogram[:, ::echo_stride]
+                            # dB scale
+                            echogram = 10 * np.log10(echogram)
+                            # Normalize by total energy
+                            echogram -= echogram[:, 0, None]
+                        else:
+                            num_windows = echogram.shape[-1] // echo_stride
+                            # https://stackoverflow.com/a/71800940
+                            echogram = np.array(np.array_split(echogram,
+                                                                    num_windows,
+                                                                    axis=-1)
+                                                     ).sum(axis=-1).T
+                            # dB scale
+                            echogram = 10 * np.log10(echogram)
+
+                        time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
+
+                        plt.plot(time_axis,
+                                 echogram[plotted_band_idx],
+                                 label = f'{src} {lst} {remeshing_strategy}')
+                    
         plt.xlim(0, 2.5)
         # plt.ylim(-60, 0)
         plt.ylim(-120, None)
