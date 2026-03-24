@@ -324,41 +324,45 @@ if __name__ == '__main__':
         cmap = plt.get_cmap('RdBu', len(contour_levels) + 1)
         norm = mpl.colors.BoundaryNorm(contour_levels, ncolors=cmap.N, extend='both')
 
+        def tick_label_func(val, pos=None):
+            if val >= num_bands:
+                return 'error'
+            elif band_centers[int(val)] < 1e3:
+                return f'{int(band_centers[int(val)])}'
+            else:
+                return f'{int(band_centers[int(val)] / 1e3)}k'
+
         fig, axes = plt.subplots(len(rirs_dict), len(mesh_strategies),
                                  figsize=(4*len(mesh_strategies), 3*len(rirs_dict)),
                                  squeeze=False, constrained_layout=True)
 
         cs = None
-        for i, mesh_strat in enumerate(mesh_strategies):
-            for j, (src, lst) in enumerate(rirs_dict.keys()):
-                reference = specgrams_per_room[short_name][(src, lst, 'reference')]
+        for i, (src, lst) in enumerate(rirs_dict.keys()):
+            reference = specgrams_per_room[short_name][(src, lst, 'reference')]
                                                         
-                X, Y = np.meshgrid(np.arange(reference.shape[-1]) / downsampled_rate,
-                                   np.arange(len(band_centers)))
+            X, Y = np.meshgrid(np.arange(reference.shape[-1]) / downsampled_rate,
+                               np.arange(len(band_centers)))
 
-                error = (reference - specgrams_per_room[short_name][(src, lst, mesh_strat)])
-                cs = axes[j, i].pcolormesh(X, Y, error,
-                                           norm=norm, cmap=cmap)
+            for j, mesh_strat in enumerate(mesh_strategies):
+                if (src, lst, mesh_strat) in specgrams_per_room[short_name]:
+                    error = (reference - specgrams_per_room[short_name][(src, lst, mesh_strat)])
+                    
+                    cs = axes[i, j].pcolormesh(X, Y, error, norm=norm, cmap=cmap)
+                    
+                    axes[i, j].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+                else:
+                    axes[i, j].text(0.5, 0.5, 'MISSING DATA',
+                                    ha='center', va='center')
                 
-                def tick_label_func(val, pos=None):
-                    if val >= num_bands:
-                        return 'error'
-                    elif band_centers[int(val)] < 1e3:
-                        return f'{int(band_centers[int(val)])}'
-                    else:
-                        return f'{int(band_centers[int(val)] / 1e3)}k'
-            
-                axes[j, i].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
-            
-                axes[j, i].set_title(f'{src} {lst} {mesh_strat}')
-                if i == 0:
-                    axes[j, i].set_ylabel('Octave band center [Hz]')
+                axes[i, j].set_title(f'{src} {lst} {mesh_strat}')
+                if i == len(rirs_dict)-1:
+                    axes[i, j].set_xlabel('Time [s]')
                 else:
-                    axes[j, i].set_ylabel('')
-                if j == len(rirs_dict)-1:
-                    axes[j, i].set_xlabel('Time [s]')
+                    axes[i, j].set_xlabel('')
+                if j == 0:
+                    axes[i, j].set_ylabel('Octave band center [Hz]')
                 else:
-                    axes[j, i].set_xlabel('')
+                    axes[i, j].set_ylabel('')
 
         cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
 
