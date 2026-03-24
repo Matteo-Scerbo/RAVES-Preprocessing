@@ -2,10 +2,35 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read
+from scipy.signal import butter, sosfilt
 from collections import defaultdict
+
+from raves.src.utils import load_frequencies
 
 mesh_folder = os.path.join('..', 'BRAS meshes')
 response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
+
+audio_sample_rate = 44.1e3
+echogram_sample_rate = 1e4
+# Choose a low sample rate for plotting and evaluating energy results.
+# In order to avoid having to do any resampling, choose a common divider of
+#  the recording and ART sample rates.
+downsampled_rate = np.gcd(int(audio_sample_rate),
+                          int(echogram_sample_rate))
+# If the downsampled rate is still too high, choose a lower common divider.
+while downsampled_rate > 1e3:
+    success = False
+    for prime in [2, 3, 5, 7, 11]:
+        if downsampled_rate % prime == 0:
+            downsampled_rate /= prime
+            success = True
+            break
+    if not success:
+        break
+audio_stride = int(audio_sample_rate / downsampled_rate)
+echogram_stride = int(echogram_sample_rate / downsampled_rate)
+
+plotted_band_idx = 4
 
 full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                    'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -67,6 +92,19 @@ source_types = ['Dodecahedron',
                 ]
 
 if __name__ == '__main__':
+    # Consider the frequency band centers provided alongside the input data.
+    band_centers = load_frequencies(mesh_folder, 'materials_oct_bands.csv')
+    num_bands = len(band_centers)
+    # Factor for octave-band boundaries.
+    band_bound = np.sqrt(2)
+    # Ensure that all frequencies support band-pass filtering.
+    if np.any(band_centers * band_bound >= audio_sample_rate / 2):
+        print('Warning: the audio sample rate is too low for some frequency bands.')
+        # Select only acceptable bands.
+        band_centers = band_centers[band_centers * band_bound < audio_sample_rate / 2]
+        # Update the number of rendered bands.
+        num_bands = len(band_centers)
+
     # https://stackoverflow.com/a/5029958
     rirs_per_room = defaultdict(lambda: defaultdict(list))
     
@@ -88,36 +126,76 @@ if __name__ == '__main__':
                     except FileNotFoundError:
                         # print(f'Missing RIR file:\n\t{rir_name}\nFull path:\n\t{rir_path}\n')
                         continue
+                    assert fs == audio_sample_rate, (fs, audio_sample_rate)
     
                     rirs_per_room[short_name][(src, lst)].append(rir_data)
     
+        num_rirs = sum([len(d) for k, d in rirs_per_room[short_name].items()])
+        print(f'Found {num_rirs} recordings in total in room {short_name}.')
+    
     for short_name, rirs_dict in rirs_per_room.items():
-        fig, ax = plt.subplots(dpi=200, figsize=(8, 4))
+        fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
     
         for (src, lst), rirs in rirs_dict.items():
-            print('Found', len(rirs), 'recordings in room', short_name,
-                  'with source', src, 'and listener', lst)
+            print(f'Found {len(rirs)} recordings in room {short_name} '
+                  f'with source {src} and listener {lst}.')
             
             first = True
             for rir in rirs:
-                energy = rir**2
-                # Reverse integration
-                edc = np.cumsum(energy[::-1])[::-1]
-                # dB scale
-                edc = 10 * np.log10(edc)
-                # Normalize by total energy
-                edc -= edc[0]
-                # Decimate (speeds up rendering)
-                edc = edc[::100]
+                # Prepare an array for the band-pass filtered response.
+                banded_rir = np.zeros((num_bands, len(rir)))
+
+                for b in range(num_bands):
+                    # Prepare the suitable band-pass filter...
+                    sos = butter(6, (band_centers[b] / band_bound,
+                                     band_centers[b] * band_bound),
+                                 btype='bandpass', output='sos',
+                                 fs=audio_sample_rate)
+                    # ...and apply it to the room impulse response.
+                    banded_rir[b] = sosfilt(sos, rir)
                 
+                banded_energy = banded_rir**2
+                """
+                # Reverse integration
+                banded_edc = np.cumsum(banded_energy[:, ::-1], axis=-1)[:, ::-1]
+                # Decimate (speeds up rendering)
+                banded_edc = banded_edc[:, ::audio_stride]
+                # dB scale
+                banded_edc = 10 * np.log10(banded_edc)
+                # Normalize by total energy
+                banded_edc -= banded_edc[:, 0, None]
+                """
+                num_windows = banded_energy.shape[-1] // audio_stride
+                # https://stackoverflow.com/a/71800940
+                downsampled_energy = np.array(np.array_split(banded_energy,
+                                                             num_windows,
+                                                             axis=-1)
+                                              ).sum(axis=-1).T
+                # dB scale
+                downsampled_energy = 10 * np.log10(downsampled_energy)
+
+                time_axis = np.arange(downsampled_energy.shape[-1]) / downsampled_rate
+
                 if first:
-                    plt.plot(edc, label = src + ' ' + lst)
+                    plt.plot(time_axis,
+                             downsampled_energy[plotted_band_idx],
+                             label = src + ' ' + lst,
+                             ls=':')
                     first = False
                 else:
-                    plt.plot(edc, color = plt.gca().lines[-1].get_color())
+                    plt.plot(time_axis,
+                             downsampled_energy[plotted_band_idx],
+                             color = plt.gca().lines[-1].get_color(),
+                             ls=':')
+            
+            # for remeshing_strategy in ['naive_trng', 'naive_obj']:
+            #     print('TODO: load and plot results')
         
-        plt.ylim(-60, 0)
-        plt.title('Mesh name: ' + short_name)
+        plt.xlim(0, 2.5)
+        # plt.ylim(-60, 0)
+        plt.ylim(-120, None)
+        plt.title(f'Mesh name {short_name}, with source {src} and listener {lst}; '
+                  f'results for {band_centers[plotted_band_idx]} octave band.')
     
         plt.tight_layout()
         plt.legend()

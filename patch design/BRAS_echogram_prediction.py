@@ -6,8 +6,7 @@ from raves import compute_ART, run_ART
 
 # Duration of the echograms to be displayed, in seconds.
 shown_duration = 2.5
-# All frequency band plots are saved to files; this one is also displayed.
-shown_band = 3
+
 # Sample rate used for the echograms. Mostly relevant to avoid rounding
 #   errors in the propagation delays.
 echogram_sample_rate = 1e4
@@ -65,7 +64,7 @@ air_parameters = {'CR1_DoorAngle1': (18.2, 47.6),
 
 if __name__ == '__main__':
     for room_name in source_positions.keys():
-        for remeshing_strategy in ['naive_trng', 'naive_obj']:
+        for remeshing_strategy in ['naive_obj', 'naive_trng']:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
             
@@ -103,4 +102,4 @@ if __name__ == '__main__':
             for src_idx, src in enumerate(sorted_source_keys):
                 for lst_idx, lst in enumerate(sorted_listener_keys):
                     write(os.path.join(echograms_subfolder, src + lst + '.wav'),
-                          echogram_sample_rate, echograms[src_idx, lst_idx])
+                          int(echogram_sample_rate), echograms[src_idx, lst_idx].T)

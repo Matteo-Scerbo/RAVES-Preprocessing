@@ -748,7 +748,7 @@ def load_materials(folder_path: str, expected_names: Set[str]) -> Dict[str, np.n
     return material_coefficients
 
 
-def load_frequencies(folder_path: str) -> np.ndarray:
+def load_frequencies(folder_path: str, file_name: str = 'materials.csv') -> np.ndarray:
     """
     Load band centers from CSV, ignoring other data.
 
@@ -758,12 +758,14 @@ def load_frequencies(folder_path: str) -> np.ndarray:
     ----------
     folder_path : str
         Path to the environment folder.
+    file_name : str, default ``materials.csv``
+        Set this if you want to read a file other than the default.
 
     Returns
     -------
     1D array of band center frequencies.
     """
-    with open(os.path.join(folder_path, 'materials.csv'), mode='r', newline='') as csvfile:
+    with open(os.path.join(folder_path, file_name), mode='r', newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
 
         first_row = next(reader, None)
