@@ -9,7 +9,7 @@ from scipy.io.wavfile import read
 from scipy.signal import butter, sosfilt
 from collections import defaultdict
 
-from raves.src.utils import load_frequencies
+from raves.src.utils import load_frequencies, air_impedance
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     # In order to avoid having to do any resampling, choose a common divider of
     #  the recording and ART sample rates.
     downsampled_rate = np.gcd(int(audio_sample_rate),
-                            int(echo_sample_rate))
+                              int(echo_sample_rate))
     # If the downsampled rate is still too high, choose a lower common divider.
     while downsampled_rate > 1e3:
         success = False
@@ -38,7 +38,10 @@ if __name__ == '__main__':
     audio_nyquist = audio_sample_rate / 2
 
     plotted_band_idx = 2
-    backwards_integration = True
+    plotted_time_range = 2.5
+    backwards_integration = False
+    normalize_total_energy = False
+    simulate_noise_floor = True
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -88,6 +91,12 @@ if __name__ == '__main__':
                                 'MP5': [11.83, 8.43, 1.43],
                                 },
                         }
+    air_parameters = {'CR1_DoorAngle1': (18.2, 47.6),
+                      'CR1_DoorAngle3': (18.2, 47.6),
+                      'CR2': (19.5, 41.7),
+                      'CR3': (22.4, 40.9),
+                      'CR4': (20.9, 37.5),
+                      }
     source_types = ['Dodecahedron',
                     'Genelec8020c_LSorientation-negativeX',
                     'Genelec8020c_LSorientation-negativeY',
@@ -169,6 +178,18 @@ if __name__ == '__main__':
     specgrams_per_room = defaultdict(dict)
 
     for short_name, rirs_dict in rirs_per_room.items():
+        num_echos = sum([len(d) for k, d in echos_per_room[short_name].items()])
+        # print(f'Found {num_echos} ART echograms in total in room {short_name}.')
+        if num_echos == 0:
+            continue
+
+        # The noise floors were assessed from the RIRs (squared pressure),
+        #  we need to convert them to sound intensity like the RIRs (see below).
+        for b in range(num_bands):
+            impedance_factor = air_impedance(temperature=air_parameters[short_name][0],
+                                             humidity=air_parameters[short_name][1])
+            noise_floors[short_name][b] += 10 * np.log10(impedance_factor)
+
         fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
 
         for (src, lst), rirs in rirs_dict.items():
@@ -201,6 +222,13 @@ if __name__ == '__main__':
                 banded_energy = banded_rir**2
                 # Normalize to energy-per-second, matching our echogram convention.
                 banded_energy *= audio_sample_rate
+                # As reported in the BRAS documentation, the RIRs' units are [Pa], pressure.
+                # Our echograms are defined as [W/m2], sound intensity.
+                # Sound intensity equals squared pressure divided by the characteristic impedance of air.
+                # TODO: In theory, this should be a division, not a multiplication.
+                #       But they match this way... why?
+                banded_energy *= air_impedance(temperature=air_parameters[short_name][0],
+                                               humidity=air_parameters[short_name][1])
 
                 if backwards_integration:
                     # Reverse integration
@@ -210,7 +238,8 @@ if __name__ == '__main__':
                     # dB scale
                     banded_energy = 10 * np.log10(banded_energy)
                     # Normalize by total energy
-                    banded_energy -= banded_energy[:, 0, None]
+                    if normalize_total_energy:
+                        banded_energy -= banded_energy[:, 0, None]
                 else:
                     num_windows = banded_energy.shape[-1] // audio_stride
                     # https://stackoverflow.com/a/71800940
@@ -218,6 +247,9 @@ if __name__ == '__main__':
                                                             num_windows,
                                                             axis=-1)
                                              ).mean(axis=-1).T
+                    # Normalize by total energy
+                    if normalize_total_energy:
+                        banded_energy /= np.sum(banded_energy, axis=-1)[:, None]
                     # dB scale
                     banded_energy = 10 * np.log10(banded_energy)
                 
@@ -240,7 +272,7 @@ if __name__ == '__main__':
             # Average over all loudspeaker types.
             min_reference_len = min([spec.shape[-1]
                                      for spec in specgram_list])
-            min_reference_len = min(min_reference_len, int(2.5 * downsampled_rate))
+            min_reference_len = min(min_reference_len, int(plotted_time_range * downsampled_rate))
             mean_specgram = np.mean([spec[:, :min_reference_len]
                                      for spec in specgram_list],
                                      axis=0)
@@ -251,9 +283,6 @@ if __name__ == '__main__':
                     if (src, lst, mesh_strat) in echos_per_room[short_name]:
                         echogram = echos_per_room[short_name][(src, lst, mesh_strat)]
 
-                        # Our convention normalizes by 4 pi; match the recordings instead.
-                        echogram /= (4 * np.pi) ** 2
-                        
                         # Extend the duration of the echogram,
                         #  providing more room for the backwards integration.
                         echogram = np.pad(echogram,
@@ -261,9 +290,10 @@ if __name__ == '__main__':
                                            (0, int(2*echo_sample_rate))))
                         # Add a noise floor matching the recordings,
                         #  especially important for the backwards integration comparison.
-                        for b in range(num_bands):
-                            floor_db = noise_floors[short_name][b]
-                            echogram[b] += 10 ** (floor_db / 10)
+                        if simulate_noise_floor:
+                            for b in range(num_bands):
+                                floor_db = noise_floors[short_name][b]
+                                echogram[b] += 10 ** (floor_db / 10)
                 
                         if backwards_integration:
                             # Reverse integration
@@ -273,7 +303,8 @@ if __name__ == '__main__':
                             # dB scale
                             echogram = 10 * np.log10(echogram)
                             # Normalize by total energy
-                            echogram -= echogram[:, 0, None]
+                            if normalize_total_energy:
+                                echogram -= echogram[:, 0, None]
                         else:
                             num_windows = echogram.shape[-1] // echo_stride
                             # https://stackoverflow.com/a/71800940
@@ -281,6 +312,9 @@ if __name__ == '__main__':
                                                                num_windows,
                                                                axis=-1)
                                                 ).mean(axis=-1).T
+                            # Normalize by total energy
+                            if normalize_total_energy:
+                                echogram /= np.sum(echogram, axis=-1)[:, None]
                             # dB scale
                             echogram = 10 * np.log10(echogram)
                         
@@ -292,7 +326,7 @@ if __name__ == '__main__':
                                  echogram[plotted_band_idx],
                                  label = f'{src} {lst} {mesh_strat}')
     
-        plt.xlim(0, 2.5)
+        plt.xlim(0, plotted_time_range)
         if backwards_integration:
             plt.ylim(-60, 0)
         else:
@@ -345,7 +379,7 @@ if __name__ == '__main__':
 
             for j, mesh_strat in enumerate(mesh_strategies):
                 if (src, lst, mesh_strat) in specgrams_per_room[short_name]:
-                    error = (reference - specgrams_per_room[short_name][(src, lst, mesh_strat)])
+                    error = specgrams_per_room[short_name][(src, lst, mesh_strat)] - reference
                     
                     cs = axes[i, j].pcolormesh(X, Y, error, norm=norm, cmap=cmap)
                     
@@ -365,6 +399,12 @@ if __name__ == '__main__':
                     axes[i, j].set_ylabel('')
 
         cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
+        if backwards_integration:
+            cbar.ax.set_ylabel('Difference (simulation - reference) of backward-integrated energy',
+                               rotation=270, labelpad=15)
+        else:
+            cbar.ax.set_ylabel('Difference (simulation - reference) of short-time-average energy',
+                               rotation=270, labelpad=15)
 
         plt.suptitle(f'Room {short_name}')
         plt.show()
