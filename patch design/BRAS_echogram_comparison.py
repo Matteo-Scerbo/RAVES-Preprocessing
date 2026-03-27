@@ -13,7 +13,6 @@ from raves.src.utils import load_frequencies, air_impedance
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
-    response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
     mesh_strategies = ['naive_trng', 'naive_obj']
 
     audio_sample_rate = 44.1e3
@@ -37,12 +36,11 @@ if __name__ == '__main__':
     echo_stride = int(echo_sample_rate / downsampled_rate)
     audio_nyquist = audio_sample_rate / 2
 
-    plotted_band_idx = 5
+    plotted_band_idx = 3
     plotted_time_range = 2.5
-    backwards_integration = True
-    normalize_total_energy = True
-    normalize_early_energy = False
-    simulate_noise_floor = True
+    backwards_integration = False
+    normalize_total_energy = False
+    show_genelecs = False
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -98,21 +96,19 @@ if __name__ == '__main__':
                       'CR3': (22.4, 40.9),
                       'CR4': (20.9, 37.5),
                       }
-    source_types = ['Dodecahedron',
-                    # 'Genelec8020c_LSorientation-negativeX',
-                    # 'Genelec8020c_LSorientation-negativeY',
-                    # 'Genelec8020c_LSorientation-positiveX',
-                    # 'Genelec8020c_LSorientation-positiveY',
-                    # 'Genelec8020c_LSorientation-01',
-                    # 'Genelec8020c_LSorientation-02',
-                    # 'Genelec8020c_LSorientation-03',
-                    # 'Genelec8020c_LSorientation-04'
-                    ]
-    noise_floors = {'CR1_DoorAngle1': [-71, -77, -78, -79, -81, -79, -73, -70],
-                    'CR1_DoorAngle3': [-77, -76, -77, -78, -80, -79, -74, -69],
-                    'CR2': [-81, -76, -75, -72, -72, -73, -69, -64],
-                    'CR3': [-93, -97, -98, -96, -91, -87, -81, -76],
-                    'CR4': [-86, -87, -88, -88, -87, -85, -80, -75]}
+    if show_genelecs:
+        source_types = ['Dodecahedron',
+                        'Genelec8020c_LSorientation-negativeX',
+                        'Genelec8020c_LSorientation-negativeY',
+                        'Genelec8020c_LSorientation-positiveX',
+                        'Genelec8020c_LSorientation-positiveY',
+                        'Genelec8020c_LSorientation-01',
+                        'Genelec8020c_LSorientation-02',
+                        'Genelec8020c_LSorientation-03',
+                        'Genelec8020c_LSorientation-04'
+                        ]
+    else:
+        source_types = ['Dodecahedron',]
 
     # Consider the frequency band centers provided alongside the input data.
     band_centers = load_frequencies(mesh_folder, 'materials_oct_bands.csv')
@@ -127,12 +123,11 @@ if __name__ == '__main__':
         # Update the number of rendered bands.
         num_bands = len(band_centers)
 
-    # https://stackoverflow.com/a/5029958
-    rirs_per_room = defaultdict(lambda: defaultdict(list))
     echos_per_room = defaultdict(dict)
     
     for short_name, full_name in full_room_names.items():
-        rir_folder = os.path.join(response_folder, full_name, 'RIRs', 'wav')
+        ref_echo_subfolder = os.path.join(mesh_folder, short_name, 'Reference echograms')
+
         if '_' in short_name:
             rir_prefix = short_name.replace('_', '_RIR_')
         else:
@@ -142,220 +137,135 @@ if __name__ == '__main__':
             for lst in listener_positions[short_name].keys():
                 for src_typ in source_types:
                     rir_name = '_'.join([rir_prefix, src, lst, src_typ])
-                    rir_path = os.path.join(rir_folder, rir_name) + '.wav'
+                    ref_echo_path = os.path.join(ref_echo_subfolder, rir_name + '.wav')
                     
                     try:
-                        fs, rir_data = read(rir_path)
+                        fs, ref_data = read(ref_echo_path)
                     except FileNotFoundError:
-                        # print(f'Missing RIR file:\n\t{rir_name}\nFull path:\n\t{rir_path}\n')
+                        # print(f'Missing reference file:\n\t{rir_name}\nFull path:\n\t{ref_echo_path}\n')
                         continue
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
-    
-                    rirs_per_room[short_name][(src, lst)].append(rir_data)
-    
+                    echogram = ref_data.T
+            
+                    if backwards_integration:
+                        # Reverse integration
+                        echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
+                        # Decimate (speeds up rendering)
+                        echogram = echogram[:, ::audio_stride]
+                        # dB scale
+                        echogram = 10 * np.log10(echogram)
+                        # Normalize by total energy
+                        if normalize_total_energy:
+                            echogram -= echogram[:, 0, None]
+                    else:
+                        # Short-time average (and downsampling)
+                        num_windows = echogram.shape[-1] // audio_stride
+                        remainder = echogram.shape[-1] % audio_stride
+                        if remainder != 0:
+                            echogram = echogram[:, :-remainder]
+                        # https://stackoverflow.com/a/71800940
+                        echogram = np.array(np.split(echogram, num_windows, axis=-1)
+                                            ).mean(axis=-1).T
+                        
+                        # Normalize by total energy
+                        if normalize_total_energy:
+                            echogram /= np.sum(echogram, axis=-1)[:, None]
+                        # dB scale
+                        echogram = 10 * np.log10(echogram)
+                    
+                    echos_per_room[short_name][(src, lst, f'reference ({src_typ})')] = echogram
+
                 for mesh_strat in mesh_strategies:
                     env_name = short_name + '_' + mesh_strat
                     env_folder = os.path.join(mesh_folder, short_name, env_name)
-                    echo_subfolder = os.path.join(env_folder, 'Echograms')
-                    echo_path = os.path.join(echo_subfolder, src + lst + '.wav')
+                    sim_echo_subfolder = os.path.join(env_folder, 'Echograms')
+                    sim_echo_path = os.path.join(sim_echo_subfolder, src + lst + '.wav')
                     
                     try:
-                        fs, echo_data = read(echo_path)
+                        fs, sim_data = read(sim_echo_path)
                     except FileNotFoundError:
-                        # print(f'Missing RIR file:\n\t{echo_path}\n')
-                        continue
-                    if fs != echo_sample_rate:
+                        # print(f'Missing simulation file:\n\t{rir_name}\nFull path:\n\t{sim_echo_path}\n')
                         continue
                     assert fs == echo_sample_rate, (fs, echo_sample_rate)
-    
-                    echos_per_room[short_name][(src, lst, mesh_strat)] = echo_data.T
-    
-        # num_rirs = sum([len(d) for k, d in rirs_per_room[short_name].items()])
-        # print(f'Found {num_rirs} recordings in total in room {short_name}.')
+                    echogram = sim_data.T
 
-        # num_echos = sum([len(d) for k, d in echos_per_room[short_name].items()])
-        # print(f'Found {num_echos} ART echograms in total in room {short_name}.')
-    
-    specgrams_per_room = defaultdict(dict)
+                    # TODO: Figure out sensible normalization.
+                    echogram /= 4 * np.pi
+                    echogram /= echo_sample_rate
+                    # The echograms are calibrated such that, when a unit-energy signal is band-passed
+                    #  to the relative octave band and then modulated by the echogram's square root, it
+                    #  has the correct energy. The band-passing removes energy according to the bandwidth,
+                    #  which we need to compensate for.
+                    band_widths = (band_centers * band_bound) - (band_centers / band_bound)
+                    echogram *= band_widths[:, None]
 
-    for short_name, rirs_dict in rirs_per_room.items():
-        num_echos = sum([len(d) for k, d in echos_per_room[short_name].items()])
-        # print(f'Found {num_echos} ART echograms in total in room {short_name}.')
-        if num_echos == 0:
+                    if backwards_integration:
+                        # Reverse integration
+                        echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
+                        # Decimate (speeds up rendering)
+                        echogram = echogram[:, ::echo_stride]
+                        # dB scale
+                        echogram = 10 * np.log10(echogram)
+                        # Normalize by total energy
+                        if normalize_total_energy:
+                            echogram -= echogram[:, 0, None]
+                    else:
+                        # Short-time average (and downsampling)
+                        num_windows = echogram.shape[-1] // echo_stride
+                        remainder = echogram.shape[-1] % echo_stride
+                        if remainder != 0:
+                            echogram = echogram[:, :-remainder]
+                        # https://stackoverflow.com/a/71800940
+                        echogram = np.array(np.split(echogram, num_windows, axis=-1)
+                                            ).mean(axis=-1).T
+                        
+                        # Normalize by total energy
+                        if normalize_total_energy:
+                            echogram /= np.sum(echogram, axis=-1)[:, None]
+                        # dB scale
+                        echogram = 10 * np.log10(echogram)
+                    
+                    echos_per_room[short_name][(src, lst, mesh_strat)] = echogram
+
+                # Trim all echograms in the room to the length of the shortest one.
+                min_length_in_room = min([e.shape[-1] for e in echos_per_room[short_name].values()])
+                echos_per_room[short_name] = {k: e[:, :min_length_in_room]
+                                              for k, e in echos_per_room[short_name].items()}
+
+    for short_name, echos_dict in echos_per_room.items():
+        # Count the number of src/lst configuration, i.e., reference echograms.
+        sl_configs = [(s, l) for s, l, k in echos_dict
+                      if k == 'reference (Dodecahedron)']
+        num_sl_configs = len(sl_configs)
+        if num_sl_configs == 0:
+            print(f'No reference echograms were found for room {short_name}.')
             continue
-
-        # The noise floors were assessed from the RIRs (squared pressure),
-        #  we need to convert them to sound intensity like the RIRs (see below).
-        for b in range(num_bands):
-            impedance_factor = air_impedance(temperature=air_parameters[short_name][0],
-                                             humidity=air_parameters[short_name][1])
-            noise_floors[short_name][b] += 10 * np.log10(impedance_factor)
+        # Count the number of echograms that were loaded, other than the reference ones.
+        num_sim_echos = len([k for s, l, k in echos_dict
+                             if 'reference' not in k])
+        if num_sim_echos == 0:
+            print(f'No ART echograms were found for room {short_name}.')
+            continue
 
         fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
 
-        for (src, lst), rirs in rirs_dict.items():
-            # print(f'Found {len(rirs)} recordings in room {short_name} '
-            #       f'with source {src} and listener {lst}.')
+        for (src, lst, key), echogram in echos_dict.items():
+            time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
 
-            # List the spectrograms of all loudspeaker types,
-            #  in order to average them together.
-            specgram_list = list()
-
-            first = True
-            for rir in rirs:
-                # Prepare an array for the band-pass filtered response.
-                banded_rir = np.zeros((num_bands, len(rir)))
-
-                for b in range(num_bands):
-                    if band_centers[b] * band_bound >= audio_nyquist:
-                        upper_lim = audio_nyquist * 0.999
-                    else:
-                        upper_lim = band_centers[b] * band_bound
-                    lower_lim = band_centers[b] / band_bound
-                    
-                    # Prepare the suitable band-pass filter...
-                    sos = butter(6, (lower_lim, upper_lim),
-                                 btype='bandpass', output='sos',
-                                 fs=audio_sample_rate)
-                    # ...and apply it to the room impulse response.
-                    banded_rir[b] = sosfilt(sos, rir)
-                
-                banded_energy = banded_rir**2
-                # Normalize to energy-per-second, matching our echogram convention.
-                banded_energy *= audio_sample_rate
-                # As reported in the BRAS documentation, the RIRs' units are [Pa], pressure.
-                # Our echograms are defined as [W/m2], sound intensity.
-                # Sound intensity equals squared pressure divided by the characteristic impedance of air.
-                # TODO: In theory, this should be a division, not a multiplication.
-                #       But they match this way... why?
-                # banded_energy *= air_impedance(temperature=air_parameters[short_name][0],
-                #                                humidity=air_parameters[short_name][1])
-
-                if backwards_integration:
-                    # Reverse integration
-                    banded_energy = np.cumsum(banded_energy[:, ::-1], axis=-1)[:, ::-1]
-                    # Decimate (speeds up rendering)
-                    banded_energy = banded_energy[:, ::audio_stride]
-                    # dB scale
-                    banded_energy = 10 * np.log10(banded_energy)
-                    # Normalize by total energy
-                    if normalize_total_energy:
-                        banded_energy -= banded_energy[:, 0, None]
-                    elif normalize_early_energy:
-                        banded_energy -= (banded_energy[:, 0, None] - banded_energy[:, int(0.25 * downsampled_rate), None])
-                else:
-                    num_windows = banded_energy.shape[-1] // audio_stride
-                    # https://stackoverflow.com/a/71800940
-                    banded_energy = np.array(np.array_split(banded_energy,
-                                                            num_windows,
-                                                            axis=-1)
-                                             ).mean(axis=-1).T
-                    # Normalize by total energy
-                    if normalize_total_energy:
-                        banded_energy /= np.sum(banded_energy, axis=-1)[:, None]
-                    elif normalize_early_energy:
-                        banded_energy /= np.sum(banded_energy[:, :int(0.25 * downsampled_rate)], axis=-1)[:, None]
-                    # dB scale
-                    banded_energy = 10 * np.log10(banded_energy)
-                
-                specgram_list.append(banded_energy)
-                
-                time_axis = np.arange(banded_energy.shape[-1]) / downsampled_rate
-
-                if first:
-                    plt.plot(time_axis,
-                             banded_energy[plotted_band_idx],
-                             label = src + ' ' + lst,
-                             ls=':')
-                    first = False
-                else:
-                    plt.plot(time_axis,
-                             banded_energy[plotted_band_idx],
-                             color = plt.gca().lines[-1].get_color(),
-                             ls=':')
-            
-            # Average over all loudspeaker types.
-            min_reference_len = min([spec.shape[-1]
-                                     for spec in specgram_list])
-            min_reference_len = min(min_reference_len, int(plotted_time_range * downsampled_rate))
-            mean_specgram = np.mean([spec[:, :min_reference_len]
-                                     for spec in specgram_list],
-                                     axis=0)
-            specgrams_per_room[short_name][(src, lst, 'reference')] = mean_specgram
-
-            for mesh_strat in mesh_strategies:
-                if short_name in echos_per_room:
-                    if (src, lst, mesh_strat) in echos_per_room[short_name]:
-                        echogram = echos_per_room[short_name][(src, lst, mesh_strat)]
-
-                        echogram /= 4 * np.pi
-                        echogram /= echo_sample_rate
-                        echogram *= band_centers[:, None]
-
-                        # Extend the duration of the echogram,
-                        #  providing more room for the backwards integration.
-                        echogram = np.pad(echogram,
-                                          ((0, 0),  # No padding over first dimension (freqs)
-                                           (0, int(2*echo_sample_rate))))
-                        # Add a noise floor matching the recordings,
-                        #  especially important for the backwards integration comparison.
-                        if simulate_noise_floor:
-                            for b in range(num_bands):
-                                floor_db = noise_floors[short_name][b]
-                                floor = 10 ** (floor_db / 10)
-                                floor /= 400
-                                echogram[b] += floor
-                
-                        if backwards_integration:
-                            # Reverse integration
-                            echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
-                            # Decimate (speeds up rendering)
-                            echogram = echogram[:, ::echo_stride]
-                            # dB scale
-                            echogram = 10 * np.log10(echogram)
-                            # Normalize by total energy
-                            if normalize_total_energy:
-                                echogram -= echogram[:, 0, None]
-                            elif normalize_early_energy:
-                                echogram -= (echogram[:, 0, None] - echogram[:, int(0.25 * downsampled_rate), None])
-                        else:
-                            num_windows = echogram.shape[-1] // echo_stride
-                            # https://stackoverflow.com/a/71800940
-                            echogram = np.array(np.array_split(echogram,
-                                                               num_windows,
-                                                               axis=-1)
-                                                ).mean(axis=-1).T
-                            # Normalize by total energy
-                            if normalize_total_energy:
-                                echogram /= np.sum(echogram, axis=-1)[:, None]
-                            elif normalize_early_energy:
-                                echogram /= np.sum(echogram[:, :int(0.25 * downsampled_rate)], axis=-1)[:, None]
-                            # dB scale
-                            echogram = 10 * np.log10(echogram)
-                        
-                        specgrams_per_room[short_name][(src, lst, mesh_strat)] = echogram[:, :min_reference_len]
-
-                        time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
-
-                        plt.plot(time_axis,
-                                 echogram[plotted_band_idx],
-                                 label = f'{src} {lst} {mesh_strat}')
+            if 'reference' not in key:
+                plt.plot(time_axis, echogram[plotted_band_idx],
+                         label=key)
+            elif 'Dodecahedron' in key:
+                plt.plot(time_axis, echogram[plotted_band_idx],
+                         label='reference', ls=':')
+            else:  # Genelecs: match color of Dodecahedron, don't add new labels
+                plt.plot(time_axis, echogram[plotted_band_idx],
+                         color=plt.gca().lines[-1].get_color(),
+                         ls=':')
 
         plt.xlim(0, plotted_time_range)
         if backwards_integration and normalize_total_energy:
             plt.ylim(-60, 0)
-        elif not (normalize_total_energy or normalize_early_energy):
-            floor_db = noise_floors[short_name][plotted_band_idx]
-            floor = 10 ** (floor_db / 10)
-            floor /= 400
-            floor_db = 10 * np.log10(floor)
-
-
-            plt.ylim(floor_db-10, None)
-
-            plt.hlines(floor_db, xmin=0, xmax=5,
-                       color='black', ls='--', linewidth=1,
-                       label='Noise floor')
         
         # https://stackoverflow.com/a/10101532
         def flip(items, ncol):
@@ -375,6 +285,8 @@ if __name__ == '__main__':
         # Diverging colormap to differentiate positive and negative values.
         contour_levels = np.linspace(-10, 10, 21)
         cmap = plt.get_cmap('RdBu', len(contour_levels) + 1)
+        # Set "bad" values (i.e., reference is below noise floor) to black.
+        cmap.set_bad('black', 1.)
         norm = mpl.colors.BoundaryNorm(contour_levels, ncolors=cmap.N, extend='both')
 
         def tick_label_func(val, pos=None):
@@ -385,20 +297,20 @@ if __name__ == '__main__':
             else:
                 return f'{int(band_centers[int(val)] / 1e3)}k'
 
-        fig, axes = plt.subplots(len(rirs_dict), len(mesh_strategies),
-                                 figsize=(4*len(mesh_strategies), 3*len(rirs_dict)),
+        fig, axes = plt.subplots(num_sl_configs, len(mesh_strategies),
+                                 figsize=(4*len(mesh_strategies), 3*num_sl_configs),
                                  squeeze=False, constrained_layout=True)
 
         cs = None
-        for i, (src, lst) in enumerate(rirs_dict.keys()):
-            reference = specgrams_per_room[short_name][(src, lst, 'reference')]
-                                                        
+        for i, (src, lst) in enumerate(sl_configs):
+            reference = echos_dict[(src, lst, 'reference (Dodecahedron)')]
+            
             X, Y = np.meshgrid(np.arange(reference.shape[-1]) / downsampled_rate,
                                np.arange(len(band_centers)))
 
             for j, mesh_strat in enumerate(mesh_strategies):
-                if (src, lst, mesh_strat) in specgrams_per_room[short_name]:
-                    error = specgrams_per_room[short_name][(src, lst, mesh_strat)] - reference
+                if (src, lst, mesh_strat) in echos_dict:
+                    error = echos_dict[(src, lst, mesh_strat)] - reference
                     
                     cs = axes[i, j].pcolormesh(X, Y, error, norm=norm, cmap=cmap)
                     
@@ -408,7 +320,7 @@ if __name__ == '__main__':
                                     ha='center', va='center')
                 
                 axes[i, j].set_title(f'{src} {lst} {mesh_strat}')
-                if i == len(rirs_dict)-1:
+                if i == num_sl_configs-1:
                     axes[i, j].set_xlabel('Time [s]')
                 else:
                     axes[i, j].set_xlabel('')
