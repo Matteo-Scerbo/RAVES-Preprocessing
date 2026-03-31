@@ -375,41 +375,29 @@ def load_all_inputs(folder_path: str,
     return mesh, patch_materials, material_coefficients, folder_path
 
 
-def load_mesh(folder_path: str,
-              area_threshold: float = 0.,
-              thoroughness: float = 0.,
-              assert_coplanarity: bool = True
-              ) -> Tuple[TriangleMesh, List[str], str]:
+def load_mesh_as_arrays(folder_path: str
+                        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, list]:
     """
-    Parse an OBJ mesh, validate per-patch consistency, and optionally merge patches.
+    Parse an OBJ mesh into vertex, triangle, and material arrays.
 
     The OBJ file ``mesh.obj`` is parsed following the specifications in `README.md`.
     Duplicate vertices are collapsed within a 1 mm tolerance before building the mesh.
-
-    If ``area_threshold > 0``, small coplanar, same-material patches may be merged;
-    if the number of patches changes, a new folder is created and updated mesh is
-    written there. The returned ``folder_path`` reflects this change.
 
     Parameters
     ----------
     folder_path : str
         Path to the environment folder.
-    area_threshold : float, default 0.0
-        If greater than 0, attempt to merge patches whose areas are below
-        the threshold.
-    thoroughness : float, default 0.0
-        Controls merge candidate selection when merging patches.
-    assert_coplanarity : bool, default True
-        If False, lift the restriction for all triangles in each patch to be coplanar.
 
     Returns
     -------
-    TriangleMesh
-        Structure-of-Arrays mesh with derived normals, areas, and plane offsets.
-    list of str
-        Material name per patch, updated if merges occurred.
-    str
-        Folder path; may point to a newly created folder if the mesh was rewritten.
+    np.ndarray
+        Coordinates of the mesh vertices.
+    np.ndarray
+        Triplets of integer vertex indices forming the mesh triangles.
+    np.ndarray
+        Integer patch ID of each triangle.
+    list
+        Strings denoting the surface material of each patch.
     """
     vertex_list = list()
     face_triplet_list = list()
@@ -512,6 +500,48 @@ def load_mesh(folder_path: str,
     _, keep_idx, old2new = np.unique(keys, axis=0, return_index=True, return_inverse=True)
     vertices = vertices[keep_idx]
     vert_triplets = old2new[vert_triplets]
+
+    return vertices, vert_triplets, patch_ids, patch_materials
+
+
+def load_mesh(folder_path: str,
+              area_threshold: float = 0.,
+              thoroughness: float = 0.,
+              assert_coplanarity: bool = True
+              ) -> Tuple[TriangleMesh, List[str], str]:
+    """
+    Parse an OBJ mesh, validate per-patch consistency, and optionally merge patches.
+
+    The OBJ file ``mesh.obj`` is parsed following the specifications in `README.md`.
+    Duplicate vertices are collapsed within a 1 mm tolerance before building the mesh.
+
+    If ``area_threshold > 0``, small coplanar, same-material patches may be merged;
+    if the number of patches changes, a new folder is created and updated mesh is
+    written there. The returned ``folder_path`` reflects this change.
+
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder.
+    area_threshold : float, default 0.0
+        If greater than 0, attempt to merge patches whose areas are below
+        the threshold.
+    thoroughness : float, default 0.0
+        Controls merge candidate selection when merging patches.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
+
+    Returns
+    -------
+    TriangleMesh
+        Structure-of-Arrays mesh with derived normals, areas, and plane offsets.
+    list of str
+        Material name per patch, updated if merges occurred.
+    str
+        Folder path; may point to a newly created folder if the mesh was rewritten.
+    """
+    # Parse the OBJ file.
+    vertices, vert_triplets, patch_ids, patch_materials = load_mesh_as_arrays(folder_path)
 
     # TODO: if area_threshold > 0:
     #           Re-mesh to INCREASE the number of triangles without changing the geometry.
