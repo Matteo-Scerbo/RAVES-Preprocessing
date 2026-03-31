@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import matplotlib.patches as mpatches
 
 from scipy.io.wavfile import read
-from scipy.signal import butter, sosfilt
 from collections import defaultdict
 
 from raves.src.utils import load_frequencies, air_impedance
@@ -36,10 +36,10 @@ if __name__ == '__main__':
     echo_stride = int(echo_sample_rate / downsampled_rate)
     audio_nyquist = audio_sample_rate / 2
 
-    plotted_band_idx = 3
+    plotted_band_idx = 5
     plotted_time_range = 2.5
     backwards_integration = False
-    normalize_total_energy = False
+    normalize_total_energy = True
     show_genelecs = False
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -150,7 +150,7 @@ if __name__ == '__main__':
                     if backwards_integration:
                         # Reverse integration
                         echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
-                        # Decimate (speeds up rendering)
+                        # Downsampling the EDC is easy, just skip values
                         echogram = echogram[:, ::audio_stride]
                         # dB scale
                         echogram = 10 * np.log10(echogram)
@@ -202,7 +202,7 @@ if __name__ == '__main__':
                     if backwards_integration:
                         # Reverse integration
                         echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
-                        # Decimate (speeds up rendering)
+                        # Downsampling the EDC is easy, just skip values
                         echogram = echogram[:, ::echo_stride]
                         # dB scale
                         echogram = 10 * np.log10(echogram)
@@ -282,6 +282,9 @@ if __name__ == '__main__':
 
         # Plot the energy differences.
 
+        # Keep track of error data for the next figure (violin plots).
+        violin_data = defaultdict(dict)
+
         # Diverging colormap to differentiate positive and negative values.
         contour_levels = np.linspace(-10, 10, 21)
         cmap = plt.get_cmap('RdBu', len(contour_levels) + 1)
@@ -311,6 +314,9 @@ if __name__ == '__main__':
             for j, mesh_strat in enumerate(mesh_strategies):
                 if (src, lst, mesh_strat) in echos_dict:
                     error = echos_dict[(src, lst, mesh_strat)] - reference
+
+                    # Keep track of error data for the next figure (violin plots).
+                    violin_data[(src, lst)][mesh_strat] = error
                     
                     cs = axes[i, j].pcolormesh(X, Y, error, norm=norm, cmap=cmap)
                     
@@ -331,13 +337,70 @@ if __name__ == '__main__':
 
         cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
         if backwards_integration:
-            cbar.ax.set_ylabel('Difference (simulation - reference) of backward-integrated energy',
+            cbar.ax.set_ylabel('Backward-integrated energy diff (ART - truth)',
                                rotation=270, labelpad=15)
         else:
-            cbar.ax.set_ylabel('Difference (simulation - reference) of short-time-average energy',
+            cbar.ax.set_ylabel('Short-time-average energy diff (ART - truth)',
                                rotation=270, labelpad=15)
 
         plt.suptitle(f'Room {short_name}')
+        plt.show()
+
+        # Plot the energy differences statistics.
+
+        fig, axes = plt.subplots(num_sl_configs, figsize=(4, 3*num_sl_configs))
+
+        group_centers = np.arange(num_bands)
+        # https://stackoverflow.com/a/11603806
+        margin = 0.25
+        width = (1 - 2*margin) / len(mesh_strategies)
+
+        # https://stackoverflow.com/a/58324984
+        violin_labels = list()
+        def add_violin_label(violin, label):
+            color = violin["bodies"][0].get_facecolor().flatten()
+            violin_labels.append((mpatches.Patch(color=color), label))
+
+        for i, (src, lst) in enumerate(sl_configs):
+            # Reference horizontal line at 0.
+            line = axes[i].hlines(0, -1, num_bands+1,
+                                    color='black', ls='--',
+                                    linewidth=1)
+            
+            for j, (mesh_strat, error_data) in enumerate(violin_data[(src, lst)].items()):
+                # [np.isfinite(error)]
+                # The NaN entries must be filtered out for each octave band.
+                error_data = [e[np.isfinite(e)]
+                              for e in error_data]
+
+                positions = group_centers - 0.5 + margin + (j+0.5)*width
+                violin = axes[i].violinplot(error_data, positions=positions,
+                                            widths=width,
+                                            showextrema=False,
+                                            showmeans=False,
+                                            showmedians=True)
+
+                if i == num_sl_configs-1:
+                    add_violin_label(violin, mesh_strat)
+
+            axes[i].set_title(f'{src} {lst}')
+
+            axes[i].set_xlim(-0.5, num_bands-0.5)
+            axes[i].xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+            if i == num_sl_configs-1:
+                axes[i].set_xlabel('Octave band center [Hz]')
+            else:
+                axes[i].set_xlabel('')
+            
+            axes[i].set_ylim(-15, 15)
+            axes[i].set_ylabel('Energy diff (ART - truth) in dB')
+
+        if backwards_integration:
+            plt.suptitle(f'{short_name} - backward-integrated energy diff')
+        else:
+            plt.suptitle(f'{short_name} - short-time-average energy diff')
+        plt.legend(*zip(*violin_labels))
+        plt.tight_layout()
         plt.show()
 
         # break
