@@ -348,7 +348,11 @@ if __name__ == '__main__':
 
         # Plot the energy differences statistics.
 
-        fig, axes = plt.subplots(num_sl_configs, figsize=(4, 3*num_sl_configs))
+        num_sources = len(source_positions[short_name])
+        num_listeners = len(listener_positions[short_name])
+        fig, axes = plt.subplots(num_listeners, num_sources,
+                                 figsize=(4*num_sources, 3*num_listeners),
+                                 constrained_layout=True)
 
         group_centers = np.arange(num_bands)
         # https://stackoverflow.com/a/11603806
@@ -356,51 +360,56 @@ if __name__ == '__main__':
         width = (1 - 2*margin) / len(mesh_strategies)
 
         # https://stackoverflow.com/a/58324984
-        violin_labels = list()
         def add_violin_label(violin, label):
             color = violin["bodies"][0].get_facecolor().flatten()
             violin_labels.append((mpatches.Patch(color=color), label))
 
-        for i, (src, lst) in enumerate(sl_configs):
-            # Reference horizontal line at 0.
-            line = axes[i].hlines(0, -1, num_bands+1,
-                                    color='black', ls='--',
-                                    linewidth=1)
-            
-            for j, (mesh_strat, error_data) in enumerate(violin_data[(src, lst)].items()):
-                # [np.isfinite(error)]
-                # The NaN entries must be filtered out for each octave band.
-                error_data = [e[np.isfinite(e)]
-                              for e in error_data]
+        for i, lst in enumerate(listener_positions[short_name]):
+            for j, src in enumerate(source_positions[short_name]):
+                # Reset legend labels.
+                violin_labels = list()
 
-                positions = group_centers - 0.5 + margin + (j+0.5)*width
-                violin = axes[i].violinplot(error_data, positions=positions,
-                                            widths=width,
-                                            showextrema=False,
-                                            showmeans=False,
-                                            showmedians=True)
+                # Reference horizontal line at 0.
+                line = axes[i, j].hlines(0, -1, num_bands+1,
+                                         color='black', ls='--',
+                                         linewidth=1)
+                
+                for k, (mesh_strat, error_data) in enumerate(violin_data[(src, lst)].items()):
+                    # [np.isfinite(error)]
+                    # The NaN entries must be filtered out for each octave band.
+                    error_data = [e[np.isfinite(e)]
+                                  for e in error_data]
 
-                if i == num_sl_configs-1:
+                    positions = group_centers - 0.5 + margin + (k+0.5)*width
+                    violin = axes[i, j].violinplot(error_data, positions=positions,
+                                                   widths=width,
+                                                   showextrema=False,
+                                                   showmeans=False,
+                                                   showmedians=True)
+
                     add_violin_label(violin, mesh_strat)
+                
+                axes[i, j].legend(*zip(*violin_labels))
 
-            axes[i].set_title(f'{src} {lst}')
+                axes[i, j].set_title(f'{src} {lst}')
 
-            axes[i].set_xlim(-0.5, num_bands-0.5)
-            axes[i].xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
-            if i == num_sl_configs-1:
-                axes[i].set_xlabel('Octave band center [Hz]')
-            else:
-                axes[i].set_xlabel('')
-            
-            axes[i].set_ylim(-15, 15)
-            axes[i].set_ylabel('Energy diff (ART - truth) in dB')
+                axes[i, j].set_ylim(-15, 15)
+                axes[i, j].set_xlim(-0.5, num_bands-0.5)
+                axes[i, j].xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+
+                if i == num_listeners-1:
+                    axes[i, j].set_xlabel('Octave band center [Hz]')
+                else:
+                    axes[i, j].set_xlabel('')
+                if j == 0:
+                    axes[i, j].set_ylabel('Energy diff (ART - truth) in dB')
+                else:
+                    axes[i, j].set_ylabel('')
 
         if backwards_integration:
             plt.suptitle(f'{short_name} - backward-integrated energy diff')
         else:
             plt.suptitle(f'{short_name} - short-time-average energy diff')
-        plt.legend(*zip(*violin_labels))
-        plt.tight_layout()
         plt.show()
 
         # break
