@@ -117,8 +117,8 @@ def segment_patch(all_vertices, all_faces, patch_triangle_idxs,
                                                  extend_to=polygon_2D)
 
         # "Cut out" individual polygon segments based on the Voronoi edges.
-        segments = [shapely.intersection(edge, polygon_2D)
-                    for edge in segment_edges.geoms]
+        segments = [shapely.intersection(edges, polygon_2D)
+                    for edges in segment_edges.geoms]
     else:
         segments = [polygon_2D]
 
@@ -136,6 +136,8 @@ def segment_patch(all_vertices, all_faces, patch_triangle_idxs,
 
     new_faces = np.arange(new_vertices_3D.shape[0], dtype=int)
     new_faces = new_faces.reshape((-1, 3))
+    # For some reason, the process flips all normals. Put them back.
+    new_faces = new_faces[:, ::-1]
 
     new_ids = np.concatenate([np.array([i for tri in seg])
                               for i, seg in enumerate(segments)])
