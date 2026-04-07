@@ -375,7 +375,6 @@ if __name__ == '__main__':
                                          linewidth=1)
                 
                 for k, (mesh_strat, error_data) in enumerate(violin_data[(src, lst)].items()):
-                    # [np.isfinite(error)]
                     # The NaN entries must be filtered out for each octave band.
                     error_data = [e[np.isfinite(e)]
                                   for e in error_data]
