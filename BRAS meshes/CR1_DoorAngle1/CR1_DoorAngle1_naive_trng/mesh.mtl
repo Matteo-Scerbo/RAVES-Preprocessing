@@ -418,7 +418,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_261_Mat_CR1_tablesEquipment
+newmtl Patch_255_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -428,7 +428,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_262_Mat_CR1_tablesEquipment
+newmtl Patch_256_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -438,7 +438,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_263_Mat_CR1_tablesEquipment
+newmtl Patch_257_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -448,7 +448,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_264_Mat_CR1_tablesEquipment
+newmtl Patch_258_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -458,7 +458,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_289_Mat_CR1_tablesEquipment
+newmtl Patch_281_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -468,7 +468,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_290_Mat_CR1_tablesEquipment
+newmtl Patch_282_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -478,7 +478,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_291_Mat_CR1_tablesEquipment
+newmtl Patch_283_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -488,7 +488,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_292_Mat_CR1_tablesEquipment
+newmtl Patch_284_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -498,7 +498,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_293_Mat_CR1_tablesEquipment
+newmtl Patch_285_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -508,7 +508,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_294_Mat_CR1_tablesEquipment
+newmtl Patch_286_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -518,7 +518,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_295_Mat_CR1_tablesEquipment
+newmtl Patch_287_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -528,7 +528,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_296_Mat_CR1_tablesEquipment
+newmtl Patch_288_Mat_CR1_tablesEquipment
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.56471 0.56471 0.64706
@@ -1078,6 +1078,66 @@ Ni 1.0
 d 1
 illum 1
 
+newmtl Patch_259_Mat_CR1_paintedConcrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.82745 0.8 0.72157
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_260_Mat_CR1_paintedConcrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.82745 0.8 0.72157
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_261_Mat_CR1_paintedConcrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.82745 0.8 0.72157
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_262_Mat_CR1_paintedConcrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.82745 0.8 0.72157
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_263_Mat_CR1_paintedConcrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.82745 0.8 0.72157
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_264_Mat_CR1_paintedConcrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.82745 0.8 0.72157
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
 newmtl Patch_265_Mat_CR1_paintedConcrete
 Ns 250
 Ka 1.0 1.0 1.0
@@ -1209,66 +1269,6 @@ d 1
 illum 1
 
 newmtl Patch_278_Mat_CR1_paintedConcrete
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.82745 0.8 0.72157
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_279_Mat_CR1_paintedConcrete
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.82745 0.8 0.72157
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_280_Mat_CR1_paintedConcrete
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.82745 0.8 0.72157
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_281_Mat_CR1_paintedConcrete
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.82745 0.8 0.72157
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_282_Mat_CR1_paintedConcrete
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.82745 0.8 0.72157
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_283_Mat_CR1_paintedConcrete
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.82745 0.8 0.72157
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_284_Mat_CR1_paintedConcrete
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.82745 0.8 0.72157
@@ -3918,7 +3918,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_255_Mat_CR1_absorber
+newmtl Patch_279_Mat_CR1_absorber
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.26667 0.16471 0.15686
@@ -3928,87 +3928,7 @@ Ni 1.0
 d 1
 illum 1
 
-newmtl Patch_256_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_257_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_258_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_259_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_260_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_285_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_286_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_287_Mat_CR1_absorber
-Ns 250
-Ka 1.0 1.0 1.0
-Kd 0.26667 0.16471 0.15686
-Ks 0 0 0
-Ke 0.0 0.0 0.0
-Ni 1.0
-d 1
-illum 1
-
-newmtl Patch_288_Mat_CR1_absorber
+newmtl Patch_280_Mat_CR1_absorber
 Ns 250
 Ka 1.0 1.0 1.0
 Kd 0.26667 0.16471 0.15686
