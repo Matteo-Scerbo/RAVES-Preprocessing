@@ -25,23 +25,19 @@ def project_3D_to_2D(points_3D):
     local_x = points_3D[1] - local_origin
     local_x /= np.linalg.norm(local_x)
 
-    found_normal = False
-    for i in range(2, num_points):
-        normal = np.cross(local_x,
-                          points_3D[i] - local_origin)
-        if np.linalg.norm(normal) > 1e-3:
-            found_normal = True
-            break
-    if not found_normal:
-        raise ValueError('All points are colinear.')
-
+    normal = np.cross(local_x,
+                      points_3D[2] - local_origin)
+    if np.linalg.norm(normal) == 0:
+        raise ValueError('All points in the first triangle are colinear.')
+    normal /= np.linalg.norm(normal)
+    
     local_y = np.cross(normal, local_x)
     local_y /= np.linalg.norm(local_y)
 
     for p in points_3D:
         z_error = np.dot(p - local_origin, normal)
-        if np.linalg.norm(z_error) > 1e-2:
-            raise ValueError('Not all points are coplanar.')
+        if np.abs(z_error) > 1e-2:
+            raise ValueError(f'Not all points are coplanar. Z error: {z_error}')
 
     points_2D = [(np.dot(p - local_origin, local_x),
                   np.dot(p - local_origin, local_y))
@@ -100,8 +96,11 @@ def segment_patch(all_vertices, all_faces, patch_triangle_idxs,
     # plt.title(str(narrowness))
     # plt.show()
 
-    num_segments = max(int(np.ceil(area / area_threshold)),
-                       int(np.ceil(narrowness / narrowness_threshold)))
+    num_segments = 1
+    if area_threshold is not None:
+        num_segments = max(int(np.ceil(area / area_threshold)), num_segments)
+    if narrowness_threshold is not None:
+        num_segments = max(int(np.ceil(narrowness / narrowness_threshold)), num_segments)
 
     if num_segments > 1:
         # Consider the polygon's maximum extent w.r.t. the 2D axes, and prepare a tight grid of sample points.
@@ -226,9 +225,9 @@ if __name__ == '__main__':
     area_threshold = 4.
     target_sample_distance = 5e-2
 
-    room_names = [# 'CR1_DoorAngle1',
-                  # 'CR1_DoorAngle3',
-                  # 'CR2',
+    room_names = ['CR1_DoorAngle1',
+                  'CR1_DoorAngle3',
+                  'CR2',
                   'CR3',
                   'CR4',
                   ]
@@ -242,10 +241,10 @@ if __name__ == '__main__':
             new_dir = os.path.join(mesh_folder, room_name, new_name)
             os.makedirs(new_dir, exist_ok=True)
 
-            if remeshing_strategy == 'split_area':
+            if remeshing_strategy == 'split_area_length':
                 narrowness_threshold = 5.
             else:
-                narrowness_threshold = np.inf
+                narrowness_threshold = None
 
             print('Converting mesh', new_name)
             
@@ -262,7 +261,7 @@ if __name__ == '__main__':
                 patch_tris = np.where(patch_ids == patch_i)
 
                 sample_distance = target_sample_distance
-                while sample_distance > 1e-3:
+                while sample_distance > 1e-4:
                     # The clustering can fail if the surface sampling is insufficient.
                     try:
                         seg_vertices, seg_faces, seg_ids = segment_patch(verts, faces, patch_tris,
@@ -273,7 +272,7 @@ if __name__ == '__main__':
                     except ValueError as e:
                         if 'should be >= n_clusters=' in str(e) or 'it contains a single sample' in str(e):
                             sample_distance /= 2
-                            if sample_distance <= 1e-3:
+                            if sample_distance <= 1e-4:
                                 raise ValueError('Could not find a fine enough sampling.')
                         else:
                             raise

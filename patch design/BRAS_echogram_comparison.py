@@ -13,7 +13,7 @@ from raves.src.utils import load_frequencies, air_impedance
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
-    mesh_strategies = ['naive_trng', 'naive_obj']
+    mesh_strategies = ['naive_trng', 'naive_obj', 'split_area', 'split_area_length']
 
     audio_sample_rate = 44.1e3
     echo_sample_rate = 1e4
