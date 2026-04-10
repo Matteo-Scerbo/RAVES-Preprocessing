@@ -4,10 +4,8 @@ import matplotlib.pyplot as plt
 
 import shapely
 import shapely.plotting
-
 from sklearn.cluster import KMeans
 
-import pymeshlab
 import polyscope
 
 from raves.src.utils import TriangleMesh, load_mesh_as_arrays, visualize_mesh, merge_small_patches
@@ -41,7 +39,7 @@ def project_3D_to_2D(points_3D):
 
     for p in points_3D:
         z_error = np.dot(p - local_origin, normal)
-        if np.linalg.norm(z_error) > 1e-3:
+        if np.linalg.norm(z_error) > 1e-2:
             raise ValueError('Not all points are coplanar.')
 
     points_2D = [(np.dot(p - local_origin, local_x),
@@ -62,7 +60,7 @@ def project_2D_to_3D(points_2D, basis):
 
 
 def segment_patch(all_vertices, all_faces, patch_triangle_idxs,
-                  area_threshold,
+                  area_threshold, narrowness_threshold,
                   sample_distance=5e-2):
     # Select only the vertices which form the patch.
     points_3D = all_vertices[all_faces[patch_triangle_idxs]]
@@ -89,10 +87,22 @@ def segment_patch(all_vertices, all_faces, patch_triangle_idxs,
 
     # TODO: Somehow detect and correct thin gaps (mismatched edges).
 
+    # The polygon will be split if its area is too large...
     area = polygon_2D.area
-    if area > area_threshold:
-        num_segments = int(np.ceil(area / area_threshold))
+    # ... or if it is very long and narrow.
+    # "Narrowness" is evaluated based on the ratio between the polygon's area
+    #  and the area of its minimum bounding circle.
+    radius = shapely.minimum_bounding_radius(polygon_2D)
+    narrowness = 2 * np.pi * radius**2 / area
 
+    # shapely.plotting.plot_polygon(polygon_2D)
+    # plt.title(str(narrowness))
+    # plt.show()
+
+    num_segments = max(int(np.ceil(area / area_threshold)),
+                       int(np.ceil(narrowness / narrowness_threshold)))
+
+    if num_segments > 1:
         # Consider the polygon's maximum extent w.r.t. the 2D axes, and prepare a tight grid of sample points.
         X = np.arange(np.min(coords_2D[:, 0]),
                       np.max(coords_2D[:, 0]),
@@ -159,6 +169,7 @@ if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
     area_threshold = 4.
+    narrowness_threshold = 5.
 
     room_names = ['CR1_DoorAngle1',
                   # 'CR1_DoorAngle3',
@@ -182,11 +193,12 @@ if __name__ == '__main__':
         new_patch_ids = np.zeros(0, dtype=int)
         new_patch_materials = list()
 
-        meshset = pymeshlab.MeshSet()
         for patch_i in range(len(patch_materials)):
             patch_tris = np.where(patch_ids == patch_i)
 
-            seg_vertices, seg_faces, seg_ids = segment_patch(verts, faces, patch_tris, area_threshold)
+            seg_vertices, seg_faces, seg_ids = segment_patch(verts, faces, patch_tris,
+                                                             area_threshold,
+                                                             narrowness_threshold)
 
             if len(seg_ids) == 0:
                 # If the patch had zero area, nothing is returned.
@@ -196,8 +208,8 @@ if __name__ == '__main__':
                                   seg_faces + new_vertices.shape[0],
                                   axis=0)
             new_vertices = np.append(new_vertices,
-                                     seg_vertices,
-                                     axis=0)
+                                    seg_vertices,
+                                    axis=0)
             if len(new_patch_ids) > 0:
                 new_patch_ids = np.concatenate([new_patch_ids,
                                                 seg_ids + np.max(new_patch_ids) + 1])
@@ -216,7 +228,7 @@ if __name__ == '__main__':
                                                   new_faces)
         random_colors = np.random.uniform(size=(int(np.max(new_patch_ids))+1, 3))
         ps_mesh.add_color_quantity('face_colors', random_colors[new_patch_ids],
-                                   defined_on='faces', enabled=True)
+                                defined_on='faces', enabled=True)
         ps_mesh.set_back_face_policy('cull')
 
         polyscope.set_up_dir('z_up')
@@ -226,31 +238,6 @@ if __name__ == '__main__':
         polyscope.show()
 
         polyscope.remove_all_structures()
-
-        continue
-
-        """
-        meshset = pymeshlab.MeshSet()
-
-        for patch_i in range(num_patches):
-            patch_tris = np.where(patch_ids == patch_i)
-
-            meshset.add_mesh(pymeshlab.Mesh(verts,
-                                            faces[patch_tris]),
-                             naive_name + str(patch_i))
-            
-            area = meshset.get_geometric_measures()['surface_area']
-            
-            if area > 30:
-                print(area)
-
-                meshset.meshing_isotropic_explicit_remeshing(targetlen=pymeshlab.PercentageValue(100))
-
-                meshset.show_polyscope()
-            
-            meshset.clear()
-            polyscope.remove_all_structures()
-        """
 
         """
         print(naive_name, 'has',
