@@ -67,27 +67,28 @@ if __name__ == '__main__':
     for room_name in source_positions.keys():
         if room_name == 'CR4':
             continue
-        
+    
         for remeshing_strategy in ['naive_obj', 'naive_trng', 'split_area', 'split_area_length']:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
 
-            if room_name != 'CR1' and 'naive' in remeshing_strategy:
+            if 'CR1' not in room_name and 'naive' in remeshing_strategy:
                 continue
-        
+            
             # Results of the echogram comparison will be saved to this subfolder.
             echograms_subfolder = os.path.join(env_folder, 'Echograms')
             os.makedirs(echograms_subfolder, exist_ok=True)
             
             print('\nPrecomputing environment', env_name, '...\n')
-            
-            if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
-                compute_ART(env_folder, assert_coplanarity=False,
-                            # points_per_square_meter=10.0,
-                            # rays_per_hemisphere=1000,
-                            multiprocess_pool_size=16,
-                            temperature=air_parameters[room_name][0],
-                            humidity=air_parameters[room_name][1])
+
+            # if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
+            compute_ART(env_folder, assert_coplanarity=False,
+                        overwrite=(True if 'CR1' in room_name else False),
+                        points_per_square_meter=(50.0 if 'CR1' in room_name else 30.0),
+                        rays_per_hemisphere=(3000 if 'CR1' in room_name else 1000),
+                        multiprocess_pool_size=16,
+                        temperature=air_parameters[room_name][0],
+                        humidity=air_parameters[room_name][1])
             
             print('\nRunning environment', env_name, '...\n')
             
