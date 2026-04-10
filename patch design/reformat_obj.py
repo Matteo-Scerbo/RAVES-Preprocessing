@@ -245,7 +245,7 @@ def reformat_mesh(input_path: str, output_path: str,
             for line in output_lines[:-1]:
                 file.write(line)
 
-        
+
 # https://stackoverflow.com/a/54529366
 def plot_loghist(ax, data, bins):
     hist, bins = np.histogram(data, bins=bins)
