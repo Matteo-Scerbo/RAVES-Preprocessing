@@ -1,9 +1,10 @@
 import os
 import warnings
 import numpy as np
+import multiprocessing
 from scipy.sparse import csr_array, lil_array
 from scipy.io import mmread, mmwrite
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 from .utils import RayBundle, TriangleMesh, load_all_inputs, load_frequencies, sound_speed
 
@@ -226,6 +227,129 @@ def operator_value_at_z(operator: csr_array,
     return result
 
 
+def run_in_band(folder_path: str, band_idx: int,
+                num_samples: int,
+                integer_delays: np.ndarray,
+                injectors_list: List[np.ndarray],
+                detectors_list: List[np.ndarray]
+                ) -> np.ndarray:
+    """
+    Build echograms in a single frequency band using TD-ART.
+
+    Parameters
+    ----------
+    folder_path: str
+        Path to the environment folder.
+    band_idx: int
+        Zero-based index of the frequency band to run.
+    num_samples: int
+        Number of time samples in the computed echograms (see notes on sample rate).
+    integer_delays: np.ndarray
+        Length of each propagation path, in samples (see notes on sample rate).
+    injectors_list: list of np.ndarray
+        List of energy injection operators, one element for each source.
+    detectors_list: list of np.ndarray
+        List of energy detection operators, one element for each listener.
+
+    Returns
+    -------
+    echograms: numpy.ndarray
+        An array of shape (S, L, T) where:
+        - S is the number of sources (even if only one is given);
+        - L is the number of listeners (even if only one is given);
+        - T is the duration of the echograms in number of samples.
+    
+    Notes
+    -----
+    The echogram sample rate is implicitly defined by the integer_delays, injectors, and detectors.
+    Make sure the same rate is used for all components!
+    """
+    num_paths = len(integer_delays)
+    num_sources = len(injectors_list)
+    num_listeners = len(detectors_list)
+
+    band_echograms = np.zeros((num_sources, num_listeners, num_samples))
+
+    # ...load the corresponding kernel.
+    kernel = csr_array(mmread(os.path.join(folder_path, 'ART_kernel_band_{}.mtx'.format(band_idx+1)), spmatrix=True))
+
+    # print('\tFrequency band {}...'.format(band_idx+1))
+    
+    # For each source...
+    for source_idx in range(num_sources):
+        # ...select the appropriate injection operators.
+        injectors = injectors_list[source_idx]
+        
+        # Prepare an array to hold the radiance of each propagation path.
+        # N.B.: This is the memory-intensive bottleneck of TD-ART.
+        radiance_per_path = np.zeros((num_paths, num_samples))
+        
+        # Populate the radiance array with the initial radiance (0th order).
+        for path_idx in range(num_paths):
+            # For an explanation of indptr, see the docs of csr_array or
+            #   https://stackoverflow.com/a/52299730
+            start = injectors.indptr[path_idx]
+            end = injectors.indptr[path_idx+1]
+            
+            # These indices and values correspond to the time samples and
+            #   energy amounts of individual contributions to path_idx.
+            contrib_delays = injectors.indices[start:end]
+            contrib_amounts = injectors.data[start:end]
+            
+            for amount, delay in zip(contrib_amounts, contrib_delays):
+                if delay < num_samples:
+                    radiance_per_path[path_idx, delay] += amount
+
+        # `radiance_per_path` currently holds the energy contributions AT
+        #   the surface patches, i.e., about to be reflected.
+        # They need to be reflected once by applying the scattering matrix.
+        radiance_per_path = kernel @ radiance_per_path
+
+        # Main recursive loop of TD-ART. Recursively propagate radiance for
+        #   each time step.
+        for time_sample in range(num_samples):
+            # Assemble a vector holding the output of each propagation path
+            #   at the current time step. This is the radiance currently
+            #   reaching each surface patch.
+            state_vector = np.zeros(num_paths)
+            for path_idx in range(num_paths):
+                if integer_delays[path_idx] <= time_sample:
+                    state_vector[path_idx] = radiance_per_path[path_idx, time_sample - integer_delays[path_idx]]
+            # Reflect the propagated radiance, turning it into the radiance
+            #   currently departing from each surface patch.
+            # Add it back onto the state array.
+            radiance_per_path[:, time_sample] += kernel @ state_vector
+        
+        # The recursive propagation is done. Radiance can now be detected,
+        #   separately, by each listener. For each listener...
+        for listener_idx in range(num_listeners):
+            # ...select the appropriate detection operators.
+            detectors = detectors_list[listener_idx]
+            
+            # Detect the radiance gathered onto each propagation path,
+            #   scaling and delaying it as dictated by the detectors.
+            for path_idx in range(num_paths):
+                start = detectors.indptr[path_idx]
+                end = detectors.indptr[path_idx+1]
+                contrib_delays = detectors.indices[start:end]
+                contrib_amounts = detectors.data[start:end]
+                
+                for amount, delay in zip(contrib_amounts, contrib_delays):
+                    if delay < num_samples:
+                        band_echograms[source_idx, listener_idx, delay:] += amount * radiance_per_path[path_idx, :num_samples-delay]
+
+    return band_echograms
+
+
+# https://stackoverflow.com/a/21130146
+def energy_contributions_wrapper(args: Tuple[TriangleMesh, csr_array, np.ndarray, bool, float, int, str, float, float, float]
+                                 ) -> csr_array:
+    return energy_contributions(*args)
+def run_in_band_wrapper(args: Tuple[str, int, int, np.ndarray, List[np.ndarray], List[np.ndarray]]
+                        ) -> np.ndarray:
+    return run_in_band(*args)
+
+
 def run_ART(folder_path: str,
             source_positions: np.ndarray, listener_positions: np.ndarray,
             overwrite_sources: bool = False, overwrite_listeners: bool = False,
@@ -233,6 +357,7 @@ def run_ART(folder_path: str,
             echogram_duration: float = 1.,
             num_rays: int = 1000,
             output_folder_path: str = None,
+            multiprocess_pool_size: int = 4,
             humidity: float = 50., temperature: float = 20., pressure: float = 100.,
             assert_coplanarity: bool = True, assert_min_delays: bool = True
             ) -> Tuple[np.ndarray, np.ndarray]:
@@ -265,6 +390,8 @@ def run_ART(folder_path: str,
     output_folder_path: str, default: None
         Path to the folder where ray-tracing results are saved (if provided).
         Specifying this is recommended to avoid repeated operations.
+    multiprocess_pool_size
+        Number of worker processes to use (1 disables multiprocessing).
     humidity : float, default: 50.0
         Relative humidity (%) used for speed-of-sound computation.
     temperature : float, default: 20.0
@@ -356,6 +483,13 @@ def run_ART(folder_path: str,
 
     print('Running `run_ART` in the environment "' + os.path.split(folder_path)[-1] + '"')
 
+    multiprocess_pool_size = min(multiprocess_pool_size, os.cpu_count() - 1)
+    num_processes = max(1, multiprocess_pool_size)
+    if num_processes == 1:
+        print('Will use a single process.')
+    else:
+        print(os.cpu_count(), 'cores available. Pool will use', num_processes, 'SUB-processes.')
+
     # Load propagation path indexing (relates patch indices to path indices).
     path_indexing = csr_array(mmread(os.path.join(folder_path, 'path_indexing.mtx'), spmatrix=True))
     # IMPORTANT: path_indexing is 1-indexed to benefit from sparsity.
@@ -363,137 +497,162 @@ def run_ART(folder_path: str,
     
     # Evaluate the path "visibility" from each source position.
     injectors_list = list()
-    for source_idx in range(num_sources):
-        print('Processing source', source_idx+1)
 
-        if output_folder_path is not None:
-            file_name = 'S{}_operator_{:.0f}Hz.mtx'.format(source_idx+1, echogram_sample_rate)
-            operator_file_path = os.path.join(output_folder_path, file_name)
-        else:
-            operator_file_path = None
+    # Parallelize ray-tracing across sources.
+    if multiprocess_pool_size == 1 or num_sources == 1:
+        for source_idx in range(num_sources):
+            print('Processing source', source_idx+1)
+
+            if output_folder_path is not None:
+                file_name = 'S{}_operator_{:.0f}Hz.mtx'.format(source_idx+1, echogram_sample_rate)
+                operator_file_path = os.path.join(output_folder_path, file_name)
+            else:
+                operator_file_path = None
+            
+            # The 2D array returned by energy_contributions is a distribution of energy
+            #   over the propagation paths, over time. The entire array sums to 1;
+            #   it specifies how the point source's unit-energy pulse at time 0
+            #   gets distributed among the propagation paths.
+            injectors = energy_contributions(mesh, path_indexing,
+                                             source_positions[source_idx],
+                                             overwrite_sources,
+                                             echogram_sample_rate,
+                                             num_rays,
+                                             operator_file_path,
+                                             humidity, temperature, pressure)
         
-        # The 2D array returned by this function is a distribution of energy
-        #   over the propagation paths, over time. The entire array sums to 1;
-        #   it specifies how the point source's unit-energy pulse at time 0
-        #   gets distributed among the propagation paths.
-        injectors = energy_contributions(mesh, path_indexing,
-                                         source_positions[source_idx],
-                                         overwrite_sources,
-                                         echogram_sample_rate,
-                                         num_rays,
-                                         operator_file_path,
-                                         humidity, temperature, pressure)
-    
-        # Injectors need to be rescaled to convert units.
-        # Refer to "ART_theory.md" for more info on this process.
-        injectors *= 4*np.pi
-        
-        injectors_list.append(injectors)
+            # Injectors need to be rescaled to convert units.
+            # Refer to "ART_theory.md" for more info on this process.
+            injectors *= 4*np.pi
+            
+            injectors_list.append(injectors)
+    else:
+        task_list = list()
+        for source_idx in range(num_sources):
+            if output_folder_path is not None:
+                file_name = 'S{}_operator_{:.0f}Hz.mtx'.format(source_idx+1, echogram_sample_rate)
+                operator_file_path = os.path.join(output_folder_path, file_name)
+            else:
+                operator_file_path = None
+            
+            task = (mesh, path_indexing,
+                    source_positions[source_idx],
+                    overwrite_sources,
+                    echogram_sample_rate,
+                    num_rays,
+                    operator_file_path,
+                    humidity, temperature, pressure)
+            task_list.append(task)
+
+        with multiprocessing.Pool(multiprocess_pool_size) as pool:
+            # The 2D array returned by energy_contributions is a distribution of energy
+            #   over the propagation paths, over time. The entire array sums to 1;
+            #   it specifies how the point source's unit-energy pulse at time 0
+            #   gets distributed among the propagation paths.
+            process_pool_results = pool.imap(energy_contributions_wrapper, task_list)
+
+            for injectors in process_pool_results:
+                # Injectors need to be rescaled to convert units.
+                # Refer to "ART_theory.md" for more info on this process.
+                injectors *= 4*np.pi
+                
+                # Note: results of pool.imap() preserve the indexing order.
+                injectors_list.append(injectors)
 
     # Evaluate the path "visibility" from each listener position.
     detectors_list = list()
-    for listener_idx in range(num_listeners):
-        print('Processing listener', listener_idx+1)
+
+    # Parallelize ray-tracing across listeners.
+    if multiprocess_pool_size == 1 or num_listeners == 1:
+        for listener_idx in range(num_listeners):
+            print('Processing listener', listener_idx+1)
+
+            if output_folder_path is not None:
+                file_name = 'L{}_operator_{:.0f}Hz.mtx'.format(listener_idx+1, echogram_sample_rate)
+                operator_file_path = os.path.join(output_folder_path, file_name)
+            else:
+                operator_file_path = None
+            
+            # The 2D array returned by energy_contributions is a distribution of energy
+            #   over the propagation paths, over time. The entire array sums to 1;
+            #   it specifies how energy reaching the point listener from different
+            #   paths gets delayed and weighted.
+            detectors = energy_contributions(mesh, path_indexing,
+                                            listener_positions[listener_idx],
+                                            overwrite_listeners,
+                                            echogram_sample_rate,
+                                            num_rays,
+                                            operator_file_path,
+                                            humidity, temperature, pressure)
+            
+            # Detectors need to be rescaled to convert units.
+            # Refer to "ART_theory.md" for more info on this process.
+            detectors = csr_array(detectors.multiply(4*np.pi / path_etendues[:, None]))
+            
+            detectors_list.append(detectors)
+    else:
+        task_list = list()
+        for listener_idx in range(num_listeners):
+            if output_folder_path is not None:
+                file_name = 'L{}_operator_{:.0f}Hz.mtx'.format(listener_idx+1, echogram_sample_rate)
+                operator_file_path = os.path.join(output_folder_path, file_name)
+            else:
+                operator_file_path = None
+            
+            task = (mesh, path_indexing,
+                    listener_positions[listener_idx],
+                    overwrite_listeners,
+                    echogram_sample_rate,
+                    num_rays,
+                    operator_file_path,
+                    humidity, temperature, pressure)
+            task_list.append(task)
+
+        with multiprocessing.Pool(multiprocess_pool_size) as pool:
+            # The 2D array returned by energy_contributions is a distribution of energy
+            #   over the propagation paths, over time. The entire array sums to 1;
+            #   it specifies how energy reaching the point listener from different
+            #   paths gets delayed and weighted.
+            process_pool_results = pool.imap(energy_contributions_wrapper, task_list)
+
+            for detectors in process_pool_results:
+                # Detectors need to be rescaled to convert units.
+                # Refer to "ART_theory.md" for more info on this process.
+                detectors = csr_array(detectors.multiply(4*np.pi / path_etendues[:, None]))
         
-        if output_folder_path is not None:
-            file_name = 'L{}_operator_{:.0f}Hz.mtx'.format(listener_idx+1, echogram_sample_rate)
-            operator_file_path = os.path.join(output_folder_path, file_name)
-        else:
-            operator_file_path = None
-        
-        # The 2D array returned by this function is a distribution of energy
-        #   over the propagation paths, over time. The entire array sums to 1;
-        #   it specifies how energy reaching the point listener from different
-        #   paths gets delayed and weighted.
-        detectors = energy_contributions(mesh, path_indexing,
-                                         listener_positions[listener_idx],
-                                         overwrite_listeners,
-                                         echogram_sample_rate,
-                                         num_rays,
-                                         operator_file_path,
-                                         humidity, temperature, pressure)
-        
-        # Detectors need to be rescaled to convert units.
-        # Refer to "ART_theory.md" for more info on this process.
-        detectors = csr_array(detectors.multiply(4*np.pi / path_etendues[:, None]))
-        
-        detectors_list.append(detectors)
-    
+                # Note: results of pool.imap() preserve the indexing order.
+                detectors_list.append(detectors)
+
     print('All components ready. Assembling echograms.')
-    
+
     # Prepare the output array.
     time_axis = np.arange(0., echogram_duration, 1/echogram_sample_rate)
     echograms = np.zeros((num_sources, num_listeners, num_bands, len(time_axis)))
     
-    # For each frequency band...
-    for band_idx in range(num_bands):
-        # ...load the corresponding kernel.
-        kernel = csr_array(mmread(os.path.join(folder_path, 'ART_kernel_band_{}.mtx'.format(band_idx+1)), spmatrix=True))
-
-        print('\tFrequency band {}...'.format(band_idx+1))
-        
-        # For each source...
-        for source_idx in range(num_sources):
-            # ...select the appropriate injection operators.
-            injectors = injectors_list[source_idx]
+    # Parallelize echogram building across frequency bands.
+    # TODO: Choose parallelism based on max(num_sources, num_listeners, num_bands).
+    if multiprocess_pool_size == 1 or num_bands == 1:
+        # For each frequency band...
+        for band_idx in range(num_bands):
+            band_echograms = run_in_band(folder_path, band_idx,
+                                         len(time_axis), integer_delays,
+                                         injectors_list, detectors_list)
             
-            # Prepare an array to hold the radiance of each propagation path.
-            # N.B.: This is the memory-intensive bottleneck of TD-ART.
-            radiance_per_path = np.zeros((num_paths, len(time_axis)))
-            
-            # Populate the radiance array with the initial radiance (0th order).
-            for path_idx in range(num_paths):
-                # For an explanation of indptr, see the docs of csr_array or
-                #   https://stackoverflow.com/a/52299730
-                start = injectors.indptr[path_idx]
-                end = injectors.indptr[path_idx+1]
-                
-                # These indices and values correspond to the time samples and
-                #   energy amounts of individual contributions to path_idx.
-                contrib_delays = injectors.indices[start:end]
-                contrib_amounts = injectors.data[start:end]
-                
-                for amount, delay in zip(contrib_amounts, contrib_delays):
-                    if delay < len(time_axis):
-                        radiance_per_path[path_idx, delay] += amount
+            echograms[:, :, band_idx, :] = band_echograms
+    else:
+        task_list = list()
+        for band_idx in range(num_bands):
+            task = (folder_path, band_idx,
+                    len(time_axis), integer_delays,
+                    injectors_list, detectors_list)
+            task_list.append(task)
 
-            # `radiance_per_path` currently holds the energy contributions AT
-            #   the surface patches, i.e., about to be reflected.
-            # They need to be reflected once by applying the scattering matrix.
-            radiance_per_path = kernel @ radiance_per_path
+        with multiprocessing.Pool(multiprocess_pool_size) as pool:
+            process_pool_results = pool.imap(run_in_band_wrapper, task_list)
 
-            # Main recursive loop of TD-ART. Recursively propagate radiance for
-            #   each time step.
-            for time_sample in range(len(time_axis)):
-                # Assemble a vector holding the output of each propagation path
-                #   at the current time step. This is the radiance currently
-                #   reaching each surface patch.
-                state_vector = np.zeros(num_paths)
-                for path_idx in range(num_paths):
-                    if integer_delays[path_idx] <= time_sample:
-                        state_vector[path_idx] = radiance_per_path[path_idx, time_sample - integer_delays[path_idx]]
-                # Reflect the propagated radiance, turning it into the radiance
-                #   currently departing from each surface patch.
-                # Add it back onto the state array.
-                radiance_per_path[:, time_sample] += kernel @ state_vector
-            
-            # The recursive propagation is done. Radiance can now be detected,
-            #   separately, by each listener. For each listener...
-            for listener_idx in range(num_listeners):
-                # ...select the appropriate detection operators.
-                detectors = detectors_list[listener_idx]
-                
-                # Detect the radiance gathered onto each propagation path,
-                #   scaling and delaying it as dictated by the detectors.
-                for path_idx in range(num_paths):
-                    start = detectors.indptr[path_idx]
-                    end = detectors.indptr[path_idx+1]
-                    contrib_delays = detectors.indices[start:end]
-                    contrib_amounts = detectors.data[start:end]
-                    
-                    for amount, delay in zip(contrib_amounts, contrib_delays):
-                        if delay < len(time_axis):
-                            echograms[source_idx, listener_idx, band_idx, delay:] += amount * radiance_per_path[path_idx, :len(time_axis)-delay]
+            # Note: results of pool.imap() preserve the indexing order.
+            for band_idx, band_echograms in enumerate(process_pool_results):
+                echograms[:, :, band_idx, :] = band_echograms
     
     print('Adding line-of-sight components where unobstructed.')
     
@@ -548,6 +707,7 @@ def run_ART(folder_path: str,
 
 
 # TODO: Take a T60 threshold (max slopes per band) as argument.
+# TODO: Add parallelization here, like in TD-ART.
 def run_MoDART(folder_path: str,
                source_positions: np.ndarray, listener_positions: np.ndarray,
                overwrite_sources: bool = False, overwrite_listeners: bool = False,

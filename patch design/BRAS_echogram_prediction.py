@@ -3,6 +3,7 @@ import numpy as np
 from scipy.io.wavfile import write
 
 from raves import compute_ART, run_ART
+from raves.src.utils import visualize_mesh
 
 if __name__ == '__main__':
     echogram_sample_rate = 1e4
@@ -72,9 +73,6 @@ if __name__ == '__main__':
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
 
-            if 'CR1' not in room_name and 'naive' in remeshing_strategy:
-                continue
-            
             # Results of the echogram comparison will be saved to this subfolder.
             echograms_subfolder = os.path.join(env_folder, 'Echograms')
             os.makedirs(echograms_subfolder, exist_ok=True)
@@ -102,9 +100,14 @@ if __name__ == '__main__':
                                         for key in sorted_listener_keys])
                 
             echograms, freqs = run_ART(env_folder, sources_array, listeners_array,
+                                       overwrite_sources=(True if 'CR1' in room_name else False),
+                                       overwrite_listeners=(True if 'CR1' in room_name else False),
                                        echogram_sample_rate=echogram_sample_rate,
                                        echogram_duration=shown_durations[room_name],
                                        output_folder_path=echograms_subfolder,
+                                       multiprocess_pool_size=16,
+                                       temperature=air_parameters[room_name][0],
+                                       humidity=air_parameters[room_name][1],
                                        assert_coplanarity=False,
                                        assert_min_delays=False)
             

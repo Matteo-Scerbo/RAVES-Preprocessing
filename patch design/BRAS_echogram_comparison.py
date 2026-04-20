@@ -414,4 +414,4 @@ if __name__ == '__main__':
             plt.suptitle(f'{short_name} - short-time-average energy diff')
         plt.show()
 
-        break
+        # break
