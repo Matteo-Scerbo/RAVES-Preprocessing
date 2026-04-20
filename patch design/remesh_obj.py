@@ -146,7 +146,7 @@ def segment_patch(all_vertices, all_faces, patch_triangle_idxs,
     # Drop miniscule triangles.
     # TODO: Find better triangulation if possible.
     segments = [[tri for tri in seg
-                 if tri.area > 1e-4]
+                 if tri.area > 1e-3]
                 for seg in segments]
     segments = [seg for seg in segments
                 if len(seg) != 0]
