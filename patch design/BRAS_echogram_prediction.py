@@ -10,6 +10,19 @@ if __name__ == '__main__':
 
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
+    room_names = [# 'CR1_DoorAngle1',
+                  # 'CR1_DoorAngle3',
+                  # 'CR2',
+                  'CR1_DoorAngle1_simplified',
+                  'CR1_DoorAngle3_simplified',
+                  'CR2_simplified',
+                  'CR1_DoorAngle1_ubersimplified',
+                  'CR1_DoorAngle3_ubersimplified',
+                  'CR2_ubersimplified',
+                  # 'CR3',
+                  # 'CR4',
+                  ]
+    
     source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
                                         'LS2': [-1.77, -2.28, 1.189],
                                         },
@@ -65,12 +78,7 @@ if __name__ == '__main__':
                        'CR4': 2.5,
                        }
 
-    for room_name in source_positions.keys():
-        if room_name == 'CR4':
-            continue
-        if room_name != 'CR3':
-            continue
-    
+    for room_name in room_names:
         for remeshing_strategy in ['naive_obj', 'split_area', 'naive_trng', 'split_area_length']:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)

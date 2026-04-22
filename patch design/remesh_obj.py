@@ -242,8 +242,7 @@ if __name__ == '__main__':
         naive_name = room_name + '_naive_obj'
         naive_dir = os.path.join(mesh_folder, room_name, naive_name)
 
-        for remeshing_strategy in ['split_area', # 'split_area_length',
-                                   ]:
+        for remeshing_strategy in ['split_area', 'split_area_length']:
             new_name = room_name + '_' + remeshing_strategy
             new_dir = os.path.join(mesh_folder, room_name, new_name)
             os.makedirs(new_dir, exist_ok=True)
@@ -353,7 +352,7 @@ if __name__ == '__main__':
             shutil.copy(os.path.join(naive_dir, 'materials.csv'),
                         os.path.join(new_dir, 'materials.csv'))
 
-            visualize_mesh(new_dir)
+            # visualize_mesh(new_dir)
             
             mesh, patch_materials, _ = load_mesh(new_dir,
                                                  assert_coplanarity=False)
