@@ -79,6 +79,9 @@ if __name__ == '__main__':
                        }
 
     for room_name in room_names:
+        base_name = room_name.replace('_simplified', '')
+        base_name = base_name.replace('_ubersimplified', '')
+
         for remeshing_strategy in ['naive_obj', 'split_area', 'naive_trng', 'split_area_length']:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
@@ -91,32 +94,32 @@ if __name__ == '__main__':
 
             # if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
             compute_ART(env_folder, assert_coplanarity=False,
-                        points_per_square_meter=(100.0 if 'CR1' in room_name else 30.0),
-                        rays_per_hemisphere=(10000 if 'CR1' in room_name else 1000),
+                        points_per_square_meter=(100.0 if 'CR1' in base_name else 30.0),
+                        rays_per_hemisphere=(10000 if 'CR1' in base_name else 1000),
                         multiprocess_pool_size=16,
-                        temperature=air_parameters[room_name][0],
-                        humidity=air_parameters[room_name][1])
+                        temperature=air_parameters[base_name][0],
+                        humidity=air_parameters[base_name][1])
             
             print('\nRunning environment', env_name, '...\n')
             
             # Need to put positions into arrays, ensuring the correct order.
             # https://stackoverflow.com/a/36634885
-            sorted_source_keys = sorted(source_positions[room_name].keys())
-            sources_array = np.array([source_positions[room_name][key]
+            sorted_source_keys = sorted(source_positions[base_name].keys())
+            sources_array = np.array([source_positions[base_name][key]
                                       for key in sorted_source_keys])
-            sorted_listener_keys = sorted(listener_positions[room_name].keys())
-            listeners_array = np.array([listener_positions[room_name][key]
+            sorted_listener_keys = sorted(listener_positions[base_name].keys())
+            listeners_array = np.array([listener_positions[base_name][key]
                                         for key in sorted_listener_keys])
             
             echograms, freqs = run_ART(env_folder, sources_array, listeners_array,
                                        overwrite_sources=True,
                                        overwrite_listeners=True,
                                        echogram_sample_rate=echogram_sample_rate,
-                                       echogram_duration=shown_durations[room_name],
+                                       echogram_duration=shown_durations[base_name],
                                        output_folder_path=echograms_subfolder,
-                                       multiprocess_pool_size=(4 if room_name == 'CR3' else 8),
-                                       temperature=air_parameters[room_name][0],
-                                       humidity=air_parameters[room_name][1],
+                                       multiprocess_pool_size=(4 if base_name == 'CR3' else 8),
+                                       temperature=air_parameters[base_name][0],
+                                       humidity=air_parameters[base_name][1],
                                        assert_coplanarity=False,
                                        assert_min_delays=False)
             
