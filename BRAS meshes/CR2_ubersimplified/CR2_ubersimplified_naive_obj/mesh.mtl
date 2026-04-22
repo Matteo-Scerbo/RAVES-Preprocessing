@@ -1,0 +1,169 @@
+newmtl Patch_1_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_5_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_6_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_7_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_8_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_14_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_15_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_16_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_17_Mat_CR2_concrete
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.55686 0.55294 0.5098
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_2_Mat_CR2_windows
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.40784 1 0.94902
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_3_Mat_CR2_windows
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.40784 1 0.94902
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_4_Mat_CR2_windows
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.40784 1 0.94902
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_9_Mat_CR2_floor
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.69804 0.67059 0.53725
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_10_Mat_CR2_plaster
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.84706 0.83922 0.77647
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_11_Mat_CR2_plaster
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.84706 0.83922 0.77647
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_12_Mat_CR2_plaster
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.84706 0.83922 0.77647
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1
+
+newmtl Patch_13_Mat_CR2_ceiling
+Ns 250
+Ka 1.0 1.0 1.0
+Kd 0.88627 0.88627 0.88627
+Ks 0 0 0
+Ke 0.0 0.0 0.0
+Ni 1.0
+d 1
+illum 1

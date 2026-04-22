@@ -1,0 +1,541 @@
+mtllib mesh.mtl
+
+# obj1
+v 6.102 1.903 2.736
+v 0.571 0.499 2.736
+v 0.571 2.411 2.736
+v 0.571 -6.16 2.736
+v 6.102 -6.16 2.736
+usemtl Patch_1_Mat_CR1_paintedConcrete
+f 1 2 3
+usemtl Patch_2_Mat_CR1_paintedConcrete
+f 2 1 4
+usemtl Patch_3_Mat_CR1_paintedConcrete
+f 4 1 5
+
+# obj2
+v -6.251 -3.648 2.768
+v -4.522 -3.648 1.1
+v -6.251 -3.648 1.1
+v -4.522 -3.648 0.0
+v -2.803 -3.648 1.1
+v -2.803 -3.648 0.0
+v -0.0 -3.648 1.1
+v -0.0 -3.648 2.768
+usemtl Patch_4_Mat_CR1_paintedConcrete
+f 6 7 8
+usemtl Patch_5_Mat_CR1_paintedConcrete
+f 9 10 11
+usemtl Patch_6_Mat_CR1_paintedConcrete
+f 10 9 7
+usemtl Patch_7_Mat_CR1_paintedConcrete
+f 12 7 13
+usemtl Patch_8_Mat_CR1_paintedConcrete
+f 13 7 6
+
+# obj3
+v -0.0 2.523 2.768
+v -6.251 -3.648 2.768
+v -6.251 3.094 2.768
+v -0.0 -3.648 2.768
+usemtl Patch_9_Mat_CR1_concrete
+f 14 15 16
+usemtl Patch_10_Mat_CR1_concrete
+f 15 14 17
+
+# obj4
+v -6.251 2.156 -0.0
+v -6.251 -3.053 1.1
+v -6.251 -3.053 0.0
+v -6.251 -3.648 2.768
+v -6.251 -3.648 1.1
+v -6.251 3.094 2.768
+v -6.251 2.156 1.1
+v -6.251 3.094 1.1
+usemtl Patch_11_Mat_CR1_concrete
+f 18 19 20
+usemtl Patch_12_Mat_CR1_concrete
+f 19 21 22
+usemtl Patch_13_Mat_CR1_concrete
+f 21 19 23
+usemtl Patch_14_Mat_CR1_concrete
+f 23 19 24
+usemtl Patch_15_Mat_CR1_concrete
+f 24 19 18
+usemtl Patch_16_Mat_CR1_concrete
+f 23 24 25
+
+# obj5
+v -0.0 2.523 2.768
+v -1.677 2.676 1.1
+v -0.0 2.523 1.1
+v -1.677 2.676 0.0
+v -4.416 2.926 1.1
+v -4.416 2.926 -0.0
+v -6.251 3.094 1.1
+v -6.251 3.094 2.768
+usemtl Patch_17_Mat_CR1_concrete
+f 26 27 28
+usemtl Patch_18_Mat_CR1_concrete
+f 29 30 31
+usemtl Patch_19_Mat_CR1_concrete
+f 30 29 27
+usemtl Patch_20_Mat_CR1_concrete
+f 30 27 32
+usemtl Patch_21_Mat_CR1_concrete
+f 32 27 33
+usemtl Patch_22_Mat_CR1_concrete
+f 33 27 26
+
+# obj6
+v -0.0 -3.648 2.768
+v -0.0 -1.488 2.193
+v -0.0 -3.648 1.1
+v -0.0 2.523 2.768
+v -0.0 -1.983 1.1
+v -0.0 -1.983 0.0
+v -0.0 -0.012 2.195
+v -0.0 -0.012 0.0
+v -0.0 1.598 1.1
+v -0.0 2.523 1.1
+v -0.0 1.598 0.0
+v -0.0 -1.488 0.0
+usemtl Patch_23_Mat_CR1_concrete
+f 34 35 36
+usemtl Patch_24_Mat_CR1_concrete
+f 35 34 37
+usemtl Patch_25_Mat_CR1_concrete
+f 36 35 38
+usemtl Patch_26_Mat_CR1_concrete
+f 38 35 39
+usemtl Patch_27_Mat_CR1_concrete
+f 35 37 40
+usemtl Patch_28_Mat_CR1_concrete
+f 40 37 41
+usemtl Patch_29_Mat_CR1_concrete
+f 41 37 42
+usemtl Patch_30_Mat_CR1_concrete
+f 42 37 43
+usemtl Patch_31_Mat_CR1_concrete
+f 44 41 42
+usemtl Patch_32_Mat_CR1_concrete
+f 45 39 35
+
+# obj7
+v 6.102 1.903 2.736
+v 0.571 2.411 0.05
+v 6.102 1.903 0.05
+v 0.571 2.411 2.736
+usemtl Patch_33_Mat_CR1_paintedConcrete
+f 46 47 48
+usemtl Patch_34_Mat_CR1_paintedConcrete
+f 47 46 49
+
+# obj8
+v 6.102 1.903 2.736
+v 6.102 -6.16 0.05
+v 6.102 -6.16 2.736
+v 6.102 1.903 0.05
+usemtl Patch_35_Mat_CR1_paintedConcrete
+f 50 51 52
+usemtl Patch_36_Mat_CR1_paintedConcrete
+f 51 50 53
+
+# obj9
+v 0.571 -6.16 2.736
+v 6.102 -6.16 0.05
+v 0.571 -6.16 0.05
+v 6.102 -6.16 2.736
+usemtl Patch_37_Mat_CR1_paintedConcrete
+f 54 55 56
+usemtl Patch_38_Mat_CR1_paintedConcrete
+f 55 54 57
+
+# obj10
+v -4.51 1.985 1.1
+v -6.251 3.094 1.1
+v -6.251 2.156 1.1
+v -4.416 2.926 1.1
+usemtl Patch_39_Mat_CR1_tablesEquipment
+f 58 59 60
+usemtl Patch_40_Mat_CR1_tablesEquipment
+f 59 58 61
+
+# obj11
+v -4.416 2.926 -0.0
+v -4.51 1.985 1.0
+v -4.51 1.985 -0.0
+v -4.51 1.985 1.1
+v -4.416 2.926 1.1
+usemtl Patch_41_Mat_CR1_tablesEquipment
+f 62 63 64
+usemtl Patch_42_Mat_CR1_tablesEquipment
+f 63 62 65
+usemtl Patch_43_Mat_CR1_tablesEquipment
+f 65 62 66
+
+# obj12
+v -4.51 1.985 1.0
+v -6.251 2.156 -0.0
+v -4.51 1.985 -0.0
+v -6.251 2.156 1.1
+v -4.51 1.985 1.1
+usemtl Patch_44_Mat_CR1_tablesEquipment
+f 67 68 69
+usemtl Patch_45_Mat_CR1_tablesEquipment
+f 68 67 70
+usemtl Patch_46_Mat_CR1_tablesEquipment
+f 70 67 71
+
+# obj13
+v -6.251 -3.053 1.1
+v -4.522 -3.053 0.0
+v -6.251 -3.053 0.0
+v -4.522 -3.053 1.1
+usemtl Patch_47_Mat_CR1_tablesEquipment
+f 72 73 74
+usemtl Patch_48_Mat_CR1_tablesEquipment
+f 73 72 75
+
+# obj14
+v -4.522 -3.648 1.1
+v -6.251 -3.053 1.1
+v -6.251 -3.648 1.1
+v -4.522 -3.053 1.1
+usemtl Patch_49_Mat_CR1_tablesEquipment
+f 76 77 78
+usemtl Patch_50_Mat_CR1_tablesEquipment
+f 77 76 79
+
+# obj15
+v -4.522 -3.053 0.0
+v -4.522 -3.648 1.1
+v -4.522 -3.648 0.0
+v -4.522 -3.053 1.1
+usemtl Patch_51_Mat_CR1_tablesEquipment
+f 80 81 82
+usemtl Patch_52_Mat_CR1_tablesEquipment
+f 81 80 83
+
+# obj16
+v -0.0 1.598 1.1
+v -1.677 2.676 1.1
+v -1.741 1.715 1.1
+v -0.0 2.523 1.1
+usemtl Patch_53_Mat_CR1_tablesEquipment
+f 84 85 86
+usemtl Patch_54_Mat_CR1_tablesEquipment
+f 85 84 87
+
+# obj17
+v -0.0 1.598 1.1
+v -1.741 1.715 0.0
+v -0.0 1.598 0.0
+v -1.741 1.715 1.0
+v -1.741 1.715 1.1
+usemtl Patch_55_Mat_CR1_tablesEquipment
+f 88 89 90
+usemtl Patch_56_Mat_CR1_tablesEquipment
+f 89 88 91
+usemtl Patch_57_Mat_CR1_tablesEquipment
+f 91 88 92
+
+# obj18
+v -1.677 2.676 1.1
+v -1.741 1.715 1.0
+v -1.741 1.715 1.1
+v -1.741 1.715 0.0
+v -1.677 2.676 0.0
+usemtl Patch_58_Mat_CR1_tablesEquipment
+f 93 94 95
+usemtl Patch_59_Mat_CR1_tablesEquipment
+f 94 93 96
+usemtl Patch_60_Mat_CR1_tablesEquipment
+f 96 93 97
+
+# obj19
+v -5.442 1.479 0.0
+v -5.442 -0.091 1.0
+v -5.442 -0.091 0.0
+v -5.442 1.479 1.0
+usemtl Patch_61_Mat_CR1_absorber
+f 98 99 100
+usemtl Patch_62_Mat_CR1_absorber
+f 99 98 101
+
+# obj20
+v -2.39 2.524 0.0
+v -3.556 2.559 1.0
+v -3.556 2.559 0.0
+v -2.39 2.524 1.0
+usemtl Patch_63_Mat_CR1_absorber
+f 102 103 104
+usemtl Patch_64_Mat_CR1_absorber
+f 103 102 105
+
+# obj21
+v -2.39 2.524 1.0
+v -1.741 1.715 0.0
+v -1.741 1.715 1.0
+v -2.39 2.524 0.0
+usemtl Patch_65_Mat_CR1_absorber
+f 106 107 108
+usemtl Patch_66_Mat_CR1_absorber
+f 107 106 109
+
+# obj22
+v -4.51 1.985 1.0
+v -5.442 1.479 0.0
+v -4.51 1.985 -0.0
+v -5.442 1.479 1.0
+usemtl Patch_67_Mat_CR1_absorber
+f 110 111 112
+usemtl Patch_68_Mat_CR1_absorber
+f 111 110 113
+
+# obj23
+v -2.803 -2.798 1.1
+v -2.803 -3.648 0.0
+v -2.803 -3.648 1.1
+v -2.803 -2.798 0.0
+usemtl Patch_69_Mat_CR1_tablesEquipment
+f 114 115 116
+usemtl Patch_70_Mat_CR1_tablesEquipment
+f 115 114 117
+
+# obj24
+v -2.803 -2.798 1.1
+v -0.913 -2.798 0.0
+v -2.803 -2.798 0.0
+v -0.913 -2.798 1.1
+usemtl Patch_71_Mat_CR1_tablesEquipment
+f 118 119 120
+usemtl Patch_72_Mat_CR1_tablesEquipment
+f 119 118 121
+
+# obj25
+v -0.0 -3.648 1.1
+v -2.803 -2.798 1.1
+v -2.803 -3.648 1.1
+v -0.913 -2.798 1.1
+v -0.913 -1.983 1.1
+v -0.0 -1.983 1.1
+usemtl Patch_73_Mat_CR1_tablesEquipment
+f 122 123 124
+usemtl Patch_74_Mat_CR1_tablesEquipment
+f 123 122 125
+usemtl Patch_75_Mat_CR1_tablesEquipment
+f 125 122 126
+usemtl Patch_76_Mat_CR1_tablesEquipment
+f 126 122 127
+
+# obj26
+v -0.913 -1.983 1.1
+v -0.913 -2.798 0.0
+v -0.913 -2.798 1.1
+v -0.913 -1.983 0.0
+usemtl Patch_77_Mat_CR1_tablesEquipment
+f 128 129 130
+usemtl Patch_78_Mat_CR1_tablesEquipment
+f 129 128 131
+
+# obj27
+v -0.913 -1.983 1.1
+v -0.0 -1.983 0.0
+v -0.913 -1.983 0.0
+v -0.0 -1.983 1.1
+usemtl Patch_79_Mat_CR1_tablesEquipment
+f 132 133 134
+usemtl Patch_80_Mat_CR1_tablesEquipment
+f 133 132 135
+
+# obj28
+v -2.803 -3.648 0.0
+v -4.522 -3.053 0.0
+v -4.522 -3.648 0.0
+v -4.51 1.985 -0.0
+v -3.556 2.559 0.0
+v -2.803 -2.798 0.0
+v -2.39 2.524 0.0
+v -0.913 -2.798 0.0
+v -1.741 1.715 0.0
+v -0.913 -1.983 0.0
+v -0.0 1.598 0.0
+v -0.0 -0.012 0.0
+v -0.0 -1.983 0.0
+v -0.0 -1.488 0.0
+v -6.251 -3.053 0.0
+v -6.251 2.156 -0.0
+usemtl Patch_81_Mat_CR1_concrete
+f 136 137 138
+usemtl Patch_82_Mat_CR1_concrete
+f 137 136 139
+usemtl Patch_83_Mat_CR1_concrete
+f 139 136 140
+usemtl Patch_84_Mat_CR1_concrete
+f 140 136 141
+usemtl Patch_85_Mat_CR1_concrete
+f 140 141 142
+usemtl Patch_86_Mat_CR1_concrete
+f 142 141 143
+usemtl Patch_87_Mat_CR1_concrete
+f 142 143 144
+usemtl Patch_88_Mat_CR1_concrete
+f 144 143 145
+usemtl Patch_89_Mat_CR1_concrete
+f 144 145 146
+usemtl Patch_90_Mat_CR1_concrete
+f 146 145 147
+usemtl Patch_91_Mat_CR1_concrete
+f 147 145 148
+usemtl Patch_92_Mat_CR1_concrete
+f 150 139 151
+usemtl Patch_93_Mat_CR1_concrete
+f 139 150 137
+
+# obj29
+v -3.556 2.559 0.0
+v -4.51 1.985 1.0
+v -4.51 1.985 -0.0
+v -3.556 2.559 1.0
+usemtl Patch_94_Mat_CR1_absorber
+f 152 153 154
+usemtl Patch_95_Mat_CR1_absorber
+f 153 152 155
+
+# obj30
+v -0.0 -1.488 2.193
+v 0.571 -1.488 0.05
+v -0.0 -1.488 0.0
+v 0.571 -1.488 2.193
+usemtl Patch_96_Mat_CR1_concrete
+f 156 157 158
+usemtl Patch_97_Mat_CR1_concrete
+f 157 156 159
+
+# obj31
+v 0.676 -1.485 0.05
+v 0.571 -0.012 2.195
+v 0.676 -1.485 2.195
+v 0.571 -0.012 0.05
+usemtl Patch_98_Mat_CR1_paintedConcrete
+f 160 161 162
+usemtl Patch_99_Mat_CR1_paintedConcrete
+f 161 160 163
+
+# obj32
+v 6.102 -6.16 0.05
+v 0.571 -1.488 0.05
+v 0.571 -6.16 0.05
+v 0.571 -0.012 0.05
+v 6.102 1.903 0.05
+v 0.571 2.411 0.05
+usemtl Patch_100_Mat_CR1_paintedConcrete
+f 164 165 166
+usemtl Patch_101_Mat_CR1_paintedConcrete
+f 165 164 167
+usemtl Patch_102_Mat_CR1_paintedConcrete
+f 167 168 169
+usemtl Patch_103_Mat_CR1_paintedConcrete
+f 168 167 164
+
+# obj33
+v -3.556 2.559 0.0
+v -4.416 2.926 -0.0
+v -4.51 1.985 -0.0
+v -1.677 2.676 0.0
+v -2.39 2.524 0.0
+v -1.741 1.715 0.0
+usemtl Patch_104_Mat_CR1_concrete
+f 170 171 172
+usemtl Patch_105_Mat_CR1_concrete
+f 171 170 173
+usemtl Patch_106_Mat_CR1_concrete
+f 173 170 174
+usemtl Patch_107_Mat_CR1_concrete
+f 173 174 175
+
+# obj34
+v 0.571 -1.488 0.05
+v -0.0 -0.012 0.0
+v -0.0 -1.488 0.0
+v 0.571 -0.012 0.05
+usemtl Patch_108_Mat_CR1_concrete
+f 176 177 178
+usemtl Patch_109_Mat_CR1_concrete
+f 177 176 179
+
+# obj35
+v 0.571 -0.012 0.05
+v 0.571 0.499 2.736
+v 0.571 -0.012 2.195
+v 0.571 2.411 0.05
+v 0.571 2.411 2.736
+usemtl Patch_110_Mat_CR1_paintedConcrete
+f 180 181 182
+usemtl Patch_111_Mat_CR1_paintedConcrete
+f 181 180 183
+usemtl Patch_112_Mat_CR1_paintedConcrete
+f 181 183 184
+
+# obj36
+v 0.571 -0.012 0.05
+v -0.0 -0.012 2.195
+v -0.0 -0.012 0.0
+v 0.571 -0.012 2.195
+usemtl Patch_113_Mat_CR1_concrete
+f 185 186 187
+usemtl Patch_114_Mat_CR1_concrete
+f 186 185 188
+
+# obj37
+v 0.571 -1.488 0.05
+v 0.571 -6.16 2.736
+v 0.571 -6.16 0.05
+v 0.571 -1.488 2.193
+v 0.571 0.499 2.736
+v 0.571 -0.012 2.195
+usemtl Patch_115_Mat_CR1_paintedConcrete
+f 189 190 191
+usemtl Patch_116_Mat_CR1_paintedConcrete
+f 190 189 192
+usemtl Patch_117_Mat_CR1_paintedConcrete
+f 190 192 193
+usemtl Patch_118_Mat_CR1_paintedConcrete
+f 193 192 194
+
+# obj38
+usemtl Patch_119_Mat_CR1_tablesEquipment
+f 160 162 161
+usemtl Patch_120_Mat_CR1_tablesEquipment
+f 161 163 160
+
+# obj39
+usemtl Patch_121_Mat_CR1_absorber
+f 98 100 99
+usemtl Patch_122_Mat_CR1_absorber
+f 99 101 98
+
+# obj40
+usemtl Patch_123_Mat_CR1_absorber
+f 102 104 103
+usemtl Patch_124_Mat_CR1_absorber
+f 103 105 102
+
+# obj41
+usemtl Patch_125_Mat_CR1_absorber
+f 106 108 107
+usemtl Patch_126_Mat_CR1_absorber
+f 107 109 106
+
+# obj42
+usemtl Patch_127_Mat_CR1_absorber
+f 110 112 111
+usemtl Patch_128_Mat_CR1_absorber
+f 111 113 110
+
+# obj43
+usemtl Patch_129_Mat_CR1_absorber
+f 152 154 153
+usemtl Patch_130_Mat_CR1_absorber
+f 153 155 152

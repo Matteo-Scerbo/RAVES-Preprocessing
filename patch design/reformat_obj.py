@@ -19,6 +19,13 @@ material_names = {'CR1_DoorAngle1': {'mat0': 'tablesEquipment',
                                      'mat4': 'unknown',
                                      'mat5': 'unknown',
                                      },
+                  'CR1_simplified': {'mat0': 'paintedConcrete',
+                                     'mat1': 'paintedConcrete',
+                                     'mat2': 'concrete',
+                                     'mat3': 'tablesEquipment',
+                                     'mat4': 'absorber',
+                                     'mat5': 'paintedConcrete',
+                                     },
                   'CR2': {'mat0': 'concrete',
                           'mat1': 'windows',
                           'mat2': 'ceiling',
@@ -26,6 +33,20 @@ material_names = {'CR1_DoorAngle1': {'mat0': 'tablesEquipment',
                           'mat4': 'floor',
                           'mat5': 'unknown',
                           },
+                  'CR2_simplified': {'mat0': 'concrete',
+                                     'mat1': 'windows',
+                                     'mat2': 'plaster',
+                                     'mat3': 'floor',
+                                     'mat4': 'ceiling',
+                                     'mat5': 'unknown',
+                                     },
+                  'CR2_ubersimplified': {'mat0': 'concrete',
+                                         'mat1': 'windows',
+                                         'mat2': 'floor',
+                                         'mat3': 'plaster',
+                                         'mat4': 'ceiling',
+                                         'mat5': 'unknown',
+                                         },
                   'CR3': {'mat0': 'plaster',
                           'mat1': 'stagePanels',
                           'mat2': 'structuredPlaster',
@@ -151,7 +172,11 @@ def reformat_mesh(input_path: str, output_path: str,
                         all_patch_names = all_patch_names[:-1]
                         output_lines.remove(f'usemtl {dropped_patch_name}\n')
                     
-                    mat_name = mtl_file_name[:3] + '_' + material_names[mtl_file_name[:-4]][old_obj_mat]
+                    base_name = mtl_file_name[:-4]
+                    if 'simplified' in base_name and 'CR1' in base_name:
+                        base_name = 'CR1_simplified'
+
+                    mat_name = mtl_file_name[:3] + '_' + material_names[base_name][old_obj_mat]
                     patch_name = f'Patch_{len(all_patch_names)+1}_Mat_{mat_name}'
                     all_patch_names.append(patch_name)
                     output_lines.append(f'usemtl {patch_name}\n')
@@ -192,7 +217,11 @@ def reformat_mesh(input_path: str, output_path: str,
                     continue
                 
                 if strategy == 'naive_trng':
-                    mat_name = mtl_file_name[:3] + '_' + material_names[mtl_file_name[:-4]][old_obj_mat]
+                    base_name = mtl_file_name[:-4]
+                    if 'simplified' in base_name and 'CR1' in base_name:
+                        base_name = 'CR1_simplified'
+                    
+                    mat_name = mtl_file_name[:3] + '_' + material_names[base_name][old_obj_mat]
                     patch_name = f'Patch_{len(all_patch_names)+1}_Mat_{mat_name}'
                     all_patch_names.append(patch_name)
                     output_lines.append(f'usemtl {patch_name}\n')
@@ -224,7 +253,11 @@ def reformat_mesh(input_path: str, output_path: str,
                 if split_line[0] == 'newmtl':
                     # Beginning of a material definition.
                     old_obj_mat = split_line[1]
-                    mat_name = mtl_file_name[:3] + '_' + material_names[mtl_file_name[:-4]][old_obj_mat]
+                    base_name = mtl_file_name[:-4]
+                    if 'simplified' in base_name and 'CR1' in base_name:
+                        base_name = 'CR1_simplified'
+                    
+                    mat_name = mtl_file_name[:3] + '_' + material_names[base_name][old_obj_mat]
                     
                     # Store all visual parameters of the old definition.
                     old_parameters = list()
@@ -265,6 +298,9 @@ for root, dirs, files in os.walk(root_folder):
         if old_file == 'mesh.obj':
             # Assume it's the output of a previous reformatting.
             continue
+
+        if 'simplified' not in old_file:
+            continue
         
         if old_file[-4:] == '.obj':
             for remeshing_strategy in ['naive_obj', 'naive_trng']:
@@ -281,7 +317,7 @@ for root, dirs, files in os.walk(root_folder):
                 shutil.copy(os.path.join(root_folder, materials_file),
                             os.path.join(new_dir, 'materials.csv'))
                 
-                # visualize_mesh(new_dir)
+                visualize_mesh(new_dir)
                 
                 mesh, patch_materials, _ = load_mesh(new_dir,
                                                      assert_coplanarity=False)
@@ -294,24 +330,24 @@ for root, dirs, files in os.walk(root_folder):
                     print('\t', count, 'out of', mesh.size(count_patches=True),
                           'patches have material', mat)
                 
-                areas = mesh.area
-                perimeters = mesh.perimeter()
-                isoperimetric = 4 * np.pi * areas / perimeters**2
+                # areas = mesh.area
+                # perimeters = mesh.perimeter()
+                # isoperimetric = 4 * np.pi * areas / perimeters**2
                 
-                fig, ax = plt.subplots(2, dpi=200, figsize=(8, 4))
+                # fig, ax = plt.subplots(2, dpi=200, figsize=(8, 4))
         
-                plot_loghist(ax[0], areas, bins=100)
-                ax[0].set_title('Triangle areas')
-                ax[0].set_yscale('log')
-                ax[0].grid(True)
+                # plot_loghist(ax[0], areas, bins=100)
+                # ax[0].set_title('Triangle areas')
+                # ax[0].set_yscale('log')
+                # ax[0].grid(True)
             
-                # plot_loghist(ax[1], isoperimetric, bins=100)
-                ax[1].hist(isoperimetric, bins=100)
-                ax[1].set_title('Triangle isoperimetric quotients')
-                ax[1].set_yscale('log')
-                ax[1].grid(True)
+                # # plot_loghist(ax[1], isoperimetric, bins=100)
+                # ax[1].hist(isoperimetric, bins=100)
+                # ax[1].set_title('Triangle isoperimetric quotients')
+                # ax[1].set_yscale('log')
+                # ax[1].grid(True)
                 
-                plt.suptitle('Mesh name: ' + new_name)
+                # plt.suptitle('Mesh name: ' + new_name)
             
-                plt.tight_layout()
-                plt.show()
+                # plt.tight_layout()
+                # plt.show()
