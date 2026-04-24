@@ -10,15 +10,15 @@ if __name__ == '__main__':
 
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
-    room_names = [# 'CR1_DoorAngle1',
-                  # 'CR1_DoorAngle3',
-                  # 'CR2',
+    room_names = ['CR1_DoorAngle1_ubersimplified',
+                  'CR1_DoorAngle3_ubersimplified',
+                  'CR2_ubersimplified',
                   'CR1_DoorAngle1_simplified',
                   'CR1_DoorAngle3_simplified',
                   'CR2_simplified',
-                  'CR1_DoorAngle1_ubersimplified',
-                  'CR1_DoorAngle3_ubersimplified',
-                  'CR2_ubersimplified',
+                  'CR1_DoorAngle1',
+                  'CR1_DoorAngle3',
+                  'CR2',
                   # 'CR3',
                   # 'CR4',
                   ]
@@ -82,7 +82,10 @@ if __name__ == '__main__':
         base_name = room_name.replace('_simplified', '')
         base_name = base_name.replace('_ubersimplified', '')
 
-        for remeshing_strategy in ['naive_obj', 'split_area', 'naive_trng', 'split_area_length']:
+        for remeshing_strategy in [# 'naive_obj', 'naive_trng',
+                                   # 'split_area', 'split_area_length',
+                                   'uber_split_area', 'uber_split_area_length'
+                                   ]:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
 

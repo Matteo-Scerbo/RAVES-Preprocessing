@@ -13,7 +13,10 @@ from raves.src.utils import load_frequencies, air_impedance
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
-    mesh_strategies = ['naive_trng', 'naive_obj', 'split_area', 'split_area_length']
+    mesh_strategies = ['naive_trng', 'naive_obj',
+                       'split_area', 'split_area_length',
+                       'uber_split_area', 'uber_split_area_length'
+                       ]
 
     shown_plots = [# 'EDC',
                    # 'Spectrogram error',
@@ -46,7 +49,7 @@ if __name__ == '__main__':
     backwards_integration = False
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
-    normalization_period = 0.1
+    normalization_period = np.inf
     show_genelecs = True
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',

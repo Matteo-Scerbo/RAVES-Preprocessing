@@ -222,12 +222,11 @@ def plot_loghist(ax, data, bins):
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
-    area_threshold = 4.
     target_sample_distance = 5e-2
 
-    room_names = [# 'CR1_DoorAngle1',
-                  # 'CR1_DoorAngle3',
-                  # 'CR2',
+    room_names = ['CR1_DoorAngle1',
+                  'CR1_DoorAngle3',
+                  'CR2',
                   'CR1_DoorAngle1_simplified',
                   'CR1_DoorAngle3_simplified',
                   'CR2_simplified',
@@ -242,11 +241,18 @@ if __name__ == '__main__':
         naive_name = room_name + '_naive_obj'
         naive_dir = os.path.join(mesh_folder, room_name, naive_name)
 
-        for remeshing_strategy in ['split_area', 'split_area_length']:
+        for remeshing_strategy in [# 'split_area', 'split_area_length',
+                                   'uber_split_area', 'uber_split_area_length'
+                                   ]:
             new_name = room_name + '_' + remeshing_strategy
             new_dir = os.path.join(mesh_folder, room_name, new_name)
             os.makedirs(new_dir, exist_ok=True)
 
+            if 'uber' in remeshing_strategy:
+                area_threshold = 2.
+            else:
+                area_threshold = 4.
+            
             if 'length' in remeshing_strategy:
                 narrowness_threshold = 5.
             else:
