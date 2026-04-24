@@ -20,7 +20,8 @@ if __name__ == '__main__':
 
     shown_plots = [# 'EDC',
                    # 'Spectrogram error',
-                   'Violin plot'
+                   # 'Violin plot',
+                   'Single violin plot'
                    ]
 
     audio_sample_rate = 44.1e3
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     backwards_integration = False
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
-    normalization_period = np.inf
+    normalization_period = 0
     show_genelecs = True
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -163,6 +164,12 @@ if __name__ == '__main__':
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = ref_data.T
 
+                    # Comparing the dodecahedron recordings against the Genelec recordings, it appears that
+                    #  the dodecahedron ones are too quiet in the 2kHz octave band by a factor of 4.
+                    # Perhaps the mid and high modules did not overlap as expected?
+                    if ls_type == 'Dodecahedron':
+                        echogram[4] *= 4
+
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
                         echogram /= np.mean(echogram,
@@ -209,7 +216,7 @@ if __name__ == '__main__':
 
                     # TODO: Figure out sensible normalization.
                     echogram /= 4 * np.pi
-                    echogram /= echo_sample_rate
+                    echogram /= fs
                     # The echograms are calibrated such that, when a unit-energy signal is band-passed
                     #  to the relative octave band and then modulated by the echogram's square root, it
                     #  has the correct energy. The band-passing removes energy according to the bandwidth,
@@ -414,6 +421,11 @@ if __name__ == '__main__':
 
         # Plot the energy differences statistics.
 
+        # https://stackoverflow.com/a/58324984
+        def add_violin_label(violin, label):
+            color = violin["bodies"][0].get_facecolor().flatten()
+            violin_labels.append((mpatches.Patch(color=color), label))
+
         if 'Violin plot' in shown_plots:
             fig, axes = plt.subplots(num_listeners, num_sources,
                                      figsize=(4*num_sources, 3*num_listeners),
@@ -423,11 +435,6 @@ if __name__ == '__main__':
             # https://stackoverflow.com/a/11603806
             margin = 0.2
             width = (1 - 2*margin) / num_comparisons
-
-            # https://stackoverflow.com/a/58324984
-            def add_violin_label(violin, label):
-                color = violin["bodies"][0].get_facecolor().flatten()
-                violin_labels.append((mpatches.Patch(color=color), label))
 
             for i, lst in enumerate(listener_positions[base_name]):
                 for j, src in enumerate(source_positions[base_name]):
@@ -473,6 +480,62 @@ if __name__ == '__main__':
 
                     if (i, j) == (0, 0):
                         axes[i, j].legend(*zip(*violin_labels), ncol=2)
+
+            if backwards_integration:
+                plt.suptitle(f'{short_name} - backward-integrated energy diff')
+            else:
+                plt.suptitle(f'{short_name} - short-time-average energy diff')
+            plt.show()
+
+        if 'Single violin plot' in shown_plots:
+            fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
+
+            group_centers = np.arange(num_bands)
+            # https://stackoverflow.com/a/11603806
+            margin = 0.2
+            width = (1 - 2*margin) / num_comparisons
+
+            combined_data = dict()
+
+            for i, lst in enumerate(listener_positions[base_name]):
+                for j, src in enumerate(source_positions[base_name]):
+                    for mesh_strat, error_data in spectrogram_errors[(src, lst)].items():
+                        combined_data[mesh_strat] = defaultdict(list)
+                        for band_idx, band_error in enumerate(error_data):
+                            # The NaN entries must be filtered out for each octave band.
+                            finite_error = band_error[np.isfinite(band_error)]
+                            finite_error = list(finite_error)
+                            combined_data[mesh_strat][band_idx].extend(finite_error)
+
+            # Reset legend labels.
+            violin_labels = list()
+
+            # Reference horizontal line at 0.
+            line = plt.hlines(0, -1, num_bands+1,
+                              color='black', ls='--',
+                              linewidth=1)
+            
+            for k, (mesh_strat, error_data) in enumerate(spectrogram_errors[(src, lst)].items()):
+                positions = group_centers - 0.5 + margin + (k+0.5)*width
+                violin = ax.violinplot(combined_data[mesh_strat].values(),
+                                       positions=positions,
+                                       widths=width,
+                                       side='both',
+                                       quantiles=[[0.05, 0.5, 0.95]]*num_bands,
+                                       showextrema=False,
+                                       showmeans=False,
+                                       showmedians=False)
+
+                add_violin_label(violin, mesh_strat)
+            
+            plt.ylim(-15, 15)
+            plt.xlim(-0.5, num_bands-0.5)
+            ax.xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+
+            plt.xlabel('Octave band center [Hz]')
+            plt.ylabel('Energy diff (ART - truth) in dB')
+
+            plt.legend(*zip(*violin_labels), ncol=2)
 
             if backwards_integration:
                 plt.suptitle(f'{short_name} - backward-integrated energy diff')

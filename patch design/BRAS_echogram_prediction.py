@@ -95,7 +95,6 @@ if __name__ == '__main__':
             
             print('\nPrecomputing environment', env_name, '...\n')
 
-            # if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
             compute_ART(env_folder, assert_coplanarity=False,
                         points_per_square_meter=(100.0 if 'CR1' in base_name else 30.0),
                         rays_per_hemisphere=(10000 if 'CR1' in base_name else 1000),
