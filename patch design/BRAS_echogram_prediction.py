@@ -10,17 +10,17 @@ if __name__ == '__main__':
 
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
-    room_names = ['CR1_DoorAngle1_ubersimplified',
-                  'CR1_DoorAngle3_ubersimplified',
-                  'CR2_ubersimplified',
-                  'CR1_DoorAngle1_simplified',
-                  'CR1_DoorAngle3_simplified',
-                  'CR2_simplified',
-                  'CR1_DoorAngle1',
-                  'CR1_DoorAngle3',
-                  'CR2',
-                  # 'CR3',
-                  # 'CR4',
+    room_names = [# 'CR1_DoorAngle1_ubersimplified',
+                #   'CR1_DoorAngle3_ubersimplified',
+                #   'CR2_ubersimplified',
+                #   'CR1_DoorAngle1_simplified',
+                #   'CR1_DoorAngle3_simplified',
+                #   'CR2_simplified',
+                #   'CR1_DoorAngle1',
+                #   'CR1_DoorAngle3',
+                #   'CR2',
+                  'CR3',
+                  'CR4',
                   ]
     
     source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
@@ -82,8 +82,8 @@ if __name__ == '__main__':
         base_name = room_name.replace('_simplified', '')
         base_name = base_name.replace('_ubersimplified', '')
 
-        for remeshing_strategy in [# 'naive_obj', 'naive_trng',
-                                   # 'split_area', 'split_area_length',
+        for remeshing_strategy in ['naive_obj', 'naive_trng',
+                                   'split_area', 'split_area_length',
                                    'uber_split_area', 'uber_split_area_length'
                                    ]:
             env_name = room_name + '_' + remeshing_strategy
@@ -119,7 +119,9 @@ if __name__ == '__main__':
                                        echogram_sample_rate=echogram_sample_rate,
                                        echogram_duration=shown_durations[base_name],
                                        output_folder_path=echograms_subfolder,
-                                       multiprocess_pool_size=(4 if base_name == 'CR3' else 8),
+                                       multiprocess_pool_size=(1 if (base_name == 'CR3'
+                                                                     or  base_name == 'CR4')
+                                                               else 8),
                                        temperature=air_parameters[base_name][0],
                                        humidity=air_parameters[base_name][1],
                                        assert_coplanarity=False,

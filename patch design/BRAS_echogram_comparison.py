@@ -224,6 +224,15 @@ if __name__ == '__main__':
                     band_widths = (band_centers * band_bound) - (band_centers / band_bound)
                     echogram *= band_widths[:, None]
 
+                    # Trim the duration in each band to the length of the reference.
+                    # This is necessary for a fair comparison with backwards integration.
+                    reference = echos_per_room[short_name][(src, lst, 'Dodecahedron')]
+                    for b in range(num_bands):
+                        ref_duration_sec = np.max(np.flatnonzero(np.isfinite(reference[b]))) / downsampled_rate
+                        ref_duration_samp = int(ref_duration_sec * echo_sample_rate)
+                        ref_duration_samp = min(ref_duration_samp, echogram.shape[-1]-1)
+                        echogram[b, ref_duration_samp:] = 0
+                    
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
                         echogram /= np.mean(echogram,
@@ -345,7 +354,7 @@ if __name__ == '__main__':
 
         # Diverging colormap to differentiate positive and negative values.
         contour_levels = np.linspace(-10, 10, 21)
-        cmap = plt.get_cmap('RdBu', len(contour_levels) + 1)
+        cmap = plt.get_cmap('RdBu', len(contour_levels))
         # Set "bad" values (i.e., reference is below noise floor) to black.
         cmap.set_bad('black', 1.)
         norm = mpl.colors.BoundaryNorm(contour_levels, ncolors=cmap.N, extend='both')
@@ -411,10 +420,10 @@ if __name__ == '__main__':
             cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
             if backwards_integration:
                 cbar.ax.set_ylabel('Backward-integrated energy diff (ART - truth)',
-                                rotation=270, labelpad=15)
+                                   rotation=270, labelpad=15)
             else:
                 cbar.ax.set_ylabel('Short-time-average energy diff (ART - truth)',
-                                rotation=270, labelpad=15)
+                                   rotation=270, labelpad=15)
 
             plt.suptitle(f'Room {short_name}')
             plt.show()
