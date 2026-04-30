@@ -1,4 +1,5 @@
 import os
+import csv
 import itertools
 import numpy as np
 import matplotlib as mpl
@@ -137,6 +138,16 @@ if __name__ == '__main__':
         # Update the number of rendered bands.
         num_bands = len(band_centers)
 
+    # Load the directivity normalization for the loudspeakers.
+    with open(os.path.join(mesh_folder, 'Source_normalization', 'Genelec.csv'), mode='r', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
+        row = next(reader, None)
+        genelec_normalization = np.array(row, dtype=float)
+    with open(os.path.join(mesh_folder, 'Source_normalization', 'Dodecahedron.csv'), mode='r', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
+        row = next(reader, None)
+        dodecahedron_normalization = np.array(row, dtype=float)
+
     echos_per_room = defaultdict(dict)
     
     for short_name, full_name in full_room_names.items():
@@ -164,19 +175,24 @@ if __name__ == '__main__':
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = ref_data.T
 
-                    # Comparing the dodecahedron recordings against the Genelec recordings, it appears that
-                    #  the dodecahedron ones are too quiet in the 2kHz octave band by a factor of 4.
-                    # Perhaps the mid and high modules did not overlap as expected?
+                    # The recording setup was calibrated based on the sound pressure at 1kHz,
+                    #  in front of the loudspeaker. There are two problems with this.
+                    # First, the dodecahedron measurements have a "dip" around 2kHz, due to
+                    #  phase cancellation in the crossover between the mid and high speakers.
+                    # Second, the Genelec measurements drop in level at higher frequencies,
+                    #  because the directivity pattern leads to less radiated energy overall.
                     if ls_type == 'Dodecahedron':
-                        echogram[4] *= 4
-
+                        echogram /= dodecahedron_normalization[:, None]
+                    else:
+                        echogram /= genelec_normalization[:, None]
+                    
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
-                        echogram /= np.mean(echogram,
-                                            axis=-1)[:, None]
+                        echogram /= np.sum(echogram,
+                                           axis=-1)[:, None]
                     elif normalization_period > 0:
-                        echogram /= np.mean(echogram[:int(fs*normalization_period)],
-                                            axis=-1)[:, None]
+                        echogram /= np.sum(echogram[:int(fs*normalization_period)],
+                                           axis=-1)[:, None]
         
                     if backwards_integration:
                         # Reverse integration
@@ -193,7 +209,7 @@ if __name__ == '__main__':
                             echogram = echogram[:, :-remainder]
                         # https://stackoverflow.com/a/71800940
                         echogram = np.array(np.split(echogram, num_windows, axis=-1)
-                                            ).mean(axis=-1).T
+                                            ).sum(axis=-1).T
                         
                         # dB scale
                         echogram = 10 * np.log10(echogram)
@@ -214,9 +230,6 @@ if __name__ == '__main__':
                     assert fs == echo_sample_rate, (fs, echo_sample_rate)
                     echogram = sim_data.T
 
-                    # TODO: Figure out sensible normalization.
-                    echogram /= 4 * np.pi
-                    echogram /= fs
                     # The echograms are calibrated such that, when a unit-energy signal is band-passed
                     #  to the relative octave band and then modulated by the echogram's square root, it
                     #  has the correct energy. The band-passing removes energy according to the bandwidth,
@@ -235,11 +248,11 @@ if __name__ == '__main__':
                     
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
-                        echogram /= np.mean(echogram,
-                                            axis=-1)[:, None]
+                        echogram /= np.sum(echogram,
+                                           axis=-1)[:, None]
                     elif normalization_period > 0:
-                        echogram /= np.mean(echogram[:int(fs*normalization_period)],
-                                            axis=-1)[:, None]
+                        echogram /= np.sum(echogram[:int(fs*normalization_period)],
+                                           axis=-1)[:, None]
         
                     if backwards_integration:
                         # Reverse integration
@@ -256,7 +269,7 @@ if __name__ == '__main__':
                             echogram = echogram[:, :-remainder]
                         # https://stackoverflow.com/a/71800940
                         echogram = np.array(np.split(echogram, num_windows, axis=-1)
-                                            ).mean(axis=-1).T
+                                            ).sum(axis=-1).T
                         
                         # dB scale
                         echogram = 10 * np.log10(echogram)
@@ -354,7 +367,7 @@ if __name__ == '__main__':
 
         # Diverging colormap to differentiate positive and negative values.
         contour_levels = np.linspace(-10, 10, 21)
-        cmap = plt.get_cmap('RdBu', len(contour_levels))
+        cmap = plt.get_cmap('RdBu', len(contour_levels)+1)
         # Set "bad" values (i.e., reference is below noise floor) to black.
         cmap.set_bad('black', 1.)
         norm = mpl.colors.BoundaryNorm(contour_levels, ncolors=cmap.N, extend='both')

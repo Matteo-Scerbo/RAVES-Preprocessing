@@ -4,6 +4,7 @@ import csv
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 
 if __name__ == '__main__':
@@ -13,10 +14,12 @@ if __name__ == '__main__':
                      'Dodecahedron (mid)': os.path.join('ITA dodecahedron', 'Dode_Mid_1x1_64442_MPS_front_pole.csv'),
                      'Dodecahedron (low)': os.path.join('ITA dodecahedron', 'Dode_Low_MPS_front_pole_omnidirectional.csv'),
                      }
+    
+    output_folder = os.path.join('..', 'BRAS meshes', 'Source_normalization')
 
-    shown_freqs = [125., 250., 500., 1000., 2000., 4000., 8000., 16000.]
+    octave_bands = [125., 250., 500., 1000., 2000., 4000., 8000., 16000.]
 
-    plot_complex_response = False
+    plot_complex_response = True
     phased_dodecahedron_sum = True
 
     responses_per_ls = dict()
@@ -78,30 +81,64 @@ if __name__ == '__main__':
 
         responses_per_ls[ls_type] = responses
 
-        if plot_complex_response:
-            # Sequential colormap for amplitude values.
-            max_amp_dB = 20 * np.log10(np.max(np.abs(responses[np.isfinite(responses)])))
-            max_amp_dB = np.ceil(max_amp_dB)
-            amp_contour_levels = np.linspace(max_amp_dB-30, max_amp_dB, 11)
-            amp_cmap = plt.get_cmap('magma', len(amp_contour_levels))
-            # Set "bad" values (0, inf, nan) to neon green.
-            amp_cmap.set_bad('lime', 1.)
-            amp_norm = mpl.colors.BoundaryNorm(amp_contour_levels, ncolors=amp_cmap.N)
+    if phased_dodecahedron_sum:
+        # Consider the full dodecahedron response as a complex pressure sum.
+        responses_per_ls['Dodecahedron (sum)'] = np.sum([r for k, r in responses_per_ls.items()
+                                                        if 'Dodecahedron' in k],
+                                                        axis=0)
+    else:
+        # Consider the full dodecahedron response as a pressure amplitude sum.
+        responses_per_ls['Dodecahedron (sum)'] = np.sum([np.abs(r) for k, r in responses_per_ls.items()
+                                                        if 'Dodecahedron' in k],
+                                                        axis=0)
+    
+    # "The output chain was calibrated to a free field sound pressure of 80dB
+    #   at 1kHz and a distance of 2m in front of the loudspeaker, i.e., Φ=Θ=0◦.
+    #   Consequently, the RIR unit is Pascal."
+    # What does this mean for the dodecahedron?
+    # Components cannot be calibrated at 1kHz separately, it's only in one of their flat ranges.
+    # If all components are calibrated together from a single measurement, the microphone
+    #  will not be 2m from each component. Phase efects between the components will
+    #  complicate the overlap regions.
+    # Here, we calibrate the amplitude of the complex pressure sum of all components,
+    #  under the assumption that all components are at 2m from the microphone.
+    # For now, let's calibrate the directional responses to have unit pressure amplitude
+    #  at [0, 0, 1kHz]. We will take the "80dB at 2m" calibration into account later.
+    ref_i = int(np.flatnonzero(frequencies == 1e3)[0])
+    gene_reference_pressure = responses_per_ls['Genelec'][0, 0, ref_i]
+    # All dodecahedron components are normalized w.r.t. their (complex pressure) sum.
+    dode_reference_pressure = responses_per_ls['Dodecahedron (sum)'][0, 0, ref_i]
 
-            # Circular colormap for phase values.
-            phase_contour_levels = np.linspace(-np.pi, np.pi, 180)
-            phase_cmap = plt.get_cmap('twilight', len(phase_contour_levels) + 1)
-            phase_norm = mpl.colors.BoundaryNorm(phase_contour_levels, ncolors=phase_cmap.N)
+    responses_per_ls = {k: (r / np.abs(dode_reference_pressure)
+                            if 'Dodecahedron' in k
+                            else r / np.abs(gene_reference_pressure))
+                        for k, r in responses_per_ls.items()}
 
-            fig, axes = plt.subplots(len(shown_freqs), 2, figsize=(6, 3*len(shown_freqs)),
-                                    subplot_kw={'projection': 'polar'},
-                                    squeeze=False, constrained_layout=True)
+    if plot_complex_response:
+        # Sequential colormap for amplitude values.
+        amp_contour_levels = np.linspace(-24, 6, 11)
+        amp_cmap = plt.get_cmap('magma', len(amp_contour_levels)-1)
+        amp_norm = mpl.colors.BoundaryNorm(amp_contour_levels, ncolors=amp_cmap.N)
+
+        # Circular colormap for phase values.
+        phase_contour_levels = np.linspace(-np.pi, np.pi, 17)
+        phase_cmap = plt.get_cmap('twilight', len(phase_contour_levels)-1)
+        phase_norm = mpl.colors.BoundaryNorm(phase_contour_levels, ncolors=phase_cmap.N)
+
+        for ls_type, responses in responses_per_ls.items():
+            # Nudge true-zero values to avoid warnings from the logarithms.
+            clipped_responses = responses.copy()
+            clipped_responses[clipped_responses == 0] = 1e-30
+
+            fig, axes = plt.subplots(len(octave_bands), 2, figsize=(8, 4*len(octave_bands)),
+                                     subplot_kw={'projection': 'polar'},
+                                     squeeze=False, constrained_layout=True)
             
             plot_i = 0
             amp_cs = None
             phase_cs = None
             for f_i, freq in enumerate(frequencies):
-                if freq not in shown_freqs:
+                if freq not in octave_bands:
                     continue
 
                 axes[plot_i, 0].set_rmax(180)
@@ -115,14 +152,14 @@ if __name__ == '__main__':
 
                 amp_cs = axes[plot_i, 0].pcolormesh(np.linspace(0, 2*np.pi, 360),
                                                     np.linspace(0, 180, 181),
-                                                    20 * np.log10(np.abs(responses[:, :, f_i])).T,
+                                                    20 * np.log10(np.abs(clipped_responses[:, :, f_i])).T,
                                                     norm=amp_norm, cmap=amp_cmap)
                 axes[plot_i, 0].set_title(f'Amplitude ({freq:.0f}Hz)')
 
                 phase_cs = axes[plot_i, 1].pcolormesh(np.linspace(0, 2*np.pi, 360),
-                                                    np.linspace(0, 180, 181),
-                                                    np.angle(responses[:, :, f_i]).T,
-                                                    norm=phase_norm, cmap=phase_cmap)
+                                                      np.linspace(0, 180, 181),
+                                                      np.angle(clipped_responses[:, :, f_i]).T,
+                                                      norm=phase_norm, cmap=phase_cmap)
                 axes[plot_i, 1].set_title(f'Phase ({freq:.0f}Hz)')
 
                 plot_i += 1
@@ -140,37 +177,9 @@ if __name__ == '__main__':
                                     minor=False)
             phase_cbar.ax.set_xticks([], [], minor=True)
                 
-            plt.title(f'Directional response of loudspeaker: {ls_type}.')
+            plt.suptitle(f'Directional response of loudspeaker: {ls_type}.')
             plt.show()
     
-    if phased_dodecahedron_sum:
-        # Consider the full dodecahedron response as a complex pressure sum.
-        responses_per_ls['Dodecahedron (sum)'] = np.sum([r for k, r in responses_per_ls.items()
-                                                        if 'Dodecahedron' in k],
-                                                        axis=0)
-    else:
-        # Consider the full dodecahedron response as a pressure amplitude sum.
-        responses_per_ls['Dodecahedron (sum)'] = np.sum([np.abs(r) for k, r in responses_per_ls.items()
-                                                        if 'Dodecahedron' in k],
-                                                        axis=0)
-    
-    # "The output chain was calibrated to a free field sound pressure of 80dB at 1kHz
-    #   and a distance of 2m in front of the loudspeaker, i.e., Φ=Θ=0◦."
-    # What does this mean for the dodecahedron?
-    # If each component is calibrated at 1kHz separately, they will be all over the place.
-    # If all components are calibrated together from a single measurement, the microphone
-    #  will not be 2m from each component.
-    # Here, for simplicity, the [0, 0, 1kHz] pressure amplitude is normalized to 1.
-    # We'll worry about the pressure at 2m later.
-    # All dodecahedron components are normalized w.r.t. their (complex pressure) sum.
-    ref_i = int(np.flatnonzero(frequencies == 1e3)[0])
-    gene_reference_pressure = responses_per_ls['Genelec'][0, 0, ref_i]
-    dode_reference_pressure = responses_per_ls['Dodecahedron (sum)'][0, 0, ref_i]
-    responses_per_ls = {k: (r / np.abs(dode_reference_pressure)
-                            if 'Dodecahedron' in k
-                            else r / np.abs(gene_reference_pressure))
-                        for k, r in responses_per_ls.items()}
-
     energy_per_ls = dict()
 
     for ls_type, responses in responses_per_ls.items():
@@ -183,17 +192,86 @@ if __name__ == '__main__':
 
         energy_per_ls[ls_type] = total_energy
 
-    fig, axes = plt.subplots(squeeze=False, constrained_layout=True)
-    
+    fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
+
     for ls_type, energy in energy_per_ls.items():
-        plt.plot(frequencies, energy,
-                 label=ls_type)
+        plt.plot(frequencies, 10 * np.log10(energy),
+                 label=ls_type,
+                 marker=('+' if 'sum' in ls_type else None),
+                 linestyle=('--' if 'sum' in ls_type else '-'))
     
     plt.xscale('log')
-    plt.yscale('log')
     plt.xlim(4e1, 2e4)
-    plt.ylim(7e-2, 2e0)
-        
+    plt.xlabel('Frequency [Hz]')
+
+    plt.ylim(-18, 6)
+    plt.ylabel('Total radiated energy [dB]')
+
+    handles, labels = ax.get_legend_handles_labels()
+    handles.append(handles.pop(0))
+    labels.append(labels.pop(0))
+    plt.legend(handles, labels, ncol=2)
+    
     plt.title('Total radiated energy of loudspeaker types.')
-    plt.legend()
     plt.show()
+
+    def tick_label_func(val, pos=None):
+        if val >= len(octave_bands):
+            return 'error'
+        elif octave_bands[int(val)] < 1e3:
+            return f'{int(octave_bands[int(val)])}'
+        else:
+            return f'{int(octave_bands[int(val)] / 1e3)}k'
+
+    band_energy_per_ls = dict()
+    # third_octave_indices = (frequencies >= octave_bands[0] / np.sqrt(2)) & (frequencies <= octave_bands[0] * np.sqrt(2))
+    for ls_type, energy in energy_per_ls.items():
+        band_energy_per_ls[ls_type] = np.zeros(len(octave_bands))
+
+        for oct_i, oct_f in enumerate(octave_bands):
+            thirds = (frequencies >= oct_f / np.sqrt(2)) & (frequencies <= oct_f * np.sqrt(2))
+            assert np.count_nonzero(thirds) == 3
+            band_energy_per_ls[ls_type][oct_i] = np.mean(energy[thirds])
+
+    group_centers = np.arange(len(octave_bands))
+    # https://stackoverflow.com/a/11603806
+    margin = 0.2
+    width = (1 - 2*margin) / 2
+
+    fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
+    
+    for k, ls_type in enumerate(['Dodecahedron (sum)', 'Genelec']):
+        energy = band_energy_per_ls[ls_type]
+        positions = group_centers - 0.5 + margin + (k+0.5)*width
+        plt.bar(positions, 10 * np.log10(energy),
+                width, label=ls_type)
+
+    plt.xlim(-0.5, len(octave_bands)-0.5)
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+    plt.xlabel('Octave band center [Hz]')
+    
+    plt.ylim(-12, 0)
+    plt.ylabel('Total radiated energy [dB]')
+
+    plt.legend()
+    plt.grid(axis='y')
+    
+    plt.title('Total radiated energy of loudspeaker types.')
+    plt.show()
+
+    # A pressure of 80dB (10^4) at 2m means a pressure of ~86dB (2*10^4) at 1m.
+    # We need to calibrate the room impulse responses with respect to that.
+    # The factors we are about to save will be used to normalize the recordings'
+    #  energy in each octave band, so we need to divide them by the reference.
+    # TODO: In theory, the normalization should be reference_level^2,
+    #        but this works without the square. Why?
+    reference_level = 2e4
+    band_energy_per_ls = {k: e / reference_level
+                          for k, e in band_energy_per_ls.items()}
+
+    with open(os.path.join(output_folder, 'Genelec.csv'), mode='w') as new_file:
+        writer = csv.writer(new_file)
+        writer.writerow(band_energy_per_ls['Genelec'])
+    with open(os.path.join(output_folder, 'Dodecahedron.csv'), mode='w') as new_file:
+        writer = csv.writer(new_file)
+        writer.writerow(band_energy_per_ls['Dodecahedron (sum)'])
