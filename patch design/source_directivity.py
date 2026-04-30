@@ -16,20 +16,27 @@ if __name__ == '__main__':
 
     shown_freqs = [125., 250., 500., 1000., 2000., 4000., 8000., 16000.]
 
-    plot_individual_energy = False
     plot_complex_response = False
+    phased_dodecahedron_sum = True
 
-    energy_per_ls = dict()
+    responses_per_ls = dict()
 
+    frequencies = None
     for ls_type, ls_path in ls_type_paths.items():
         file_path = os.path.join(root_folder, ls_path)
         with open(file_path, mode='r', newline='') as csvfile:
             reader = csv.reader(csvfile, skipinitialspace=True)
 
             header = next(reader)
-            frequencies = np.array([float(f)
-                                    for f in header[1:]
-                                    if f!= ''])
+            if frequencies is None:
+                frequencies = np.array([float(f)
+                                        for f in header[1:]
+                                        if f!= ''])
+            else:
+                assert np.allclose(frequencies,
+                                   np.array([float(f)
+                                             for f in header[1:]
+                                             if f!= '']))
 
             responses = np.zeros((360, 181, len(frequencies)),
                                  dtype=complex)
@@ -38,16 +45,12 @@ if __name__ == '__main__':
                 match = re.match(r'P(\d+)T(\d+)', row[0])
                 if match is None:
                     if row[0] == 'f in Hz':
-                        if np.allclose(frequencies, np.array([float(f)
-                                                              for f in row[1:]
-                                                              if f!= ''])):
-                            continue
-                        else:
-                            print('Mismatched frequencies', row)
-                            break
+                        assert np.allclose(frequencies, np.array([float(f)
+                                                                  for f in row[1:]
+                                                                  if f!= '']))
+                        continue
                     else:
-                        print('Bad format:', row[0])
-                        break
+                        raise ValueError(f'Bad format: {row[0]}')
 
                 phi = int(match.group(1))
                 theta = int(match.group(2))
@@ -73,32 +76,8 @@ if __name__ == '__main__':
         #           f'({num_valid} / {max_valid})')
         responses[~valid_samples] = 0
 
-        energy_responses = np.abs(responses) ** 2
-        # Since the angular sampling of both phi and theta is uniform,
-        #  the samples need to be normalized by the (co)sine of theta before integration.
-        energy_responses *= np.sin(np.linspace(0, np.pi, 181))[None, :, None]
-        # Take the mean rather than the sum, to normalize for the number of measurements.
-        total_energy = energy_responses.mean(axis=(0, 1))
+        responses_per_ls[ls_type] = responses
 
-        energy_per_ls[ls_type] = total_energy
-
-        if plot_individual_energy:
-            fig, axes = plt.subplots(squeeze=False, constrained_layout=True)
-            
-            plt.plot(frequencies, total_energy)
-            
-            plt.xscale('log')
-            plt.yscale('log')
-
-            low_lim = np.min(total_energy[frequencies > 50])
-            low_lim = 10 ** (np.floor(np.log10(low_lim) * 10 - 1) / 10)
-            high_lim = np.max(total_energy[frequencies > 50])
-            high_lim = 10 ** (np.ceil(np.log10(high_lim) * 10 + 1) / 10)
-            plt.ylim(low_lim, high_lim)
-                
-            plt.title(f'Total radiated energy of loudspeaker: {ls_type}.')
-            plt.show()
-        
         if plot_complex_response:
             # Sequential colormap for amplitude values.
             max_amp_dB = 20 * np.log10(np.max(np.abs(responses[np.isfinite(responses)])))
@@ -164,9 +143,45 @@ if __name__ == '__main__':
             plt.title(f'Directional response of loudspeaker: {ls_type}.')
             plt.show()
     
-    dode_energy_sum = np.sum([e for k, e in energy_per_ls.items()
-                              if 'Dodecahedron' in k],
-                             axis=0)
+    if phased_dodecahedron_sum:
+        # Consider the full dodecahedron response as a complex pressure sum.
+        responses_per_ls['Dodecahedron (sum)'] = np.sum([r for k, r in responses_per_ls.items()
+                                                        if 'Dodecahedron' in k],
+                                                        axis=0)
+    else:
+        # Consider the full dodecahedron response as a pressure amplitude sum.
+        responses_per_ls['Dodecahedron (sum)'] = np.sum([np.abs(r) for k, r in responses_per_ls.items()
+                                                        if 'Dodecahedron' in k],
+                                                        axis=0)
+    
+    # "The output chain was calibrated to a free field sound pressure of 80dB at 1kHz
+    #   and a distance of 2m in front of the loudspeaker, i.e., Φ=Θ=0◦."
+    # What does this mean for the dodecahedron?
+    # If each component is calibrated at 1kHz separately, they will be all over the place.
+    # If all components are calibrated together from a single measurement, the microphone
+    #  will not be 2m from each component.
+    # Here, for simplicity, the [0, 0, 1kHz] pressure amplitude is normalized to 1.
+    # We'll worry about the pressure at 2m later.
+    # All dodecahedron components are normalized w.r.t. their (complex pressure) sum.
+    ref_i = int(np.flatnonzero(frequencies == 1e3)[0])
+    gene_reference_pressure = responses_per_ls['Genelec'][0, 0, ref_i]
+    dode_reference_pressure = responses_per_ls['Dodecahedron (sum)'][0, 0, ref_i]
+    responses_per_ls = {k: (r / np.abs(dode_reference_pressure)
+                            if 'Dodecahedron' in k
+                            else r / np.abs(gene_reference_pressure))
+                        for k, r in responses_per_ls.items()}
+
+    energy_per_ls = dict()
+
+    for ls_type, responses in responses_per_ls.items():
+        energy_responses = np.abs(responses) ** 2
+        # Since the angular sampling of both phi and theta is uniform,
+        #  the samples need to be normalized by the (co)sine of theta before integration.
+        energy_responses *= np.sin(np.linspace(0, np.pi, 181))[None, :, None]
+        # Take the mean rather than the sum, to normalize for the number of measurements.
+        total_energy = energy_responses.mean(axis=(0, 1))
+
+        energy_per_ls[ls_type] = total_energy
 
     fig, axes = plt.subplots(squeeze=False, constrained_layout=True)
     
@@ -174,11 +189,10 @@ if __name__ == '__main__':
         plt.plot(frequencies, energy,
                  label=ls_type)
     
-    plt.plot(frequencies, dode_energy_sum,
-             label='Dodecahedron (sum)')
-    
     plt.xscale('log')
     plt.yscale('log')
+    plt.xlim(4e1, 2e4)
+    plt.ylim(7e-2, 2e0)
         
     plt.title('Total radiated energy of loudspeaker types.')
     plt.legend()
