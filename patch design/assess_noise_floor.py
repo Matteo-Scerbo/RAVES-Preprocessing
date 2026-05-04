@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read, write
+from scipy.stats import linregress
 from scipy.signal import butter, sosfiltfilt
 from scipy.signal.windows import get_window
 
@@ -13,9 +14,7 @@ if __name__ == '__main__':
 
     audio_sample_rate = 44.1e3
     audio_nyquist = audio_sample_rate / 2
-    window_length = int(0.1 * audio_sample_rate)
-    # The responses are trimmed when they reach these many dB above the detected noise floor.
-    cutoff_before_floor = 12
+    window_length = int(0.15 * audio_sample_rate)
 
     window = get_window('hann', window_length, fftbins=False)
     window /= np.sum(window)
@@ -26,12 +25,12 @@ if __name__ == '__main__':
                        'CR3': 'CR3 medium room (chamber music hall)',
                        'CR4': 'CR4 large room (auditorium)',
                        }
-    source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
-                                        'LS2': [-1.77, -2.28, 1.189],
-                                        },
+    source_positions = {'CR1_DoorAngle1': {# 'LS1': [1.5, -2.225, 1.239],
+                                           'LS2': [-1.77, -2.28, 1.189],
+                                           },
                         'CR1_DoorAngle3': {'LS1': [1.5, -2.225, 1.239],
-                                        'LS2': [-1.77, -2.28, 1.189],
-                                        },
+                                           'LS2': [-1.77, -2.28, 1.189],
+                                           },
                         'CR2': {'LS1': [0.931, -2.547, 1.23],
                                 'LS2': [0.119, 2.88, 1.23],
                                 },
@@ -145,87 +144,94 @@ if __name__ == '__main__':
                         smooth_energy = np.apply_along_axis(lambda m: np.convolve(m, window),
                                                             arr=band_energy, axis=-1)
                         
+                        # dB scale (for linear regression). Add an offset to avoid true zeros.
+                        smooth_energy_dB = 10 * np.log10(smooth_energy + 1e-20)
+
+                        # Peak energy (to disregard low-energy onset).
+                        start_of_decay = np.argmax(smooth_energy_dB)
+                        
                         # Start by assuming there is no detectable noise floor.
                         noise_floor = None
+                        noise_floor_onset = len(smooth_energy_dB) - 1
+
+                        time_axis = np.arange(len(smooth_energy))
+
+                        plt.plot(time_axis / audio_sample_rate,
+                                 smooth_energy_dB,
+                                 label=f'{band_centers[b]}Hz')
                         
-                        # Consider possible starting times for the examined range, in 50ms increments.
-                        for start_of_range in range(0, len(smooth_energy), int(0.05*audio_sample_rate)):
-                            examined_range_duration = len(smooth_energy) - start_of_range
-                            if examined_range_duration / audio_sample_rate < 0.05:
-                                # A range of less than 50ms is considered insufficient to detect a noise floor.
+                        for iteration in range(100):
+                            regression = linregress(time_axis[start_of_decay:],
+                                                    smooth_energy_dB[start_of_decay:])
+
+                            linear_approx = regression.intercept + regression.slope * time_axis
+                            error = smooth_energy_dB - linear_approx
+
+                            if np.max(error[start_of_decay:]) < 3:
                                 break
 
-                            # Consider the energy values from 'start_of_range' onwards.
-                            late_values = smooth_energy[start_of_range:]
-                            # Raise true-zero values to the lowest nonzero value, to avoid errors.
-                            late_values = late_values.clip(np.min(late_values[late_values != 0]))
-                            # dB scale.
-                            late_values = 10 * np.log10(late_values)
+                            zero_crossings = np.flatnonzero(np.diff(np.sign(error)) != 0)
+                            # upward_zero_crossings = np.flatnonzero(np.diff(np.sign(error)) > 0)
+                            # downward_zero_crossings = np.flatnonzero(np.diff(np.sign(error)) < 0)
 
-                            # In some responses, the energy appears to rise towards the end of the response.
-                            # This is assumed to be an artefact and is removed.
-                            # If energy is higher in the later half of the examined range than in the earlier half,
-                            #  the average energy in the range is taken to be the noise floor.
-                            range_midpoint = start_of_range + int(examined_range_duration / 2)
-                            if np.sum(smooth_energy[range_midpoint:]) > np.sum(smooth_energy[start_of_range:range_midpoint]):
-                                noise_floor = int(np.mean(late_values))
-                                break
-
-                            # Make a histogram of the energy values, with bins which are 1 dB wide.
-                            hist, bin_edges = np.histogram(late_values, bins=150,
-                                                           range=(-150.5, -0.5))
-                            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-
-                            # Note: hist[hist_peak] is the most common energy value in the examined range.
-                            hist_peak = np.argmax(hist)
+                            # plt.plot(time_axis / audio_sample_rate,
+                            #          linear_approx)
+                            # plt.plot(time_axis[upward_zero_crossings] / audio_sample_rate,
+                            #          linear_approx[upward_zero_crossings],
+                            #          marker='^', ls=':',
+                            #          color=plt.gca().lines[-1].get_color())
+                            # plt.plot(time_axis[downward_zero_crossings] / audio_sample_rate,
+                            #          linear_approx[downward_zero_crossings],
+                            #          marker='v', ls=':',
+                            #          color=plt.gca().lines[-1].get_color())
                             
-                            # Count the duration of time during which the energy is within +-5dB of the most common value.
-                            within_10dB_of_peak = range(hist_peak-6, hist_peak+5)
-                            noise_duration = np.sum(hist[within_10dB_of_peak])
-                            # Compare that with the total duration of time of the examined range.
-                            noise_percentage = 100 * noise_duration / examined_range_duration
-
-                            if noise_percentage > 95:
-                                # If this condition is satisfied, it means that the response energy
-                                #  stays within a 10dB range for more than 95% of the examined range.
-                                # In other words, the energy is "flat" for a prolonged period.
-                                # The middle of the "flat" energy range is taken to be the noise floor.
-                                noise_floor = int(bin_centers[hist_peak])
+                            if len(zero_crossings) == 0:
                                 break
 
+                            potential_onset = zero_crossings[-1]
+
+                            if potential_onset - start_of_decay < 0.1 * audio_sample_rate:
+                                # The response would be too short, something went wrong.
+                                break
+
+                            noise_floor_onset = potential_onset
+                            noise_floor = linear_approx[noise_floor_onset]
+
+                            smooth_energy_dB = smooth_energy_dB[:noise_floor_onset]
+                            time_axis = time_axis[:noise_floor_onset]
+                        
+                        print(iteration, np.max(error[start_of_decay:]))
+                        
                         if noise_floor is None:
                             # No noise floor was detected. The entire duration of the echogram is preserved.
                             echogram[b] = band_energy
                         else:
                             # A noise floor was detected. The echogram is truncated before the floor is reached.
+                            echogram[b, :noise_floor_onset-1] = band_energy[:noise_floor_onset-1]
 
-                            # Find the indices of all samples below the noise floor.
-                            low_energy_indices = np.flatnonzero(smooth_energy <= 10**((noise_floor + cutoff_before_floor)/10))
-                            # Drop the indices earlier than the peak energy (response onset).
-                            low_energy_indices = low_energy_indices[low_energy_indices > np.argmax(smooth_energy)]
-                            # Find the earliest sample below the noise floor.
-                            max_valid_sample = np.min(low_energy_indices)
+                        plt.scatter(noise_floor_onset / audio_sample_rate,
+                                    smooth_energy_dB[noise_floor_onset-1],
+                                    marker='v', label=f'{(noise_floor_onset / audio_sample_rate):.2f}s',
+                                    color=plt.gca().lines[-1].get_color())
+                        
+                        # print(f'Chosen cutoff for {band_centers[b]:.0f}Hz: {(noise_floor_onset / audio_sample_rate):.2f}s.')
 
-                            echogram[b, :max_valid_sample] = band_energy[:max_valid_sample]
-                            smooth_energy[max_valid_sample:] = 0
-
-                        # plt.plot(np.arange(len(smooth_energy)) / audio_sample_rate,
-                        #          smooth_energy,
-                        #          label=(f'{band_centers[b]}Hz -> {noise_floor}dB'
-                        #                 if noise_floor is not None else
-                        #                 f'{band_centers[b]}Hz -> None'))
-                    
                     # Truncate to the longest nonzero value.
                     max_valid_sample = np.max(np.nonzero(echogram)[-1])
                     echogram = echogram[:, :max_valid_sample]
 
-                    # plt.yscale('log')
                     # plt.xlim(0, max_valid_sample / audio_sample_rate)
-                    # plt.ylim(10**(-9), None)
-                    # plt.title(short_name)
-                    # plt.tight_layout()
-                    # plt.legend()
-                    # plt.show()
+                    plt.ylim(-90, None)
+                    plt.title(short_name)
+                    plt.tight_layout()
+                    plt.legend(ncol=2)
+                    plt.show()
+
+                    break
 
                     # Save the "masked" echogram.
-                    write(echo_path, int(audio_sample_rate), echogram.T)
+                    # write(echo_path, int(audio_sample_rate), echogram.T)
+
+                break
+            break
+        break
