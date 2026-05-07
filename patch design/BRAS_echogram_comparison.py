@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     plotted_band_idx = 3
     plotted_time_range = 2.5
-    backwards_integration = True
+    backwards_integration = False
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
     normalization_period = 0
@@ -195,10 +195,10 @@ if __name__ == '__main__':
                     max_duration = (max_duration // audio_stride) * audio_stride
                     if echogram.shape[-1] >= max_duration:
                         # print('Reference longer than simulation:', short_name, np.round(echogram.shape[-1] / audio_sample_rate, 2))
-                        echogram = echogram[:, :max_duration-1]
+                        echogram = echogram[:, :max_duration]
                     elif echogram.shape[-1] < max_duration:
                         echogram = np.pad(echogram, ((0, 0), (0, max_duration - echogram.shape[-1])))
-
+                    
                     # The recording setup was calibrated based on the sound pressure at 1kHz,
                     #  in front of the loudspeaker. There are two problems with this.
                     # First, the dodecahedron measurements have a "dip" around 2kHz, due to
@@ -328,15 +328,25 @@ if __name__ == '__main__':
         num_sources = len(source_positions[base_name])
         num_listeners = len(listener_positions[base_name])
 
-        # if 'CR4' in short_name:
+        if 'simplified' in short_name:
+            continue
+        # if 'ubersimplified' in short_name:
         #     continue
-        # if 'CR1' not in short_name:
+        if 'CR1' in short_name:
+            continue
+        # if 'DoorAngle1' in short_name:
         #     continue
-        # if 'simplified' not in short_name:
+        # if 'DoorAngle3' in short_name:
         #     continue
+        # if 'CR2' in short_name:
+        #     continue
+        # if 'CR3' in short_name:
+        #     continue
+        if 'CR4' in short_name:
+            continue
         
         if 'EDC' in shown_plots:
-            fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
+            fig, ax = plt.subplots(dpi=100, figsize=(9, 6))
 
             for (src, lst, key), echogram in echos_dict.items():
                 time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
@@ -516,7 +526,10 @@ if __name__ == '__main__':
                     
                     axes[i, j].set_title(f'{src} {lst}')
 
-                    axes[i, j].set_ylim(-15, 15)
+                    if backwards_integration:
+                        axes[i, j].set_ylim(-15, 15)
+                    else:
+                        axes[i, j].set_ylim(-15, 15)
                     axes[i, j].set_xlim(-0.5, num_bands-0.5)
                     axes[i, j].xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
 
@@ -539,7 +552,7 @@ if __name__ == '__main__':
             plt.show()
 
         if 'Single violin plot' in shown_plots:
-            fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
+            fig, ax = plt.subplots(dpi=100, figsize=(9, 6))
 
             group_centers = np.arange(num_bands)
             # https://stackoverflow.com/a/11603806
@@ -582,7 +595,10 @@ if __name__ == '__main__':
                                           strategy_alias[mesh_strat]),
                                  violin_labels)
             
-            plt.ylim(-15, 15)
+            if backwards_integration:
+                plt.ylim(-15, 15)
+            else:
+                plt.ylim(-20, 20)
             plt.xlim(-0.5, num_bands-0.5)
             ax.xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
 
