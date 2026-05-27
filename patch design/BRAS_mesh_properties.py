@@ -116,8 +116,8 @@ if __name__ == '__main__':
                        # 'CR4': 'CR4 large room (auditorium)',
                        }
 
-    strategy_aliases = {'naive_trng': 'Bad triangulation',
-                        'naive_obj': 'Largest patches possible',
+    strategy_aliases = {'naive_obj': 'Largest patches possible',
+                        'naive_trng': 'Bad triangulation',
                         'split_area': r'Max area $4\text{m}^2$',
                         'split_area_length': r'Max area $4\text{m}^2$, compact',
                         'uber_split_area': r'Max area $2\text{m}^2$',

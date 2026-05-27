@@ -26,14 +26,10 @@ def remove_outliers(x, outlier_const):
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
-    mesh_strategies = ['naive_trng', 'naive_obj',
-                       'split_area', 'split_area_length',
-                       'uber_split_area', 'uber_split_area_length'
-                       ]
 
-    shown_plots = [# 'EDC',
-                   # 'Spectrogram error',
-                   # 'Violin plot',
+    shown_plots = ['EDC',
+                   'Spectrogram error',
+                   'Violin plot',
                    'Single violin plot'
                    ]
 
@@ -58,26 +54,29 @@ if __name__ == '__main__':
     echo_stride = int(echo_sample_rate / downsampled_rate)
     audio_nyquist = audio_sample_rate / 2
 
-    plotted_band_idx = 3
-    plotted_time_range = 2.5
+    edc_src_lst_band = ('LS1', 'MP1', 3)
+    plotted_time_range = 1.5
+    plotted_band_range = (2, 6)
     backwards_integration = True
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
-    normalization_period = np.inf
+    normalization_period = 0
     # Normalize each frequency band separately, or all together.
     band_wise_norm = False
     outlier_constant = 1e0
-    show_genelecs = True
     directivity_normalization = False
 
-    full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+    # reference_name = 'Dodecahedron'
+    reference_name = 'Genelec_1'
+
+    full_room_names = {# 'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       # 'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       # 'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       # 'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR2': 'CR2 small room (seminar room)',
-                       'CR2_simplified': 'CR2 small room (seminar room)',
+                       # 'CR2': 'CR2 small room (seminar room)',
+                       # 'CR2_simplified': 'CR2 small room (seminar room)',
                        # 'CR2_ubersimplified': 'CR2 small room (seminar room)',
                        'CR3': 'CR3 medium room (chamber music hall)',
                        # 'CR4': 'CR4 large room (auditorium)',
@@ -130,16 +129,6 @@ if __name__ == '__main__':
                       'CR3': (22.4, 40.9),
                       'CR4': (20.9, 37.5),
                       }
-    loudspeaker_types = ['Dodecahedron',
-                         'Genelec8020c_LSorientation-negativeX',
-                         'Genelec8020c_LSorientation-negativeY',
-                         'Genelec8020c_LSorientation-positiveX',
-                         'Genelec8020c_LSorientation-positiveY',
-                         'Genelec8020c_LSorientation-01',
-                         'Genelec8020c_LSorientation-02',
-                         'Genelec8020c_LSorientation-03',
-                         'Genelec8020c_LSorientation-04'
-                         ]
     shown_durations = {'CR1_DoorAngle1': 4.0,
                        'CR1_DoorAngle3': 4.0,
                        'CR2': 2.5,
@@ -147,8 +136,18 @@ if __name__ == '__main__':
                        'CR4': 2.5,
                        }
 
-    strategy_aliases = {'naive_trng': 'Bad triangulation',
-                        'naive_obj': 'Largest patches possible',
+    loudspeaker_aliases = {'Genelec8020c_LSorientation-negativeX': 'Genelec_1',
+                           'Genelec8020c_LSorientation-negativeY': 'Genelec_2',
+                           'Genelec8020c_LSorientation-positiveX': 'Genelec_3',
+                           'Genelec8020c_LSorientation-positiveY': 'Genelec_4',
+                           'Genelec8020c_LSorientation-01': 'Genelec_1',
+                           'Genelec8020c_LSorientation-02': 'Genelec_2',
+                           'Genelec8020c_LSorientation-03': 'Genelec_3',
+                           'Genelec8020c_LSorientation-04': 'Genelec_4',
+                           'Dodecahedron': 'Dodecahedron'
+                           }
+    strategy_aliases = {'naive_obj': 'Largest patches possible',
+                        'naive_trng': 'Bad triangulation',
                         'split_area': r'Max area $4\text{m}^2$',
                         'split_area_length': r'Max area $4\text{m}^2$, compact',
                         'uber_split_area': r'Max area $2\text{m}^2$',
@@ -197,8 +196,8 @@ if __name__ == '__main__':
         
         for src in source_positions[base_name].keys():
             for lst in listener_positions[base_name].keys():
-                for ls_type in loudspeaker_types:
-                    rir_name = '_'.join([rir_prefix, src, lst, ls_type])
+                for ls_long, ls_short in loudspeaker_aliases.items():
+                    rir_name = '_'.join([rir_prefix, src, lst, ls_long])
                     ref_echo_path = os.path.join(ref_echo_subfolder, rir_name + '.wav')
                     
                     try:
@@ -223,10 +222,13 @@ if __name__ == '__main__':
                         #  phase cancellation in the crossover between the mid and high speakers.
                         # Second, the Genelec measurements drop in level at higher frequencies,
                         #  because the directivity pattern leads to less radiated energy overall.
-                        if ls_type == 'Dodecahedron':
+                        if ls_short == 'Dodecahedron':
                             echogram /= dodecahedron_normalization[:, None]
                         else:
                             echogram /= genelec_normalization[:, None]
+                    else:
+                        # TODO: Explain
+                        echogram *= 2 * audio_sample_rate
 
                     # Trim the duration to a multiple of the downsampling stride.
                     # This is necessary to match the truncation of the simulations.
@@ -273,9 +275,9 @@ if __name__ == '__main__':
                         # dB scale
                         echogram = 10 * np.log10(echogram)
                     
-                    echos_per_room[short_name][(src, lst, ls_type)] = echogram
+                    echos_per_room[short_name][(src, lst, ls_short)] = echogram
 
-                for mesh_strat in mesh_strategies:
+                for mesh_strat in strategy_aliases.keys():
                     env_name = short_name + '_' + mesh_strat
                     env_folder = os.path.join(mesh_folder, short_name, env_name)
                     sim_echo_subfolder = os.path.join(env_folder, 'Echograms')
@@ -297,7 +299,7 @@ if __name__ == '__main__':
 
                     # Trim the duration in each band to the length of the reference.
                     # This is necessary for a fair comparison with backwards integration.
-                    reference = echos_per_room[short_name][(src, lst, 'Dodecahedron')]
+                    reference = echos_per_room[short_name][(src, lst, reference_name)]
                     for b in range(num_bands):
                         # Note: the reference was converted to dB, the zero values are now NaN.
                         ref_duration = np.max(np.flatnonzero(np.isfinite(reference[b])))
@@ -349,15 +351,14 @@ if __name__ == '__main__':
         base_name = base_name.replace('_ubersimplified', '')
 
         # Count the number of src/lst configuration, i.e., reference echograms.
-        sl_configs = [(s, l) for s, l, k in echos_dict
-                      if k == 'Dodecahedron']
-        num_sl_configs = len(sl_configs)
+        num_sl_configs = len([(s, l) for s, l, k in echos_dict
+                              if k == reference_name])
         if num_sl_configs == 0:
             print(f'No reference echograms were found for room {short_name}.')
             continue
         # Count the number of echograms that were loaded, other than the reference ones.
         num_sim_echos = len([k for s, l, k in echos_dict
-                             if k != 'Dodecahedron' and 'Genelec' not in k])
+                             if 'Dodecahedron' not in k and 'Genelec' not in k])
         if num_sim_echos == 0:
             print(f'No ART echograms were found for room {short_name}.')
             continue
@@ -369,55 +370,43 @@ if __name__ == '__main__':
             fig, ax = plt.subplots(dpi=100, figsize=(9, 6))
 
             for (src, lst, key), echogram in echos_dict.items():
+                if src != edc_src_lst_band[0]:
+                    continue
+                if lst != edc_src_lst_band[1]:
+                    continue
+
                 time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
 
-                if key == 'Dodecahedron':
-                    plt.plot(time_axis, echogram[plotted_band_idx],
-                             label='reference', ls=':')
-                elif 'Genelec' in key:
-                    if not show_genelecs:
-                        continue
-                    # Genelecs: match color of Dodecahedron, don't add new labels
-                    plt.plot(time_axis, echogram[plotted_band_idx],
-                             color=plt.gca().lines[-1].get_color(),
-                             ls=':')
-                else:
-                    plt.plot(time_axis, echogram[plotted_band_idx],
-                             label=strategy_aliases[key])
+                plt.plot(time_axis, echogram[edc_src_lst_band[2]],
+                            label=(key
+                                   if 'Genelec' in key or 'Dodecahedron' in key else
+                                   strategy_aliases[key]))
+                
+                if key == reference_name:
+                    bottom = echogram[edc_src_lst_band[2], int(downsampled_rate * plotted_time_range)]
 
             plt.xlim(0, plotted_time_range)
             if backwards_integration and np.isinf(normalization_period):
                 plt.ylim(-60, 0)
+            else:
+                plt.ylim(bottom, None)
             
-            # https://stackoverflow.com/a/10101532
-            def flip(items, ncol):
-                return itertools.chain(*[items[i::ncol]
-                                        for i in range(ncol)])
-            handles, labels = ax.get_legend_handles_labels()
-            plt.legend(flip(handles, len(mesh_strategies)+1),
-                       flip(labels, len(mesh_strategies)+1),
-                       ncol=len(mesh_strategies)+1)
+            plt.legend(ncol=3)
 
-            plt.title(f'Room {room_aliases[short_name]}; {band_centers[plotted_band_idx]}Hz octave band.')
+            plt.title(f'Room {room_aliases[short_name]}; {band_centers[edc_src_lst_band[2]]}Hz octave band.')
             plt.tight_layout()
             plt.show()
-
+        
         # Plot the energy differences.
 
         spectrogram_errors = defaultdict(dict)
-        for i, (src, lst) in enumerate(sl_configs):
-            reference = echos_dict[(src, lst, 'Dodecahedron')]
-            for j, mesh_strat in enumerate(mesh_strategies):
-                if (src, lst, mesh_strat) in echos_dict:
-                    error = echos_dict[(src, lst, mesh_strat)] - reference
-                    spectrogram_errors[(src, lst)][mesh_strat] = error
-            
-            if show_genelecs:
-                genelec_errors = [echo - reference
-                                  for (s, l, k), echo in echos_dict.items()
-                                  if 'Genelec' in k and (s, l) == (src, lst)]
-                genelec_mean_error = np.mean(genelec_errors, axis=0)
-                spectrogram_errors[(src, lst)]['Genelec'] = genelec_mean_error
+        for (src, lst, strat), echo in echos_dict.items():
+            if strat == reference_name:
+                continue
+
+            reference = echos_dict[(src, lst, reference_name)]
+            error = echo - reference
+            spectrogram_errors[(src, lst)][strat] = error
         
         num_comparisons = max([len(d) for d in spectrogram_errors.values()])
 
@@ -442,22 +431,16 @@ if __name__ == '__main__':
                                      squeeze=False, constrained_layout=True)
 
             cs = None
-            for i, (src, lst) in enumerate(sl_configs):
+            for i, ((src, lst), spec_dict) in enumerate(spectrogram_errors.items()):
                 X, Y = np.meshgrid(np.arange(reference.shape[-1]) / downsampled_rate,
                                    np.arange(len(band_centers)))
 
-                for j, mesh_strat in enumerate(mesh_strategies):
-                    if (src, lst, mesh_strat) in echos_dict:
-                        error = spectrogram_errors[(src, lst)][mesh_strat]
+                for j, (strat, error) in enumerate(spec_dict.items()):
+                    cs = axes[i, j].pcolormesh(X, Y, error, norm=norm, cmap=cmap)
 
-                        cs = axes[i, j].pcolormesh(X, Y, error, norm=norm, cmap=cmap)
-                        
-                        axes[i, j].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
-                    else:
-                        axes[i, j].text(0.5, plotted_time_range/2, 'MISSING ART DATA',
-                                        ha='center', va='center')
-                    
-                    axes[i, j].set_title(f'{src} {lst} {mesh_strat}')
+                    axes[i, j].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+
+                    axes[i, j].set_title(f'{src} {lst} {strat}')
                     axes[i, j].set_xlim(0, plotted_time_range)
                     if i == num_sl_configs-1:
                         axes[i, j].set_xlabel('Time [s]')
@@ -467,25 +450,7 @@ if __name__ == '__main__':
                         axes[i, j].set_ylabel('Octave band center [Hz]')
                     else:
                         axes[i, j].set_ylabel('')
-                
-                if 'Genelec' in spectrogram_errors[(src, lst)]:
-                    error = spectrogram_errors[(src, lst)]['Genelec']
-
-                    cs = axes[i, -1].pcolormesh(X, Y, error, norm=norm, cmap=cmap)
-                    
-                    axes[i, -1].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
-                elif show_genelecs:
-                    axes[i, -1].text(0.5, plotted_time_range/2, 'MISSING GENELEC DATA',
-                                     ha='center', va='center')
-                
-                axes[i, -1].set_title(f'{src} {lst} Genelec')
-                axes[i, -1].set_xlim(0, plotted_time_range)
-                if i == num_sl_configs-1:
-                    axes[i, -1].set_xlabel('Time [s]')
-                else:
-                    axes[i, -1].set_xlabel('')
-                axes[i, -1].set_ylabel('')
-
+            
             cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
             if backwards_integration:
                 cbar.ax.set_ylabel('Backward-integrated energy diff (ART - truth)',
@@ -536,8 +501,8 @@ if __name__ == '__main__':
                                                        positions=positions,
                                                        widths=width-mid_margin,
                                                        side='both',
-                                                       quantiles=[[0.05, 0.5, 0.95]]*num_bands,
-                                                       showextrema=False,
+                                                       # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
+                                                       showextrema=True,
                                                        showmeans=False,
                                                        showmedians=False)
 
@@ -546,7 +511,7 @@ if __name__ == '__main__':
                             pc.set_alpha(0.5)
 
                         add_violin_label(violin, (mesh_strat
-                                                  if 'Genelec' in mesh_strat else
+                                                  if 'Genelec' in mesh_strat or 'Dodecahedron' in mesh_strat else
                                                   strategy_aliases[mesh_strat]),
                                          violin_labels)
                     
@@ -556,7 +521,7 @@ if __name__ == '__main__':
                         axes[i, j].set_ylim(-15, 15)
                     else:
                         axes[i, j].set_ylim(-15, 15)
-                    axes[i, j].set_xlim(-0.5, num_bands-0.5)
+                    axes[i, j].set_xlim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
                     axes[i, j].xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
 
                     if i == num_listeners-1:
@@ -568,8 +533,8 @@ if __name__ == '__main__':
                     else:
                         axes[i, j].set_ylabel('')
 
-                    if (i, j) == (0, 0):
-                        axes[i, j].legend(*zip(*violin_labels), ncol=2)
+                    if (i, j) == (0, num_sources-1):
+                        axes[i, j].legend(*zip(*violin_labels), ncol=3)
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
@@ -613,8 +578,8 @@ if __name__ == '__main__':
                                        positions=positions,
                                        widths=width-mid_margin,
                                        side='both',
-                                       quantiles=[[0.05, 0.5, 0.95]]*num_bands,
-                                       showextrema=False,
+                                       # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
+                                       showextrema=True,
                                        showmeans=False,
                                        showmedians=False)
 
@@ -623,7 +588,7 @@ if __name__ == '__main__':
                     pc.set_alpha(0.5)
 
                 add_violin_label(violin, (mesh_strat
-                                          if 'Genelec' in mesh_strat else
+                                          if 'Genelec' in mesh_strat or 'Dodecahedron' in mesh_strat else
                                           strategy_aliases[mesh_strat]),
                                  violin_labels)
             
@@ -631,13 +596,14 @@ if __name__ == '__main__':
                 plt.ylim(-15, 15)
             else:
                 plt.ylim(-20, 20)
-            plt.xlim(-0.5, num_bands-0.5)
+            plt.xlim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
+
             ax.xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
 
             plt.xlabel('Octave band center [Hz]')
             plt.ylabel('Energy diff (ART - truth) in dB')
 
-            plt.legend(*zip(*violin_labels), ncol=2)
+            plt.legend(*zip(*violin_labels), ncol=3)
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
