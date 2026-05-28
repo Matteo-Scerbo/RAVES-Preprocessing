@@ -12,7 +12,7 @@ from matplotlib.patches import Patch
 
 from collections import defaultdict
 
-from raves.src.utils import load_mesh, load_mesh_as_arrays
+from raves.src.utils import load_mesh, load_mesh_as_arrays, visualize_mesh
 
 
 # https://stackoverflow.com/a/26370192
@@ -100,20 +100,38 @@ def plot_loghist(ax, data, bins):
     ax.set_xscale('log')
 
 
+def recolor_mesh(folder_path):
+    file_path = os.path.join(folder_path, 'mesh.mtl')
+
+    output_lines = list()
+    
+    with open(file_path, mode='r') as file:
+        for line in file:
+            if line.startswith('Kd '):
+                rand_color = np.random.uniform(size=3)
+                output_lines.append(f'Kd {rand_color[0]} {rand_color[1]} {rand_color[2]}')
+            else:
+                output_lines.append(line)
+
+    with open(file_path, mode='w') as file:
+        for line in output_lines:
+            file.write(line)
+
+
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       # 'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       # 'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR2': 'CR2 small room (seminar room)',
                        'CR2_simplified': 'CR2 small room (seminar room)',
-                       # 'CR2_ubersimplified': 'CR2 small room (seminar room)',
+                       'CR2_ubersimplified': 'CR2 small room (seminar room)',
                        'CR3': 'CR3 medium room (chamber music hall)',
-                       # 'CR4': 'CR4 large room (auditorium)',
+                       'CR4': 'CR4 large room (auditorium)',
                        }
 
     strategy_aliases = {'naive_obj': 'Largest patches possible',
@@ -158,8 +176,17 @@ if __name__ == '__main__':
                 patch_IPQs[patch_i] = ipq
 
             # print(combined_name, 'has', num_patches, 'patches.')
+            # print('Min-max area', np.min(patch_areas), np.max(patch_areas))
+            # print('Min-max IPQ', np.min(patch_IPQs), np.max(patch_IPQs))
             # TODO: Count size and nnz of scattering matrix.
-            
+
+            # if 'split_area' in mesh_strat and np.max(patch_areas) > 4:
+            #     print('Areas too large:', combined_name, mesh_strat, np.max(patch_areas))
+            # if 'uber_split_area' in mesh_strat and np.max(patch_areas) > 2:
+            #     print('Areas too large:', combined_name, mesh_strat, np.max(patch_areas))
+            # if '_length' in mesh_strat and np.max(patch_IPQs) > 5:
+            #     print('IPQs too large:', combined_name, mesh_strat, np.max(patch_IPQs))
+
             area_data[mesh_strat][short_name] = patch_areas
             ipq_data[mesh_strat][short_name] = patch_IPQs
 
@@ -195,6 +222,17 @@ if __name__ == '__main__':
             plt.show()
             """
 
+            if 'split_' not in mesh_strat:
+                recolor_mesh(combined_dir)
+
+            image = visualize_mesh(combined_dir, interactive_window=False)
+
+            if image is not None:
+                plt.figure()
+                plt.imshow(image)
+                plt.axis('off')
+                plt.show()
+
     num_rooms = len(full_room_names)
     num_strats = len(strategy_aliases)
     
@@ -212,7 +250,7 @@ if __name__ == '__main__':
     # Reset legend labels.
     legend_elements = list()
 
-    fig, ax = plt.subplots(dpi=100, figsize=(9, 6))
+    fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
     for k, (mesh_strat, areas_per_room) in enumerate(area_data.items()):
         positions = group_centers - 0.5 + group_margin + (k+0.5)*width
@@ -220,7 +258,7 @@ if __name__ == '__main__':
                                positions=positions,
                                widths=width - mid_margin,
                                side='both',
-                               points=100,
+                               points=1000,
                                # quantiles=[[0.05, 0.5, 0.95]]*num_rooms,
                                showextrema=True,
                                showmeans=False,
@@ -239,7 +277,7 @@ if __name__ == '__main__':
     plt.ylabel(r'Area [$\text{m}^2$]')
     plt.yscale('log')
 
-    plt.legend(handles=legend_elements, ncol=3)
+    plt.legend(handles=legend_elements)
 
     plt.title('Surface patch areas')
     plt.show()
@@ -247,7 +285,7 @@ if __name__ == '__main__':
     # Reset legend labels.
     legend_elements = list()
 
-    fig, ax = plt.subplots(dpi=100, figsize=(9, 6))
+    fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
     for k, (mesh_strat, ipqs_per_room) in enumerate(ipq_data.items()):
         positions = group_centers - 0.5 + group_margin + (k+0.5)*width
@@ -255,7 +293,7 @@ if __name__ == '__main__':
                                positions=positions,
                                widths=width - mid_margin,
                                side='both',
-                               points=100,
+                               points=1000,
                                # quantiles=[[0.05, 0.5, 0.95]]*num_rooms,
                                showextrema=True,
                                showmeans=False,
@@ -280,7 +318,7 @@ if __name__ == '__main__':
     plt.ylabel('Isoperimetric quotient')
     plt.yscale('log')
 
-    plt.legend(handles=legend_elements, ncol=3)
+    plt.legend(handles=legend_elements)
 
     plt.title('Surface patch compactness')
     plt.show()

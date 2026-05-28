@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     shown_plots = ['EDC',
                    'Spectrogram error',
-                   'Violin plot',
+                   # 'Violin plot',
                    'Single violin plot'
                    ]
 
