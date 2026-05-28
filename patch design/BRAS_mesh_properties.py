@@ -121,25 +121,25 @@ def recolor_mesh(folder_path):
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
-    full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+    full_room_names = {# 'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR2': 'CR2 small room (seminar room)',
                        'CR2_simplified': 'CR2 small room (seminar room)',
-                       'CR2_ubersimplified': 'CR2 small room (seminar room)',
-                       'CR3': 'CR3 medium room (chamber music hall)',
-                       'CR4': 'CR4 large room (auditorium)',
+                    #    'CR2_ubersimplified': 'CR2 small room (seminar room)',
+                    #    'CR3': 'CR3 medium room (chamber music hall)',
+                    #    'CR4': 'CR4 large room (auditorium)',
                        }
 
     strategy_aliases = {'naive_obj': 'Largest patches possible',
                         'naive_trng': 'Bad triangulation',
                         'split_area': r'Max area $4\text{m}^2$',
                         'split_area_length': r'Max area $4\text{m}^2$, compact',
-                        'uber_split_area': r'Max area $2\text{m}^2$',
-                        'uber_split_area_length': r'Max area $2\text{m}^2$, compact'
+                        # 'uber_split_area': r'Max area $2\text{m}^2$',
+                        # 'uber_split_area_length': r'Max area $2\text{m}^2$, compact'
                         }
     room_aliases = {k: k.replace('_DoorAngle1', ', closed').replace('_DoorAngle3', ', open').replace('_simplified', ' (simplified)')
                     for k in full_room_names.keys()}
@@ -222,9 +222,7 @@ if __name__ == '__main__':
             plt.show()
             """
 
-            if 'split_' not in mesh_strat:
-                recolor_mesh(combined_dir)
-
+            print(combined_name)
             image = visualize_mesh(combined_dir, interactive_window=False)
 
             if image is not None:
