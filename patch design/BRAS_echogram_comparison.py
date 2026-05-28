@@ -7,6 +7,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.patches as mpatches
 
+from cycler import cycler
+from okabeito import lightblue, yellow, orange, green, purple, red, blue, black
+
+default_cycler = (cycler(color=[lightblue, yellow, orange, green, black, purple, red, blue]))
+plt.rc('axes', prop_cycle=default_cycler)
+
 from scipy.io.wavfile import read
 from collections import defaultdict
 
@@ -28,7 +34,8 @@ if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
     shown_plots = ['EDC',
-                   'Spectrogram error',
+                   # 'Spectrogram error',
+                   'Single spectrogram error',
                    # 'Violin plot',
                    'Single violin plot'
                    ]
@@ -69,7 +76,7 @@ if __name__ == '__main__':
     gene_directivity_normalization = True
 
     reference_name = 'Dodecahedron'
-    # reference_name = 'Genelec_1'
+    # reference_name = 'Genelec 1'
 
     full_room_names = {# 'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -138,14 +145,14 @@ if __name__ == '__main__':
                        'CR4': 2.5,
                        }
 
-    loudspeaker_aliases = {'Genelec8020c_LSorientation-negativeX': 'Genelec_1',
-                           'Genelec8020c_LSorientation-negativeY': 'Genelec_2',
-                           'Genelec8020c_LSorientation-positiveX': 'Genelec_3',
-                           'Genelec8020c_LSorientation-positiveY': 'Genelec_4',
-                           'Genelec8020c_LSorientation-01': 'Genelec_1',
-                           'Genelec8020c_LSorientation-02': 'Genelec_2',
-                           'Genelec8020c_LSorientation-03': 'Genelec_3',
-                           'Genelec8020c_LSorientation-04': 'Genelec_4',
+    loudspeaker_aliases = {'Genelec8020c_LSorientation-negativeX': 'Genelec 1',
+                           'Genelec8020c_LSorientation-negativeY': 'Genelec 2',
+                           'Genelec8020c_LSorientation-positiveX': 'Genelec 3',
+                           'Genelec8020c_LSorientation-positiveY': 'Genelec 4',
+                           'Genelec8020c_LSorientation-01': 'Genelec 1',
+                           'Genelec8020c_LSorientation-02': 'Genelec 2',
+                           'Genelec8020c_LSorientation-03': 'Genelec 3',
+                           'Genelec8020c_LSorientation-04': 'Genelec 4',
                            'Dodecahedron': 'Dodecahedron'
                            }
     strategy_aliases = {'naive_obj': 'Largest patches possible',
@@ -372,7 +379,7 @@ if __name__ == '__main__':
         num_listeners = len(listener_positions[base_name])
 
         if 'EDC' in shown_plots:
-            fig, ax = plt.subplots(dpi=100, figsize=(9, 6))
+            fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
             for (src, lst, key), echogram in echos_dict.items():
                 if src != edc_src_lst_band[0]:
@@ -383,9 +390,10 @@ if __name__ == '__main__':
                 time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
 
                 plt.plot(time_axis, echogram[edc_src_lst_band[2]],
-                            label=(key
-                                   if 'Genelec' in key or 'Dodecahedron' in key else
-                                   strategy_aliases[key]))
+                         ls=('-' if 'Genelec' in key or 'Dodecahedron' in key else '--'),
+                         label=(key
+                                if 'Genelec' in key or 'Dodecahedron' in key else
+                                strategy_aliases[key]))
                 
                 if key == reference_name:
                     bottom = echogram[edc_src_lst_band[2], int(downsampled_rate * plotted_time_range)]
@@ -396,7 +404,11 @@ if __name__ == '__main__':
             else:
                 plt.ylim(bottom, None)
             
-            plt.legend(ncol=2)
+            plt.xlabel('Time [s]')
+            plt.ylabel('Energy [dB]')
+
+            # https://stackoverflow.com/a/77328370
+            plt.legend(ncol=2, handleheight=2)
 
             plt.title(f'Room {room_aliases[short_name]}; {band_centers[edc_src_lst_band[2]]}Hz octave band.')
             plt.tight_layout()
@@ -447,6 +459,7 @@ if __name__ == '__main__':
 
                     axes[i, j].set_title(f'{src} {lst} {strat}')
                     axes[i, j].set_xlim(0, plotted_time_range)
+                    # axes[i, j].set_ylim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
                     if i == num_sl_configs-1:
                         axes[i, j].set_xlabel('Time [s]')
                     else:
@@ -458,10 +471,45 @@ if __name__ == '__main__':
             
             cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
             if backwards_integration:
-                cbar.ax.set_ylabel('Backward-integrated energy diff (ART - truth)',
+                cbar.ax.set_ylabel('Backward-integrated energy difference',
                                    rotation=270, labelpad=15)
             else:
-                cbar.ax.set_ylabel('Short-time-average energy diff (ART - truth)',
+                cbar.ax.set_ylabel('Short-time-average energy difference',
+                                   rotation=270, labelpad=15)
+
+            plt.suptitle(f'Room {room_aliases[short_name]}')
+            plt.show()
+
+        if 'Single spectrogram error' in shown_plots:
+            fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
+
+            src, lst = edc_src_lst_band[0], edc_src_lst_band[1]
+            spec_dict = spectrogram_errors[(src, lst)]
+
+            strat = 'split_area'
+            error = spec_dict[strat]
+
+            X, Y = np.meshgrid(np.arange(reference.shape[-1]) / downsampled_rate,
+                               np.arange(len(band_centers)))
+
+            cs = ax.pcolormesh(X, Y, error, norm=norm, cmap=cmap)
+
+            ax.yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
+
+            ax.set_title(f'{src}, {lst}, {(strat
+                                           if 'Genelec' in strat or 'Dodecahedron' in mesh_strat else
+                                           strategy_aliases[strat])}')
+            ax.set_xlim(0, plotted_time_range)
+            # ax.set_ylim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
+            ax.set_xlabel('Time [s]')
+            ax.set_ylabel('Octave band center [Hz]')
+    
+            cbar = fig.colorbar(cs, ax=ax, format='{x:.0f}dB')
+            if backwards_integration:
+                cbar.ax.set_ylabel('Backward-integrated energy difference',
+                                   rotation=270, labelpad=15)
+            else:
+                cbar.ax.set_ylabel('Short-time-average energy difference',
                                    rotation=270, labelpad=15)
 
             plt.suptitle(f'Room {room_aliases[short_name]}')
@@ -529,17 +577,20 @@ if __name__ == '__main__':
                     axes[i, j].set_xlim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
                     axes[i, j].xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
 
+                    axes[i, j].grid(axis='y')
+
                     if i == num_listeners-1:
                         axes[i, j].set_xlabel('Octave band center [Hz]')
                     else:
                         axes[i, j].set_xlabel('')
                     if j == 0:
-                        axes[i, j].set_ylabel('Energy diff (ART - truth) in dB')
+                        axes[i, j].set_ylabel('Energy difference [dB]')
                     else:
                         axes[i, j].set_ylabel('')
 
                     if (i, j) == (0, num_sources-1):
-                        axes[i, j].legend(*zip(*violin_labels), ncol=2)
+                        axes[i, j].legend(*zip(*violin_labels), ncol=2,
+                                          handleheight=2)
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
@@ -548,7 +599,7 @@ if __name__ == '__main__':
             plt.show()
 
         if 'Single violin plot' in shown_plots:
-            fig, ax = plt.subplots(dpi=100, figsize=(9, 6))
+            fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
             group_centers = np.arange(num_bands)
             # https://stackoverflow.com/a/11603806
@@ -606,9 +657,12 @@ if __name__ == '__main__':
             ax.xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
 
             plt.xlabel('Octave band center [Hz]')
-            plt.ylabel('Energy diff (ART - truth) in dB')
+            plt.ylabel('Energy difference [dB]')
 
-            plt.legend(*zip(*violin_labels), ncol=2)
+            plt.grid(axis='y')
+
+            plt.legend(*zip(*violin_labels), ncol=2,
+                       handleheight=2)
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')

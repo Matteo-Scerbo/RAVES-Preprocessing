@@ -10,6 +10,12 @@ import matplotlib.ticker as ticker
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
+from cycler import cycler
+from okabeito import lightblue, yellow, orange, green, purple, red, blue, black
+
+default_cycler = (cycler(color=[lightblue, yellow, orange, green, black, purple, red, blue]))
+plt.rc('axes', prop_cycle=default_cycler)
+
 from collections import defaultdict
 
 from raves.src.utils import load_mesh, load_mesh_as_arrays, visualize_mesh
@@ -222,14 +228,14 @@ if __name__ == '__main__':
             plt.show()
             """
 
-            print(combined_name)
-            image = visualize_mesh(combined_dir, interactive_window=False)
+            # print(combined_name)
+            # image = visualize_mesh(combined_dir, interactive_window=False)
 
-            if image is not None:
-                plt.figure()
-                plt.imshow(image)
-                plt.axis('off')
-                plt.show()
+            # if image is not None:
+            #     plt.figure()
+            #     plt.imshow(image)
+            #     plt.axis('off')
+            #     plt.show()
 
     num_rooms = len(full_room_names)
     num_strats = len(strategy_aliases)
