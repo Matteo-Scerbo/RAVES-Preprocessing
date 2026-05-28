@@ -57,17 +57,19 @@ if __name__ == '__main__':
     edc_src_lst_band = ('LS1', 'MP1', 3)
     plotted_time_range = 1.5
     plotted_band_range = (2, 6)
-    backwards_integration = True
+    backwards_integration = False
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
     normalization_period = 0
     # Normalize each frequency band separately, or all together.
     band_wise_norm = False
     outlier_constant = 1e0
-    directivity_normalization = False
 
-    # reference_name = 'Dodecahedron'
-    reference_name = 'Genelec_1'
+    dode_directivity_normalization = True
+    gene_directivity_normalization = True
+
+    reference_name = 'Dodecahedron'
+    # reference_name = 'Genelec_1'
 
     full_room_names = {# 'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -75,10 +77,10 @@ if __name__ == '__main__':
                        # 'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       # 'CR2': 'CR2 small room (seminar room)',
-                       # 'CR2_simplified': 'CR2 small room (seminar room)',
+                       'CR2': 'CR2 small room (seminar room)',
+                       'CR2_simplified': 'CR2 small room (seminar room)',
                        # 'CR2_ubersimplified': 'CR2 small room (seminar room)',
-                       'CR3': 'CR3 medium room (chamber music hall)',
+                       # 'CR3': 'CR3 medium room (chamber music hall)',
                        # 'CR4': 'CR4 large room (auditorium)',
                        }
     source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
@@ -150,8 +152,8 @@ if __name__ == '__main__':
                         'naive_trng': 'Bad triangulation',
                         'split_area': r'Max area $4\text{m}^2$',
                         'split_area_length': r'Max area $4\text{m}^2$, compact',
-                        'uber_split_area': r'Max area $2\text{m}^2$',
-                        'uber_split_area_length': r'Max area $2\text{m}^2$, compact'
+                        # 'uber_split_area': r'Max area $2\text{m}^2$',
+                        # 'uber_split_area_length': r'Max area $2\text{m}^2$, compact'
                         }
     room_aliases = {k: k.replace('_DoorAngle1', ', closed').replace('_DoorAngle3', ', open').replace('_simplified', ' (simplified)')
                     for k in full_room_names.keys()}
@@ -204,7 +206,11 @@ if __name__ == '__main__':
                         fs, ref_data = read(ref_echo_path)
                     except FileNotFoundError:
                         # print(f'Missing reference file:\n\t{rir_name}\nFull path:\n\t{ref_echo_path}\n')
-                        continue
+                        if rir_name == 'CR2_RIR_LS1_MP5_Genelec8020c_LSorientation-positiveY':
+                            # This RIR is missing from the dataset. Replace it to make plots fit correctly.
+                            ref_data = np.ones_like(echogram.T)
+                        else:
+                            continue
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = ref_data.T
 
@@ -215,20 +221,19 @@ if __name__ == '__main__':
                     elif echogram.shape[-1] < max_duration:
                         echogram = np.pad(echogram, ((0, 0), (0, max_duration - echogram.shape[-1])))
                     
-                    if directivity_normalization:
-                        # The recording setup was calibrated based on the sound pressure at 1kHz,
-                        #  in front of the loudspeaker. There are two problems with this.
-                        # First, the dodecahedron measurements have a "dip" around 2kHz, due to
-                        #  phase cancellation in the crossover between the mid and high speakers.
-                        # Second, the Genelec measurements drop in level at higher frequencies,
-                        #  because the directivity pattern leads to less radiated energy overall.
-                        if ls_short == 'Dodecahedron':
-                            echogram /= dodecahedron_normalization[:, None]
-                        else:
+                    # The recording setup was calibrated based on the sound pressure at 1kHz,
+                    #  in front of the loudspeaker. There are two problems with this.
+                    # First, the dodecahedron measurements have a "dip" around 2kHz, due to
+                    #  phase cancellation in the crossover between the mid and high speakers.
+                    # Second, the Genelec measurements drop in level at higher frequencies,
+                    #  because the directivity pattern leads to less radiated energy overall.
+                    if dode_directivity_normalization and ls_short == 'Dodecahedron':
+                        echogram /= dodecahedron_normalization[:, None]
+                    elif gene_directivity_normalization and 'Genelec' in ls_short:
                             echogram /= genelec_normalization[:, None]
                     else:
                         # TODO: Explain
-                        echogram *= 2 * audio_sample_rate
+                        echogram *= audio_sample_rate
 
                     # Trim the duration to a multiple of the downsampling stride.
                     # This is necessary to match the truncation of the simulations.
@@ -243,7 +248,7 @@ if __name__ == '__main__':
                             echogram /= np.sum(echogram, axis=-1)[:, None]
                         else:
                             band_energies = np.sum(echogram, axis=-1)
-                            # band_energies *= band_widths / np.sum(band_widths)
+                            band_energies /= band_widths / np.sum(band_widths)
                             echogram /= np.average(band_energies)
                     elif normalization_period > 0:
                         if band_wise_norm:
@@ -252,7 +257,7 @@ if __name__ == '__main__':
                         else:
                             band_energies = np.sum(echogram[:int(fs*normalization_period)],
                                                    axis=-1)
-                            # band_energies *= band_widths / np.sum(band_widths)
+                            band_energies /= band_widths / np.sum(band_widths)
                             echogram /= np.average(band_energies)
         
                     if backwards_integration:
@@ -312,7 +317,7 @@ if __name__ == '__main__':
                             echogram /= np.sum(echogram, axis=-1)[:, None]
                         else:
                             band_energies = np.sum(echogram, axis=-1)
-                            # band_energies *= band_widths / np.sum(band_widths)
+                            band_energies /= band_widths / np.sum(band_widths)
                             echogram /= np.average(band_energies)
                     elif normalization_period > 0:
                         if band_wise_norm:
@@ -321,7 +326,7 @@ if __name__ == '__main__':
                         else:
                             band_energies = np.sum(echogram[:int(fs*normalization_period)],
                                                    axis=-1)
-                            # band_energies *= band_widths / np.sum(band_widths)
+                            band_energies /= band_widths / np.sum(band_widths)
                             echogram /= np.average(band_energies)
         
                     if backwards_integration:
@@ -391,7 +396,7 @@ if __name__ == '__main__':
             else:
                 plt.ylim(bottom, None)
             
-            plt.legend(ncol=3)
+            plt.legend(ncol=2)
 
             plt.title(f'Room {room_aliases[short_name]}; {band_centers[edc_src_lst_band[2]]}Hz octave band.')
             plt.tight_layout()
@@ -502,8 +507,8 @@ if __name__ == '__main__':
                                                        widths=width-mid_margin,
                                                        side='both',
                                                        # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
-                                                       showextrema=True,
-                                                       showmeans=False,
+                                                       showextrema=False,
+                                                       showmeans=True,
                                                        showmedians=False)
 
                         for pc in violin['bodies']:
@@ -534,7 +539,7 @@ if __name__ == '__main__':
                         axes[i, j].set_ylabel('')
 
                     if (i, j) == (0, num_sources-1):
-                        axes[i, j].legend(*zip(*violin_labels), ncol=3)
+                        axes[i, j].legend(*zip(*violin_labels), ncol=2)
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
@@ -579,8 +584,8 @@ if __name__ == '__main__':
                                        widths=width-mid_margin,
                                        side='both',
                                        # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
-                                       showextrema=True,
-                                       showmeans=False,
+                                       showextrema=False,
+                                       showmeans=True,
                                        showmedians=False)
 
                 for pc in violin['bodies']:
@@ -603,7 +608,7 @@ if __name__ == '__main__':
             plt.xlabel('Octave band center [Hz]')
             plt.ylabel('Energy diff (ART - truth) in dB')
 
-            plt.legend(*zip(*violin_labels), ncol=3)
+            plt.legend(*zip(*violin_labels), ncol=2)
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')

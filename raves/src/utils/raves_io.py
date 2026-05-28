@@ -909,15 +909,12 @@ def visualize_mesh(folder_path: str, cull_back_faces: bool = True,
 
     diagonal_dir = np.array([-1, -1, 1]) / np.sqrt(3)
     new_camera_pos = turntable_pivot + turntable_radius * diagonal_dir
-    # polyscope.look_at(new_camera_pos, turntable_pivot)
+    polyscope.look_at(new_camera_pos, turntable_pivot)
 
     if interactive_window:
         polyscope.show()
         img = None
     else:
-        temp = np.array([2.25, -4.5, 1.25])
-        temp += diagonal_dir * 0.5
-        polyscope.look_at(temp, temp - diagonal_dir)
         img = polyscope.screenshot_to_buffer()
 
     polyscope.remove_all_structures()
