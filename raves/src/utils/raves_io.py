@@ -375,7 +375,8 @@ def load_all_inputs(folder_path: str,
     return mesh, patch_materials, material_coefficients, folder_path
 
 
-def load_mesh_as_arrays(folder_path: str
+def load_mesh_as_arrays(folder_path: str,
+                        collapse_distance: float = 1e-7
                         ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, list]:
     """
     Parse an OBJ mesh into vertex, triangle, and material arrays.
@@ -387,6 +388,8 @@ def load_mesh_as_arrays(folder_path: str
     ----------
     folder_path : str
         Path to the environment folder.
+    collapse_distance : float, default 1e-7
+        Vertices closer than this threshold are collapsed together.
 
     Returns
     -------
@@ -495,11 +498,12 @@ def load_mesh_as_arrays(folder_path: str
 
     # TODO: Cross-validate OBJ and MTL. Read original patch colors in the process.
 
-    # Collapse duplicate vertices (within a millimeter of each other).
-    keys = np.round(vertices * 1e3)
-    _, keep_idx, old2new = np.unique(keys, axis=0, return_index=True, return_inverse=True)
-    vertices = vertices[keep_idx]
-    vert_triplets = old2new[vert_triplets]
+    if collapse_distance > 0:
+        # Collapse duplicate vertices (within a given distance of each other).
+        keys = np.round(vertices / collapse_distance)
+        _, keep_idx, old2new = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+        vertices = vertices[keep_idx]
+        vert_triplets = old2new[vert_triplets]
 
     return vertices, vert_triplets, patch_ids, patch_materials
 

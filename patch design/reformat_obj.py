@@ -72,8 +72,8 @@ inches_per_meter = 39.3700787402
 
 def reformat_mesh(input_path: str, output_path: str,
                   strategy: str,
-                  area_threshold: float = 1e-4,
-                  verbose: bool = False):
+                  area_threshold: float = 0,
+                  verbose: bool = True):
     """
     The website ImageToStl.com can convert SketchUp files into OBJ/MTL meshes.
     This function is meant to take the resulting files and re-format them to
@@ -136,6 +136,8 @@ def reformat_mesh(input_path: str, output_path: str,
     
     # Keep track of vertices; this is only used to check for "0 area" faces.
     vertex_list = list()
+    # For debugging...
+    areas = list()
     
     output_lines.append('mtllib mesh.mtl\n')
     
@@ -193,16 +195,15 @@ def reformat_mesh(input_path: str, output_path: str,
                                      + ' Bad line:\n\t' + line)
 
                 # Convert from inches to meters (blame SketchUp).
-                converted_coords = [float(c) / inches_per_meter
-                                    for c in split_line[1:]]
+                coords = [float(c) / inches_per_meter
+                          for c in split_line[1:]]
                 # Round to fewer digits. Otherwise, some of the following operations
                 #  on the floats will not match what actually gets written in the files.
-                converted_coords = [np.round(c, 3)
-                                    for c in converted_coords]
-                converted_line = 'v ' + ' '.join([str(c)
-                                                  for c in converted_coords]) + '\n'
+                coords = [np.round(c, 8) for c in coords]
+                converted_line = 'v ' + ' '.join([str(c) for c in coords]) + '\n'
+                converted_line = f'v {coords[0]:.10f} {coords[1]:.10f} {coords[2]:.10f}\n'
 
-                vertex_list.append(converted_coords)
+                vertex_list.append(coords)
                 output_lines.append(converted_line)
                 
             elif split_line[0] == 'f':
@@ -211,10 +212,11 @@ def reformat_mesh(input_path: str, output_path: str,
                                      for c in split_line[1:]])
                 area = np.linalg.norm(np.cross(triangle[1] - triangle[0],
                                                triangle[2] - triangle[0]))
-                if area < area_threshold:
+                if area <= area_threshold:
                     if verbose:
                         print(f'\tIgnoring triangle with area {area}.')
                     continue
+                areas.append(area)
                 
                 if strategy == 'naive_trng':
                     base_name = mtl_file_name[:-4]
@@ -326,25 +328,3 @@ for root, dirs, files in os.walk(root_folder):
                 for mat, count in zip(*np.unique(patch_materials, return_counts=True)):
                     print('\t', count, 'out of', mesh.size(count_patches=True),
                           'patches have material', mat)
-                
-                # areas = mesh.area
-                # perimeters = mesh.perimeter()
-                # isoperimetric = 4 * np.pi * areas / perimeters**2
-                
-                # fig, ax = plt.subplots(2, dpi=200, figsize=(8, 4))
-        
-                # plot_loghist(ax[0], areas, bins=100)
-                # ax[0].set_title('Triangle areas')
-                # ax[0].set_yscale('log')
-                # ax[0].grid(True)
-            
-                # # plot_loghist(ax[1], isoperimetric, bins=100)
-                # ax[1].hist(isoperimetric, bins=100)
-                # ax[1].set_title('Triangle isoperimetric quotients')
-                # ax[1].set_yscale('log')
-                # ax[1].grid(True)
-                
-                # plt.suptitle('Mesh name: ' + new_name)
-            
-                # plt.tight_layout()
-                # plt.show()

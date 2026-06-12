@@ -2,6 +2,7 @@ import os
 import csv
 import itertools
 import numpy as np
+from scipy.io import mmread
 import shapely
 import shapely.plotting
 import matplotlib as mpl
@@ -84,16 +85,17 @@ def assess_patch(all_vertices, all_faces, patch_triangle_idxs):
     # The polygon will be split if its area is too large...
     area = polygon_2D.area
     # ... or if it is very long and narrow.
-    # "Narrowness" is evaluated based on the ratio between the polygon's area
-    #  and the area of its minimum bounding circle (isoperimetric quotient).
-    radius = shapely.minimum_bounding_radius(polygon_2D)
-    ipq = 2 * np.pi * radius**2 / area
+    # "Narrowness" is evaluated through the isoperimetric quotient,
+    #  defined as the ratio of the polygon's area and the area of
+    #  the circle having the same perimeter as the polygon.
+    perimeter = polygon_2D.length
+    ipq = 4 * np.pi * area / perimeter**2
 
     # shapely.plotting.plot_polygon(polygon_2D)
     # plt.title(str(ipq))
     # plt.show()
 
-    return radius, ipq
+    return area, ipq
 
 
 # https://stackoverflow.com/a/54529366
@@ -126,28 +128,29 @@ def recolor_mesh(folder_path):
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
+    output_folder = os.path.join('.', 'data_for_figures')
 
-    full_room_names = {# 'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+    full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     #    'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     #    'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR2': 'CR2 small room (seminar room)',
                        'CR2_simplified': 'CR2 small room (seminar room)',
                     #    'CR2_ubersimplified': 'CR2 small room (seminar room)',
-                    #    'CR3': 'CR3 medium room (chamber music hall)',
+                       'CR3': 'CR3 medium room (chamber music hall)',
                     #    'CR4': 'CR4 large room (auditorium)',
                        }
 
-    strategy_aliases = {'naive_obj': 'Largest patches possible',
+    strategy_aliases = {'naive_obj': 'Largest possible',
                         'naive_trng': 'Bad triangulation',
-                        'split_area': r'Max area $4\text{m}^2$',
-                        'split_area_length': r'Max area $4\text{m}^2$, compact',
-                        # 'uber_split_area': r'Max area $2\text{m}^2$',
-                        # 'uber_split_area_length': r'Max area $2\text{m}^2$, compact'
+                        'split_area': r'Max $4\text{m}^2$',
+                        'split_area_length': r'Max $4\text{m}^2$, compact',
+                        'uber_split_area': r'Max $2\text{m}^2$',
+                        'uber_split_area_length': r'Max $2\text{m}^2$, compact'
                         }
-    room_aliases = {k: k.replace('_DoorAngle1', ', closed').replace('_DoorAngle3', ', open').replace('_simplified', ' (simplified)')
+    room_aliases = {k: k.replace('_DoorAngle1', ', closed').replace('_DoorAngle3', ', open').replace('_simplified', '\n(simplified)')
                     for k in full_room_names.keys()}
 
     area_data = defaultdict(dict)
@@ -181,10 +184,13 @@ if __name__ == '__main__':
                 patch_areas[patch_i] = area
                 patch_IPQs[patch_i] = ipq
 
-            # print(combined_name, 'has', num_patches, 'patches.')
+            # kernel = mmread(os.path.join(combined_dir, 'ART_kernel_band_1.mtx'), spmatrix=True)
+            # num_paths = kernel.shape[0]
+            # num_nonzero = kernel.nnz
+
+            # print(combined_name, 'has', num_patches, 'patches,', num_paths, 'paths, and', num_nonzero, 'nonzeroes.')
             # print('Min-max area', np.min(patch_areas), np.max(patch_areas))
             # print('Min-max IPQ', np.min(patch_IPQs), np.max(patch_IPQs))
-            # TODO: Count size and nnz of scattering matrix.
 
             # if 'split_area' in mesh_strat and np.max(patch_areas) > 4:
             #     print('Areas too large:', combined_name, mesh_strat, np.max(patch_areas))
@@ -262,7 +268,7 @@ if __name__ == '__main__':
                                positions=positions,
                                widths=width - mid_margin,
                                side='both',
-                               points=1000,
+                               points=10000,
                                # quantiles=[[0.05, 0.5, 0.95]]*num_rooms,
                                showextrema=True,
                                showmeans=False,
@@ -275,13 +281,14 @@ if __name__ == '__main__':
         add_violin_label(violin, strategy_aliases[mesh_strat], legend_elements)
         
     plt.xlim(-0.5, num_rooms-0.5)
-    plt.xticks(group_centers, room_aliases.keys(),
+    plt.xticks(group_centers, room_aliases.values(),
                rotation=30, ha='right', rotation_mode='anchor')
 
     plt.ylabel(r'Area [$\text{m}^2$]')
     plt.yscale('log')
 
-    plt.legend(handles=legend_elements)
+    plt.legend(handles=legend_elements, ncol=3,
+               loc='lower center')
 
     plt.title('Surface patch areas')
     plt.show()
@@ -297,7 +304,7 @@ if __name__ == '__main__':
                                positions=positions,
                                widths=width - mid_margin,
                                side='both',
-                               points=1000,
+                               points=10000,
                                # quantiles=[[0.05, 0.5, 0.95]]*num_rooms,
                                showextrema=True,
                                showmeans=False,
@@ -312,17 +319,20 @@ if __name__ == '__main__':
     plt.hlines(1, -1, num_rooms+1,
                color='black', ls='--',
                linewidth=1)
-    legend_elements.append(Line2D([0], [0], color='black', ls='--',
-                                  label='Optimal IPQ (circle)'))
-    
+    # legend_elements.append(Line2D([0], [0], color='black', ls='--',
+    #                               label='Optimal IPQ (circle)'))
+    plt.annotate('Optimal IPQ (circle)', ((num_rooms-1)/2, 1),
+                 ha='center', va='top')
+
     plt.xlim(-0.5, num_rooms-0.5)
-    plt.xticks(group_centers, room_aliases.keys(),
+    plt.xticks(group_centers, room_aliases.values(),
                rotation=30, ha='right', rotation_mode='anchor')
 
     plt.ylabel('Isoperimetric quotient')
-    plt.yscale('log')
+    # plt.yscale('log')
 
-    plt.legend(handles=legend_elements)
+    plt.legend(handles=legend_elements, ncol=3,
+               loc='lower center')
 
     plt.title('Surface patch compactness')
     plt.show()
