@@ -237,8 +237,6 @@ f 87 86 89
 v -1.6164924200 -2.8906222000 2.9879999800
 v -2.8844923400 -2.8906222000 2.9879589000
 v -2.8844923400 -2.8906222000 2.9879999800
-usemtl Patch_56_Mat_CR2_plaster
-f 90 91 92
 
 # obj19
 v -2.8844923400 4.1893776200 2.9879999800
@@ -251,37 +249,37 @@ v 2.4885076000 -3.6946221600 2.9879999800
 v 3.1315076900 -1.6946223400 2.9879999800
 v 3.0935076900 -4.2546220900 2.9879999800
 v 3.0935076900 -3.6946221600 2.9879999800
-usemtl Patch_57_Mat_CR2_ceiling
+usemtl Patch_56_Mat_CR2_ceiling
 f 93 94 95
-usemtl Patch_58_Mat_CR2_ceiling
+usemtl Patch_57_Mat_CR2_ceiling
 f 94 93 96
-usemtl Patch_59_Mat_CR2_ceiling
+usemtl Patch_58_Mat_CR2_ceiling
 f 94 96 97
-usemtl Patch_60_Mat_CR2_ceiling
+usemtl Patch_59_Mat_CR2_ceiling
 f 97 96 98
-usemtl Patch_61_Mat_CR2_ceiling
+usemtl Patch_60_Mat_CR2_ceiling
 f 97 98 99
-usemtl Patch_62_Mat_CR2_ceiling
+usemtl Patch_61_Mat_CR2_ceiling
 f 98 96 100
-usemtl Patch_63_Mat_CR2_ceiling
+usemtl Patch_62_Mat_CR2_ceiling
 f 99 101 97
-usemtl Patch_64_Mat_CR2_ceiling
+usemtl Patch_63_Mat_CR2_ceiling
 f 101 99 102
 
 # obj20
-usemtl Patch_65_Mat_CR2_concrete
+usemtl Patch_64_Mat_CR2_concrete
 f 1 3 2
-usemtl Patch_66_Mat_CR2_concrete
+usemtl Patch_65_Mat_CR2_concrete
 f 2 4 1
 
 # obj21
-usemtl Patch_67_Mat_CR2_concrete
+usemtl Patch_66_Mat_CR2_concrete
 f 37 39 38
-usemtl Patch_68_Mat_CR2_concrete
+usemtl Patch_67_Mat_CR2_concrete
 f 38 40 37
 
 # obj22
-usemtl Patch_69_Mat_CR2_concrete
+usemtl Patch_68_Mat_CR2_concrete
 f 41 43 42
-usemtl Patch_70_Mat_CR2_concrete
+usemtl Patch_69_Mat_CR2_concrete
 f 42 44 41

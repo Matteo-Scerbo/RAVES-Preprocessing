@@ -222,8 +222,9 @@ o obj18
 v -63.64143372 -113.80402374 117.63779449
 v -113.56269073 -113.80402374 117.63617706
 v -113.56269073 -113.80402374 117.63779449
-usemtl mat2
-f 90 91 92
+# Tiny triangle, removed:
+# usemtl mat2
+# f 90 91 92
 # Vertices: 3, normals: 0, texture coordinates: 0, faces: 1
 
 o obj19
