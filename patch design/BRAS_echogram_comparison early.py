@@ -14,9 +14,6 @@ default_cycler = (cycler(color=[lightblue, yellow, orange, green, black, purple,
 plt.rc('axes', prop_cycle=default_cycler)
 
 from scipy.io.wavfile import read
-from scipy.signal import convolve
-from scipy.signal.windows import get_window
-
 from collections import defaultdict
 
 from raves.src.utils import load_frequencies
@@ -25,9 +22,6 @@ from raves.src.utils import load_frequencies
 # https://gist.github.com/vishalkuo/f4aec300cf6252ed28d3
 def remove_outliers(x, outlier_const):
     a = np.array(x).flatten()
-    if outlier_const <= 0:
-        return a
-    
     upper_quartile = np.percentile(a, 75)
     lower_quartile = np.percentile(a, 25)
     iqr = (upper_quartile - lower_quartile) * outlier_const
@@ -36,72 +30,46 @@ def remove_outliers(x, outlier_const):
     return a[np.where((a >= quartileSet[0]) & (a <= quartileSet[1]))]
 
 
-# https://stackoverflow.com/a/58324984
-def add_violin_label(violin, label, label_list):
-    color = violin["bodies"][0].get_facecolor().flatten()
-    label_list.append((mpatches.Patch(color=color), label))
-
-
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
-    shown_plots = [# 'EDC',
+    shown_plots = ['EDC',
                    # 'Spectrogram error',
-                   # 'Single spectrogram error',
+                   'Single spectrogram error',
                    # 'Violin plot',
-                   # 'Single violin plot',
-                   'Freq-wise violin plot'
+                   'Single violin plot'
                    ]
 
-    audio_sample_rate = 44100
-    echo_sample_rate = 8820
-    # Choose a low sample rate for plotting and evaluating energy results.
-    # In order to avoid having to do any resampling, choose a common divider of
-    #  the recording and ART sample rates.
-    downsampled_rate = 2205
-    # Possible divisors:
-    #  [8820, 4410, 2940, 2205, 1764, 1470, 1260,  980,
-    #    882,  735,  630,  588,  490,  441,  420,  315,
-    #    294,  252,  245,  210,  196,  180,  147,  140,
-    #    126,  105,   98,   90,   84,   70,   63,   60,
-    #     49,   45,   42,   36,   35,   30,   28,   21,
-    #     20,   18,   15,   14,   12,   10,    9,    7,
-    #      6,    5,    4,    3,    2,    1]
-    audio_stride = int(audio_sample_rate / downsampled_rate)
-    echo_stride = int(echo_sample_rate / downsampled_rate)
+    audio_sample_rate = 44.1e3
+    echo_sample_rate = 1e4
+    target_window = 1e-4
+    audio_stride = int(audio_sample_rate * target_window)
+    echo_stride = int(echo_sample_rate * target_window)
     audio_nyquist = audio_sample_rate / 2
 
-    # Length of the smoothing window applied to the energy envelopes after downsampling.
-    smoothing_window_len = 50e-3
-    # Broadest: 'cosine', 'lanczos', 'tukey'
-    smoothing_window = get_window('tukey', int(smoothing_window_len * downsampled_rate))
-    smoothing_window /= np.sum(smoothing_window)
-
-    edc_src_lst_band = ('LS1', 'MP1', 2)
-    plotted_time_range = 2.0
-    plotted_band_range = (0, 7)
-    backwards_integration = False
-    forwards_integration = False
+    edc_src_lst_band = ('LS1', 'MP3', 5)
+    plotted_band_range = (2, 6)
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
     normalization_period = 0
     # Normalize each frequency band separately, or all together.
     band_wise_norm = False
-    outlier_constant = 1.0
+    outlier_constant = 1e0
 
-    dode_2k_compensation = 4.0
+    dode_directivity_normalization = True
+    gene_directivity_normalization = True
 
     reference_name = 'Dodecahedron'
     # reference_name = 'Genelec 1'
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       # 'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       # 'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        # 'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR2': 'CR2 small room (seminar room)',
-                       'CR2_simplified': 'CR2 small room (seminar room)',
+                       # 'CR2_simplified': 'CR2 small room (seminar room)',
                        # 'CR2_ubersimplified': 'CR2 small room (seminar room)',
                        'CR3': 'CR3 medium room (chamber music hall)',
                        # 'CR4': 'CR4 large room (auditorium)',
@@ -160,6 +128,12 @@ if __name__ == '__main__':
                        'CR3': 2.0,
                        'CR4': 2.5,
                        }
+    early_ranges = {'CR1_DoorAngle1': (0.005, 0.02),
+                    'CR1_DoorAngle3': (0.005, 0.02),
+                    'CR2': (0.0, 0.015),
+                    'CR3': (0.025, 0.045),
+                    'CR4': (0.025, 0.045),
+                    }
 
     loudspeaker_aliases = {'Genelec8020c_LSorientation-negativeX': 'Genelec 1',
                            'Genelec8020c_LSorientation-negativeY': 'Genelec 2',
@@ -174,22 +148,11 @@ if __name__ == '__main__':
     strategy_aliases = {'naive_obj': 'Largest possible',
                         'naive_trng': 'Bad triangulation',
                         'split_area': r'Target $4\text{m}^2$',
-                        # 'split_area_length': r'Target $4\text{m}^2$, compact',
-                        'uber_split_area': r'Target $2\text{m}^2$',
+                        'split_area_length': r'Target $4\text{m}^2$, compact',
+                        # 'uber_split_area': r'Target $2\text{m}^2$',
                         # 'uber_split_area_length': r'Target $2\text{m}^2$, compact'
                         }
-    room_aliases = {k: k.replace(
-                        '_DoorAngle1',
-                        ', closed'
-                        ).replace(
-                            '_DoorAngle3',
-                            ', open'
-                            ).replace(
-                                '_simplified',
-                                '\n(simplified)'
-                                ).replace(
-                                    '_ubersimplified',
-                                    '\n(ultra-simplified)')
+    room_aliases = {k: k.replace('_DoorAngle1', ', closed').replace('_DoorAngle3', ', open').replace('_simplified', ' (simplified)')
                     for k in full_room_names.keys()}
 
     # Consider the frequency band centers provided alongside the input data.
@@ -207,19 +170,19 @@ if __name__ == '__main__':
     # Bandwidths used for some normalization aspects.
     band_widths = (band_centers * band_bound) - (band_centers / band_bound)
 
-    def tick_label_func(val, pos=None):
-        if val >= num_bands:
-            return 'error'
-        elif band_centers[int(val)] < 1e3:
-            return f'{int(band_centers[int(val)])}'
-        else:
-            return f'{int(band_centers[int(val)] / 1e3)}k'
+    # Load the directivity normalization for the loudspeakers.
+    with open(os.path.join(mesh_folder, 'Source_normalization', 'Genelec.csv'), mode='r', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
+        row = next(reader, None)
+        genelec_normalization = np.array(row, dtype=float)
+    with open(os.path.join(mesh_folder, 'Source_normalization', 'Dodecahedron.csv'), mode='r', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
+        row = next(reader, None)
+        dodecahedron_normalization = np.array(row, dtype=float)
 
     echos_per_room = defaultdict(dict)
     
     for short_name, full_name in full_room_names.items():
-        print('Loading echograms,', short_name)
-        
         base_name = short_name.replace('_simplified', '')
         base_name = base_name.replace('_ubersimplified', '')
 
@@ -239,36 +202,29 @@ if __name__ == '__main__':
                     try:
                         fs, ref_data = read(ref_echo_path)
                     except FileNotFoundError:
-                        # print(f'Missing reference file:\n\t{rir_name}\nFull path:\n\t{ref_echo_path}\n')
                         if rir_name == 'CR2_RIR_LS1_MP5_Genelec8020c_LSorientation-positiveY':
                             # This RIR is missing from the dataset. Replace it to make plots fit correctly.
                             ref_data = np.ones_like(echogram.T)
                         else:
+                            # print(f'Missing reference file:\n\t{rir_name}\nFull path:\n\t{ref_echo_path}\n')
                             continue
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = ref_data.T
 
                     # The recording setup was calibrated based on the sound pressure at 1kHz,
-                    #  in front of the loudspeaker. There is a problem with this.
-                    # The dodecahedron measurements have a "dip" around 2kHz, possibly due to
+                    #  in front of the loudspeaker. There are two problems with this.
+                    # First, the dodecahedron measurements have a "dip" around 2kHz, due to
                     #  phase cancellation in the crossover between the mid and high speakers.
-                    if ls_short == 'Dodecahedron':
-                        echogram[4] *= dode_2k_compensation
+                    # Second, the Genelec measurements drop in level at higher frequencies,
+                    #  because the directivity pattern leads to less radiated energy overall.
+                    if dode_directivity_normalization and ls_short == 'Dodecahedron':
+                        echogram /= dodecahedron_normalization[:, None]
+                    elif gene_directivity_normalization and 'Genelec' in ls_short:
+                            echogram /= genelec_normalization[:, None]
+                    else:
+                        # TODO: Explain
+                        echogram *= audio_sample_rate
 
-                    # The simulations are calibrated such that, when a unit-energy signal is band-passed
-                    #  to the relative octave band and modulated by the (simulated) echogram's root, it
-                    #  has the correct energy. The band-passing removes energy according to the bandwidth,
-                    #  which we need to compensate for.
-                    echogram /= band_widths[:, None]
-                    echogram *= audio_sample_rate
-
-                    # Trim the duration to a multiple of the downsampling stride, to match the simulations.
-                    # This is necessary for a fair comparison with backwards integration.
-                    for b in range(num_bands):
-                        ref_duration = np.max(np.flatnonzero(echogram[b]))
-                        ref_duration = (ref_duration // audio_stride) * audio_stride
-                        echogram[b, ref_duration+1:] = 0
-                    
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
                         if band_wise_norm:
@@ -286,50 +242,29 @@ if __name__ == '__main__':
                                                    axis=-1)
                             band_energies /= band_widths / np.sum(band_widths)
                             echogram /= np.average(band_energies)
-        
-                    if backwards_integration:
-                        # Reverse integration
-                        echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
-                        # Downsampling the EDC is easy, just skip values
-                        echogram = echogram[:, ::audio_stride]
-                    elif forwards_integration:
-                        # Regular integration
-                        echogram = np.cumsum(echogram, axis=-1)
-                        # Downsampling the accumulated energy is easy, just skip values
-                        echogram = echogram[:, ::audio_stride]
-                    else:
-                        # Short-time average (and downsampling)
-                        num_windows = echogram.shape[-1] // audio_stride
-                        remainder = echogram.shape[-1] % audio_stride
-                        if remainder != 0:
-                            echogram = echogram[:, :-remainder]
-                        # https://stackoverflow.com/a/71800940
-                        echogram = np.array(np.split(echogram, num_windows, axis=-1)
-                                            ).sum(axis=-1).T
+    
+                    # Short-time average (and downsampling)
+                    num_windows = echogram.shape[-1] // audio_stride
+                    remainder = echogram.shape[-1] % audio_stride
+                    if remainder != 0:
+                        echogram = echogram[:, :-remainder]
+                    # https://stackoverflow.com/a/71800940
+                    echogram = np.array(np.split(echogram, num_windows, axis=-1)
+                                        ).sum(axis=-1).T
+                    
+                    time_axis = np.arange(echogram.shape[-1]) * audio_stride / audio_sample_rate
 
-                        # Finally, apply smoothing.
-                        # Cannot use an FFT convolution, because it screws up the zero padding.
-                        echogram = np.vstack([convolve(echogram[b], smoothing_window,
-                                                       method='direct', mode='same')
-                                              for b in range(num_bands)])
-                    
-                    max_duration = int(np.floor(shown_durations[base_name] * downsampled_rate))
-                    if echogram.shape[-1] >= max_duration:
-                        echogram = echogram[:, :max_duration]
-                    elif echogram.shape[-1] < max_duration:
-                        echogram = np.pad(echogram,
-                                          ((0, 0), (0, max_duration - echogram.shape[-1])),
-                                          mode=('edge' if forwards_integration else 'constant'))
-                    
+                    # Fill in early silence to allow comparison.
+                    early_indices = (time_axis < 0.1)
+                    early_zeros = (echogram == 0) & early_indices[None]
+                    echogram[early_zeros] = 1e-32
+        
                     # dB scale
                     echogram = 10 * np.log10(echogram)
-                
-                    echos_per_room[short_name][(src, lst, ls_short)] = echogram
+
+                    echos_per_room[short_name][(src, lst, ls_short)] = (time_axis, echogram)
 
                 for mesh_strat in strategy_aliases.keys():
-                    if 'CR3' in short_name and 'naive' not in mesh_strat:
-                        continue
-
                     env_name = short_name + '_' + mesh_strat
                     env_folder = os.path.join(mesh_folder, short_name, env_name)
                     sim_echo_subfolder = os.path.join(env_folder, 'Echograms')
@@ -343,15 +278,12 @@ if __name__ == '__main__':
                     assert fs == echo_sample_rate, (fs, echo_sample_rate)
                     echogram = sim_data.T
 
-                    # Trim the duration in each band to the length of the reference.
-                    # This is necessary for a fair comparison with backwards integration.
-                    reference = echos_per_room[short_name][(src, lst, reference_name)]
-                    for b in range(num_bands):
-                        # Note: the reference was converted to dB, the zero values are now NaN.
-                        ref_duration = np.max(np.flatnonzero(np.isfinite(reference[b])))
-                        ref_duration *= echo_stride
-                        echogram[b, ref_duration+1:] = 0
-                    
+                    # The echograms are calibrated such that, when a unit-energy signal is band-passed
+                    #  to the relative octave band and then modulated by the echogram's square root, it
+                    #  has the correct energy. The band-passing removes energy according to the bandwidth,
+                    #  which we need to compensate for.
+                    echogram *= band_widths[:, None]
+
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
                         if band_wise_norm:
@@ -369,51 +301,29 @@ if __name__ == '__main__':
                                                    axis=-1)
                             band_energies /= band_widths / np.sum(band_widths)
                             echogram /= np.average(band_energies)
+    
+                    # Short-time average (and downsampling)
+                    num_windows = echogram.shape[-1] // echo_stride
+                    remainder = echogram.shape[-1] % echo_stride
+                    if remainder != 0:
+                        echogram = echogram[:, :-remainder]
+                    # https://stackoverflow.com/a/71800940
+                    echogram = np.array(np.split(echogram, num_windows, axis=-1)
+                                        ).sum(axis=-1).T
+                    
+                    time_axis = np.arange(echogram.shape[-1]) * echo_stride / echo_sample_rate
+
+                    # Fill in early silence to allow comparison.
+                    early_indices = (time_axis < 0.1)
+                    early_zeros = (echogram == 0) & early_indices[None]
+                    echogram[early_zeros] = 1e-32
         
-                    if backwards_integration:
-                        # Reverse integration
-                        echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
-                        # Downsampling the EDC is easy, just skip values
-                        echogram = echogram[:, ::echo_stride]
-                    elif forwards_integration:
-                        # Regular integration
-                        echogram = np.cumsum(echogram, axis=-1)
-                        # Downsampling the accumulated energy is easy, just skip values
-                        echogram = echogram[:, ::audio_stride]
-                    else:
-                        # Short-time average (and downsampling)
-                        num_windows = echogram.shape[-1] // echo_stride
-                        remainder = echogram.shape[-1] % echo_stride
-                        if remainder != 0:
-                            echogram = echogram[:, :-remainder]
-                        # https://stackoverflow.com/a/71800940
-                        echogram = np.array(np.split(echogram, num_windows, axis=-1)
-                                            ).sum(axis=-1).T
-                    
-                        # Finally, apply smoothing.
-                        # Cannot use an FFT convolution, because it screws up the zero padding.
-                        echogram = np.vstack([convolve(echogram[b], smoothing_window,
-                                                       method='direct', mode='same')
-                                              for b in range(num_bands)])
-                    
-                    max_duration = int(np.floor(shown_durations[base_name] * downsampled_rate))
-                    if echogram.shape[-1] >= max_duration:
-                        echogram = echogram[:, :max_duration]
-                    elif echogram.shape[-1] < max_duration:
-                        echogram = np.pad(echogram,
-                                          ((0, 0), (0, max_duration - echogram.shape[-1])),
-                                          mode=('edge' if forwards_integration else 'constant'))
-                    
                     # dB scale
                     echogram = 10 * np.log10(echogram)
                 
-                    echos_per_room[short_name][(src, lst, mesh_strat)] = echogram
-
-    all_violin_data = dict()
+                    echos_per_room[short_name][(src, lst, mesh_strat)] = (time_axis, echogram)
 
     for short_name, echos_dict in echos_per_room.items():
-        print('Preparing plots,', short_name)
-        
         base_name = short_name.replace('_simplified', '')
         base_name = base_name.replace('_ubersimplified', '')
 
@@ -436,13 +346,11 @@ if __name__ == '__main__':
         if 'EDC' in shown_plots:
             fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
-            for (src, lst, key), echogram in echos_dict.items():
+            for (src, lst, key), (time_axis, echogram) in echos_dict.items():
                 if src != edc_src_lst_band[0]:
                     continue
                 if lst != edc_src_lst_band[1]:
                     continue
-
-                time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
 
                 plt.plot(time_axis, echogram[edc_src_lst_band[2]],
                          ls=('-' if 'Genelec' in key or 'Dodecahedron' in key else '--'),
@@ -451,13 +359,10 @@ if __name__ == '__main__':
                                 strategy_aliases[key]))
                 
                 if key == reference_name:
-                    bottom = np.max(echogram[edc_src_lst_band[2]]) - 60
+                    bottom = echogram[edc_src_lst_band[2], np.argmin(time_axis > early_ranges[base_name][1])]
 
-            plt.xlim(0, plotted_time_range)
-            if backwards_integration and np.isinf(normalization_period):
-                plt.ylim(-60, 0)
-            elif not forwards_integration:
-                plt.ylim(bottom, None)
+            plt.xlim(early_ranges[base_name][0], early_ranges[base_name][1])
+            plt.ylim(bottom, None)
             
             plt.xlabel('Time [s]')
             plt.ylabel('Energy [dB]')
@@ -468,7 +373,7 @@ if __name__ == '__main__':
             plt.title(f'Room {room_aliases[short_name]}; {band_centers[edc_src_lst_band[2]]}Hz octave band.')
             plt.tight_layout()
             plt.show()
-        
+        """
         # Plot the energy differences.
 
         spectrogram_errors = defaultdict(dict)
@@ -488,6 +393,14 @@ if __name__ == '__main__':
         # Set "bad" values (i.e., reference is below noise floor) to black.
         cmap.set_bad('black', 1.)
         norm = mpl.colors.BoundaryNorm(contour_levels, ncolors=cmap.N, extend='both')
+
+        def tick_label_func(val, pos=None):
+            if val >= num_bands:
+                return 'error'
+            elif band_centers[int(val)] < 1e3:
+                return f'{int(band_centers[int(val)])}'
+            else:
+                return f'{int(band_centers[int(val)] / 1e3)}k'
 
         if 'Spectrogram error' in shown_plots:
             fig, axes = plt.subplots(num_sl_configs, num_comparisons,
@@ -519,9 +432,6 @@ if __name__ == '__main__':
             cbar = fig.colorbar(cs, ax=axes, format='{x:.0f}dB')
             if backwards_integration:
                 cbar.ax.set_ylabel('Backward-integrated energy difference',
-                                   rotation=270, labelpad=15)
-            elif forwards_integration:
-                cbar.ax.set_ylabel('Forward-integrated energy difference',
                                    rotation=270, labelpad=15)
             else:
                 cbar.ax.set_ylabel('Short-time-average energy difference',
@@ -558,9 +468,6 @@ if __name__ == '__main__':
             if backwards_integration:
                 cbar.ax.set_ylabel('Backward-integrated energy difference',
                                    rotation=270, labelpad=15)
-            elif forwards_integration:
-                cbar.ax.set_ylabel('Forward-integrated energy difference',
-                                   rotation=270, labelpad=15)
             else:
                 cbar.ax.set_ylabel('Short-time-average energy difference',
                                    rotation=270, labelpad=15)
@@ -569,6 +476,11 @@ if __name__ == '__main__':
             plt.show()
 
         # Plot the energy differences statistics.
+
+        # https://stackoverflow.com/a/58324984
+        def add_violin_label(violin, label, label_list):
+            color = violin["bodies"][0].get_facecolor().flatten()
+            label_list.append((mpatches.Patch(color=color), label))
 
         if 'Violin plot' in shown_plots:
             fig, axes = plt.subplots(num_listeners, num_sources,
@@ -642,32 +554,30 @@ if __name__ == '__main__':
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
-            elif forwards_integration:
-                plt.suptitle(f'{room_aliases[short_name]} - forward-integrated energy diff')
             else:
                 plt.suptitle(f'{room_aliases[short_name]} - short-time-average energy diff')
             plt.show()
 
-        combined_data = dict()
-
-        for i, lst in enumerate(listener_positions[base_name]):
-            for j, src in enumerate(source_positions[base_name]):
-                for mesh_strat, error_data in spectrogram_errors[(src, lst)].items():
-                    combined_data[mesh_strat] = defaultdict(list)
-                    for band_idx, band_error in enumerate(error_data):
-                        # The NaN entries must be filtered out for each octave band.
-                        finite_error = band_error[np.isfinite(band_error)]
-                        finite_error = list(finite_error)
-                        combined_data[mesh_strat][band_idx].extend(finite_error)
-
         if 'Single violin plot' in shown_plots:
-            fig, ax = plt.subplots(dpi=100, figsize=(0.75*16, 0.75*9))
+            fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
             group_centers = np.arange(num_bands)
             # https://stackoverflow.com/a/11603806
-            group_margin = 0.1
+            group_margin = 0.2
             mid_margin = 0.02
             width = (1 - 2*group_margin) / num_comparisons
+
+            combined_data = dict()
+
+            for i, lst in enumerate(listener_positions[base_name]):
+                for j, src in enumerate(source_positions[base_name]):
+                    for mesh_strat, error_data in spectrogram_errors[(src, lst)].items():
+                        combined_data[mesh_strat] = defaultdict(list)
+                        for band_idx, band_error in enumerate(error_data):
+                            # The NaN entries must be filtered out for each octave band.
+                            finite_error = band_error[np.isfinite(band_error)]
+                            finite_error = list(finite_error)
+                            combined_data[mesh_strat][band_idx].extend(finite_error)
 
             # Reset legend labels.
             violin_labels = list()
@@ -677,15 +587,13 @@ if __name__ == '__main__':
                               color='black', ls='--',
                               linewidth=1)
             
-            for k, (mesh_strat, error_data) in enumerate(combined_data.items()):
+            for k, (mesh_strat, error_data) in enumerate(spectrogram_errors[(src, lst)].items()):
                 positions = group_centers - 0.5 + group_margin + (k+0.5)*width
                 violin = ax.violinplot([remove_outliers(x, outlier_constant)
-                                        for x in error_data.values()],
+                                        for x in combined_data[mesh_strat].values()],
                                        positions=positions,
                                        widths=width-mid_margin,
                                        side='both',
-                                       points=1000,
-                                       bw_method=0.2,
                                        # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
                                        showextrema=False,
                                        showmeans=True,
@@ -703,7 +611,7 @@ if __name__ == '__main__':
             if backwards_integration:
                 plt.ylim(-15, 15)
             else:
-                plt.ylim(-30, 30)
+                plt.ylim(-20, 20)
             plt.xlim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
 
             ax.xaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
@@ -718,90 +626,7 @@ if __name__ == '__main__':
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
-            elif forwards_integration:
-                plt.suptitle(f'{room_aliases[short_name]} - forward-integrated energy diff')
             else:
                 plt.suptitle(f'{room_aliases[short_name]} - short-time-average energy diff')
             plt.show()
-
-        all_violin_data[short_name] = combined_data
-    
-    if 'Freq-wise violin plot' in shown_plots:
-        num_rooms = len(all_violin_data)
-
-        comparison_keys = list()
-        for violin_data in all_violin_data.values():
-            if len(violin_data) > len(comparison_keys):
-                comparison_keys = list(violin_data.keys())
-        num_comparisons = len(comparison_keys)
-
-        group_centers = np.arange(num_rooms)
-        # https://stackoverflow.com/a/11603806
-        group_margin = 0.1
-        mid_margin = 0.02
-        width = (1 - 2*group_margin) / num_comparisons
-
-        for band_idx in range(num_bands):
-            fig, ax = plt.subplots(dpi=100, figsize=(0.75*16, 0.75*9))
-
-            # Reset legend labels.
-            violin_labels = list()
-
-            # Reference horizontal line at 0.
-            line = plt.hlines(0, -1, num_bands+1,
-                              color='black', ls='--',
-                              linewidth=1)
-            
-            for k, comparison_key in enumerate(comparison_keys):
-                positions = group_centers - 0.5 + group_margin + (k+0.5)*width
-                
-                violin_data = [(all_violin_data[short_name][comparison_key][band_idx]
-                                if comparison_key in all_violin_data[short_name]
-                                else np.zeros(1))
-                               for short_name in room_aliases]
-
-                violin = ax.violinplot([remove_outliers(x, outlier_constant)
-                                        for x in violin_data],
-                                        positions=positions,
-                                        widths=width-mid_margin,
-                                        side='both',
-                                        points=100,
-                                        bw_method=0.2,
-                                        # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
-                                        showextrema=False,
-                                        showmeans=True,
-                                        showmedians=False)
-
-                for pc in violin['bodies']:
-                    pc.set_edgecolor(pc.get_facecolor())
-                    pc.set_alpha(0.5)
-
-                add_violin_label(violin, (comparison_key
-                                          if 'Genelec' in comparison_key or 'Dodecahedron' in comparison_key else
-                                          strategy_aliases[comparison_key]),
-                                 violin_labels)
-            
-            if backwards_integration:
-                plt.ylim(-15, 15)
-            else:
-                plt.ylim(-20, 20)
-            plt.xlim(-0.5, num_rooms-0.5)
-
-            ax.set_xticks(group_centers, room_aliases.values(),
-                          rotation=30, ha='right')
-
-            plt.xlabel('Room')
-            plt.ylabel('Energy difference [dB]')
-
-            plt.grid(axis='y')
-
-            plt.legend(*zip(*violin_labels), ncol=2,
-                       handleheight=2)
-
-            if backwards_integration:
-                plt.suptitle(f'{tick_label_func(band_idx)}Hz band - backward-integrated energy diff')
-            elif forwards_integration:
-                plt.suptitle(f'{tick_label_func(band_idx)}Hz band - forward-integrated energy diff')
-            else:
-                plt.suptitle(f'{tick_label_func(band_idx)}Hz band - short-time-average energy diff')
-            plt.show()
+        """

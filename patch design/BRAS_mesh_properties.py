@@ -8,8 +8,7 @@ import shapely.plotting
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
+import matplotlib.patches as mpatches
 
 from cycler import cycler
 from okabeito import lightblue, yellow, orange, green, purple, red, blue, black
@@ -108,6 +107,12 @@ def plot_loghist(ax, data, bins):
     ax.set_xscale('log')
 
 
+# https://stackoverflow.com/a/58324984
+def add_violin_label(violin, label, label_list):
+    color = violin["bodies"][0].get_facecolor().flatten()
+    label_list.append((mpatches.Patch(color=color), label))
+
+
 def recolor_mesh(folder_path):
     file_path = os.path.join(folder_path, 'mesh.mtl')
 
@@ -132,25 +137,36 @@ if __name__ == '__main__':
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR2': 'CR2 small room (seminar room)',
                        'CR2_simplified': 'CR2 small room (seminar room)',
-                    #    'CR2_ubersimplified': 'CR2 small room (seminar room)',
+                       'CR2_ubersimplified': 'CR2 small room (seminar room)',
                        'CR3': 'CR3 medium room (chamber music hall)',
                     #    'CR4': 'CR4 large room (auditorium)',
                        }
 
     strategy_aliases = {'naive_obj': 'Largest possible',
                         'naive_trng': 'Bad triangulation',
-                        'split_area': r'Max $4\text{m}^2$',
-                        'split_area_length': r'Max $4\text{m}^2$, compact',
-                        'uber_split_area': r'Max $2\text{m}^2$',
-                        'uber_split_area_length': r'Max $2\text{m}^2$, compact'
+                        'split_area': r'Target $4\text{m}^2$',
+                        'split_area_length': r'Target $4\text{m}^2$, compact',
+                        'uber_split_area': r'Target $2\text{m}^2$',
+                        'uber_split_area_length': r'Target $2\text{m}^2$, compact'
                         }
-    room_aliases = {k: k.replace('_DoorAngle1', ', closed').replace('_DoorAngle3', ', open').replace('_simplified', '\n(simplified)')
+    room_aliases = {k: k.replace(
+                        '_DoorAngle1',
+                        ', closed'
+                        ).replace(
+                            '_DoorAngle3',
+                            ', open'
+                            ).replace(
+                                '_simplified',
+                                '\n(simplified)'
+                                ).replace(
+                                    '_ubersimplified',
+                                    '\n(ultra-simplified)')
                     for k in full_room_names.keys()}
 
     area_data = defaultdict(dict)
@@ -183,7 +199,7 @@ if __name__ == '__main__':
                 area, ipq = assess_patch(verts, faces, patch_tris)
                 patch_areas[patch_i] = area
                 patch_IPQs[patch_i] = ipq
-
+            
             # kernel = mmread(os.path.join(combined_dir, 'ART_kernel_band_1.mtx'), spmatrix=True)
             # num_paths = kernel.shape[0]
             # num_nonzero = kernel.nnz
@@ -242,7 +258,7 @@ if __name__ == '__main__':
             #     plt.imshow(image)
             #     plt.axis('off')
             #     plt.show()
-
+    
     num_rooms = len(full_room_names)
     num_strats = len(strategy_aliases)
     
@@ -252,28 +268,58 @@ if __name__ == '__main__':
     mid_margin = 0.02
     width = (1 - 2*group_margin) / num_strats
 
-    # https://stackoverflow.com/a/58324984
-    def add_violin_label(violin, label, label_list):
-        color = violin["bodies"][0].get_facecolor().flatten()
-        label_list.append(Patch(color=color, label=label))
-
     # Reset legend labels.
     legend_elements = list()
 
-    fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
+    fig, ax = plt.subplots(dpi=150, figsize=(2.0*4, 2.0*3))
 
     for k, (mesh_strat, areas_per_room) in enumerate(area_data.items()):
         positions = group_centers - 0.5 + group_margin + (k+0.5)*width
-        violin = ax.violinplot(areas_per_room.values(),
+        violin_keys = list(areas_per_room.keys())
+        violin = ax.violinplot([np.log10(areas_per_room[k])
+                                for k in violin_keys],
                                positions=positions,
                                widths=width - mid_margin,
                                side='both',
-                               points=10000,
+                               points=100,
+                               bw_method=0.2,
                                # quantiles=[[0.05, 0.5, 0.95]]*num_rooms,
-                               showextrema=True,
+                               showextrema=False,
                                showmeans=False,
                                showmedians=False)
         
+        # Save the violin contour coordinates.
+        # This is way more efficient than computing the violins in Tikz.
+
+        assert len(violin['bodies']) == len(areas_per_room)
+
+        for i, body in enumerate(violin['bodies']):
+            violin_contour = body.get_paths()
+            assert len(body.get_paths()) == 1
+            violin_contour = violin_contour[0].vertices.copy()
+
+            violin_contour[:, 0] -= positions[i]
+
+            positive = (violin_contour[:, 0] > 0)
+            pos_violin_contour = violin_contour[positive]
+            sorting = np.argsort(pos_violin_contour[:, 1])
+            pos_violin_contour = pos_violin_contour[sorting][::-1]
+
+            with open(os.path.join(output_folder, 'patch_areas_' + mesh_strat + '_' + violin_keys[i] + '-pos.dat'),
+                      mode='w') as file:
+                for x, y in pos_violin_contour:
+                    file.write(f'{x} {y}\n')
+
+            negative = (violin_contour[:, 0] <= 0)
+            neg_violin_contour = violin_contour[negative]
+            sorting = np.argsort(neg_violin_contour[:, 1])
+            neg_violin_contour = neg_violin_contour[sorting]
+
+            with open(os.path.join(output_folder, 'patch_areas_' + mesh_strat + '_' + violin_keys[i] + '-neg.dat'),
+                      mode='w') as file:
+                for x, y in neg_violin_contour:
+                    file.write(f'{x} {y}\n')
+
         for pc in violin['bodies']:
             pc.set_edgecolor(pc.get_facecolor())
             pc.set_alpha(0.5)
@@ -285,10 +331,23 @@ if __name__ == '__main__':
                rotation=30, ha='right', rotation_mode='anchor')
 
     plt.ylabel(r'Area [$\text{m}^2$]')
-    plt.yscale('log')
+    # plt.yscale('log')
+    # plt.ylim(1e-1, None)
+    # https://stackoverflow.com/a/60132262
+    y_min, y_max = ax.get_ylim()
+    y_min = -2
+    y_max = np.ceil(y_max)
+    tick_range = np.arange(y_min, y_max+1)
+    ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("$10^{{{x:.0f}}}$"))
+    ax.yaxis.set_ticks(tick_range)
+    ax.yaxis.set_ticks([np.log10(x)
+                        for p in tick_range
+                        for x in np.linspace(10**p, 10**(p+1), 10)],
+                       minor=True)
+    plt.ylim(y_min, y_max)
 
-    plt.legend(handles=legend_elements, ncol=3,
-               loc='lower center')
+    plt.legend(*zip(*legend_elements), ncol=3,
+               loc='upper center', handleheight=2)
 
     plt.title('Surface patch areas')
     plt.show()
@@ -296,26 +355,61 @@ if __name__ == '__main__':
     # Reset legend labels.
     legend_elements = list()
 
-    fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
+    fig, ax = plt.subplots(dpi=150, figsize=(2.0*4, 2.0*3))
 
     for k, (mesh_strat, ipqs_per_room) in enumerate(ipq_data.items()):
         positions = group_centers - 0.5 + group_margin + (k+0.5)*width
-        violin = ax.violinplot(ipqs_per_room.values(),
+        violin_keys = list(ipqs_per_room.keys())
+        violin = ax.violinplot([ipqs_per_room[k]
+                                for k in violin_keys],
                                positions=positions,
                                widths=width - mid_margin,
                                side='both',
-                               points=10000,
+                               points=100,
+                               bw_method=0.2,
                                # quantiles=[[0.05, 0.5, 0.95]]*num_rooms,
-                               showextrema=True,
+                               showextrema=False,
                                showmeans=False,
                                showmedians=False)
         
+        # Save the violin contour coordinates.
+        # This is way more efficient than computing the violins in Tikz.
+
+        assert len(violin['bodies']) == len(ipqs_per_room)
+
+        for i, body in enumerate(violin['bodies']):
+            violin_contour = body.get_paths()
+            assert len(body.get_paths()) == 1
+            violin_contour = violin_contour[0].vertices.copy()
+
+            violin_contour[:, 0] -= positions[i]
+
+            positive = (violin_contour[:, 0] > 0)
+            pos_violin_contour = violin_contour[positive]
+            sorting = np.argsort(pos_violin_contour[:, 1])
+            pos_violin_contour = pos_violin_contour[sorting][::-1]
+
+            with open(os.path.join(output_folder, 'patch_IPQs_' + mesh_strat + '_' + violin_keys[i] + '-pos.dat'),
+                      mode='w') as file:
+                for x, y in pos_violin_contour:
+                    file.write(f'{x} {y}\n')
+
+            negative = (violin_contour[:, 0] <= 0)
+            neg_violin_contour = violin_contour[negative]
+            sorting = np.argsort(neg_violin_contour[:, 1])
+            neg_violin_contour = neg_violin_contour[sorting]
+
+            with open(os.path.join(output_folder, 'patch_IPQs_' + mesh_strat + '_' + violin_keys[i] + '-neg.dat'),
+                      mode='w') as file:
+                for x, y in neg_violin_contour:
+                    file.write(f'{x} {y}\n')
+
         for pc in violin['bodies']:
             pc.set_edgecolor(pc.get_facecolor())
             pc.set_alpha(0.5)
 
         add_violin_label(violin, strategy_aliases[mesh_strat], legend_elements)
-        
+    
     plt.hlines(1, -1, num_rooms+1,
                color='black', ls='--',
                linewidth=1)
@@ -331,8 +425,8 @@ if __name__ == '__main__':
     plt.ylabel('Isoperimetric quotient')
     # plt.yscale('log')
 
-    plt.legend(handles=legend_elements, ncol=3,
-               loc='lower center')
+    plt.legend(*zip(*legend_elements), ncol=3,
+               loc='lower center', handleheight=2)
 
     plt.title('Surface patch compactness')
     plt.show()

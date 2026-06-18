@@ -6,21 +6,21 @@ from raves import compute_ART, run_ART
 from raves.src.utils import visualize_mesh
 
 if __name__ == '__main__':
-    echogram_sample_rate = 1e4
+    echogram_sample_rate = 8820
 
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
     room_names = [# 'CR1_DoorAngle1_ubersimplified',
-                #   'CR1_DoorAngle3_ubersimplified',
-                #   'CR2_ubersimplified',
+                  # 'CR1_DoorAngle3_ubersimplified',
+                  'CR2_ubersimplified',
                 #   'CR1_DoorAngle1_simplified',
                 #   'CR1_DoorAngle3_simplified',
-                #   'CR2_simplified',
+                  'CR2_simplified',
                 #   'CR1_DoorAngle1',
                 #   'CR1_DoorAngle3',
                 #   'CR2',
                 #   'CR3',
-                  'CR4',
+                  # 'CR4',
                   ]
     
     source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
@@ -102,16 +102,14 @@ if __name__ == '__main__':
             listeners_array = np.array([listener_positions[base_name][key]
                                         for key in sorted_listener_keys])
             
-            if os.path.isfile(os.path.join(echograms_subfolder, sorted_source_keys[-1] + sorted_listener_keys[-1] + '.wav')):
-                continue
-            
             print('\nPrecomputing environment', env_name, '...\n')
 
-            compute_ART(env_folder, assert_coplanarity=False,
-                        points_per_square_meter=(100.0 if 'CR1' in base_name else 
-                                                 (10.0 if 'CR4' in base_name else 30.0)),
-                        rays_per_hemisphere=(10000 if 'CR1' in base_name else 
-                                             (500 if 'CR4' in base_name else 1000)),
+            compute_ART(env_folder, overwrite=True,
+                        assert_coplanarity=False,
+                        points_per_square_meter=(30.0 if 'CR1' in base_name else 
+                                                 (5.0 if 'CR4' in base_name else 10.0)),
+                        rays_per_hemisphere=(3000 if 'CR1' in base_name else 
+                                             (300 if 'CR4' in base_name else 1000)),
                         multiprocess_pool_size=16,
                         temperature=air_parameters[base_name][0],
                         humidity=air_parameters[base_name][1])

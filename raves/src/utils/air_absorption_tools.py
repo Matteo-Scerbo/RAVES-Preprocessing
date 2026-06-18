@@ -110,11 +110,9 @@ def air_absorption_linear(frequency: Union[np.ndarray, float], distance: Union[n
 
 def air_absorption_in_band(fc: float, fd: float, distance: Union[np.ndarray, float],
                            humidity: float, temperature: float, pressure: float = 100.,
-                           num_samples: int = 100, energy_domain: bool = False) -> float:
+                           energy_domain: bool = False) -> float:
     """
-    Compute band-average linear pressure gain via RMS over a fractional band.
-
-    The band is [fc/fd, fc*fd] and the response is averaged over log-spaced frequency samples.
+    Compute linear pressure gain in a frequency band (i.e., at the lower edge of the band).
 
     Parameters
     ----------
@@ -130,44 +128,26 @@ def air_absorption_in_band(fc: float, fd: float, distance: Union[np.ndarray, flo
         Ambient temperature (°C).
     pressure : float, default: 100.0
         Ambient pressure (kPa).
-    num_samples : int, default 100
-        Number of frequency samples used inside the band.
     energy_domain : bool, default False
         If True, return the energy gain (squared pressure gain).
 
     Returns
     -------
     float or ndarray
-        Average linear pressure gain for the band.
-    
-    Notes
-    -----
-    The root-mean-square is always taken w.r.t. energy-domain values.
-    If pressure gains are requested, the square root is taken at the end.
+        Linear pressure gain at the lower band boundary.
     """
-    log_spaced_samples = np.logspace(np.log10(fc/fd), np.log10(fc*fd), num_samples)
+    low_boundary = fc / fd
     
-    sampled_values = air_absorption_linear(log_spaced_samples,
-                                           distance, humidity, temperature, pressure,
-                                           energy_domain=True)
-    
-    # The number of dimensions in the result depends on whether ´distance´ is a scalar or array.
-    if np.ndim(sampled_values) == 1:
-        rms = np.sqrt(np.mean(sampled_values**2))
-    else:
-        rms = np.sqrt(np.mean(sampled_values**2, axis=-1))
-    
-    if energy_domain:
-        return rms
-    else:
-        return np.sqrt(rms)
+    return air_absorption_linear(low_boundary,
+                                 distance, humidity, temperature, pressure,
+                                 energy_domain)
 
 
 def air_absorption_in_bands(band_centers: np.ndarray, fd: float, distance: Union[np.ndarray, float],
                             humidity: float, temperature: float, pressure: float = 100,
-                            num_samples: int = 100, energy_domain: bool = False) -> np.ndarray:
+                            energy_domain: bool = False) -> np.ndarray:
     """
-    Compute band-average linear pressure gain for multiple band centers.
+    Compute linear pressure gain for multiple frequency bands.
 
     Parameters
     ----------
@@ -183,24 +163,17 @@ def air_absorption_in_bands(band_centers: np.ndarray, fd: float, distance: Union
         Ambient temperature (°C).
     pressure : float, default: 100.0
         Ambient pressure (kPa).
-    num_samples : int, default 100
-        Number of frequency samples used inside each band.
     energy_domain : bool, default False
         If True, return the energy gain (squared pressure gain).
 
     Returns
     -------
     ndarray
-        Linear pressure gain per band center, same length as band_centers.
-    
-    Notes
-    -----
-    The root-mean-square is always taken w.r.t. energy-domain values.
-    If pressure gains are requested, the square root is taken at the end.
+        Linear pressure gain per band, same length as band_centers.
     """
     return np.array([air_absorption_in_band(fc, fd, distance,
                                             humidity, temperature, pressure,
-                                            num_samples, energy_domain)
+                                            energy_domain)
                      for fc in band_centers])
 
 
