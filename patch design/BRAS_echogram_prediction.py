@@ -10,14 +10,14 @@ if __name__ == '__main__':
 
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
-    room_names = ['CR1_DoorAngle1_ubersimplified',
-                  'CR1_DoorAngle3_ubersimplified',
+    room_names = [# 'CR1_DoorAngle1_ubersimplified',
+                #   'CR1_DoorAngle3_ubersimplified',
                 #   'CR2_ubersimplified',
-                  'CR1_DoorAngle1_simplified',
-                  'CR1_DoorAngle3_simplified',
+                #   'CR1_DoorAngle1_simplified',
+                #   'CR1_DoorAngle3_simplified',
                 #   'CR2_simplified',
-                  'CR1_DoorAngle1',
-                  'CR1_DoorAngle3',
+                #   'CR1_DoorAngle1',
+                #   'CR1_DoorAngle3',
                 #   'CR2',
                 #   'CR3',
                   'CR4',
@@ -92,18 +92,7 @@ if __name__ == '__main__':
             # Results of the echogram comparison will be saved to this subfolder.
             echograms_subfolder = os.path.join(env_folder, 'Echograms')
             os.makedirs(echograms_subfolder, exist_ok=True)
-            
-            print('\nPrecomputing environment', env_name, '...\n')
 
-            compute_ART(env_folder, assert_coplanarity=False,
-                        points_per_square_meter=(100.0 if 'CR1' in base_name else 30.0),
-                        rays_per_hemisphere=(10000 if 'CR1' in base_name else 1000),
-                        multiprocess_pool_size=16,
-                        temperature=air_parameters[base_name][0],
-                        humidity=air_parameters[base_name][1])
-            
-            print('\nRunning environment', env_name, '...\n')
-            
             # Need to put positions into arrays, ensuring the correct order.
             # https://stackoverflow.com/a/36634885
             sorted_source_keys = sorted(source_positions[base_name].keys())
@@ -112,6 +101,22 @@ if __name__ == '__main__':
             sorted_listener_keys = sorted(listener_positions[base_name].keys())
             listeners_array = np.array([listener_positions[base_name][key]
                                         for key in sorted_listener_keys])
+            
+            if os.path.isfile(os.path.join(echograms_subfolder, sorted_source_keys[-1] + sorted_listener_keys[-1] + '.wav')):
+                continue
+            
+            print('\nPrecomputing environment', env_name, '...\n')
+
+            compute_ART(env_folder, assert_coplanarity=False,
+                        points_per_square_meter=(100.0 if 'CR1' in base_name else 
+                                                 (10.0 if 'CR4' in base_name else 30.0)),
+                        rays_per_hemisphere=(10000 if 'CR1' in base_name else 
+                                             (500 if 'CR4' in base_name else 1000)),
+                        multiprocess_pool_size=16,
+                        temperature=air_parameters[base_name][0],
+                        humidity=air_parameters[base_name][1])
+            
+            print('\nRunning environment', env_name, '...\n')
             
             echograms, freqs = run_ART(env_folder, sources_array, listeners_array,
                                        overwrite_sources=True,
