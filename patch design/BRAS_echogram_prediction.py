@@ -79,14 +79,14 @@ if __name__ == '__main__':
             
             print('\nPrecomputing environment', env_name, '...\n')
 
-            # if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
-            compute_ART(env_folder, assert_coplanarity=False,
-                        overwrite=(True if 'CR1' in room_name else False),
-                        points_per_square_meter=(50.0 if 'CR1' in room_name else 30.0),
-                        rays_per_hemisphere=(3000 if 'CR1' in room_name else 1000),
-                        multiprocess_pool_size=16,
-                        temperature=air_parameters[room_name][0],
-                        humidity=air_parameters[room_name][1])
+            if env_name == 'CR3_split_area_length':
+                # if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
+                compute_ART(env_folder, assert_coplanarity=False,
+                            points_per_square_meter=(100.0 if 'CR1' in room_name else 30.0),
+                            rays_per_hemisphere=(10000 if 'CR1' in room_name else 1000),
+                            multiprocess_pool_size=16,
+                            temperature=air_parameters[room_name][0],
+                            humidity=air_parameters[room_name][1])
             
             print('\nRunning environment', env_name, '...\n')
             
@@ -98,10 +98,10 @@ if __name__ == '__main__':
             sorted_listener_keys = sorted(listener_positions[room_name].keys())
             listeners_array = np.array([listener_positions[room_name][key]
                                         for key in sorted_listener_keys])
-                
+            
             echograms, freqs = run_ART(env_folder, sources_array, listeners_array,
-                                       overwrite_sources=(True if 'CR1' in room_name else False),
-                                       overwrite_listeners=(True if 'CR1' in room_name else False),
+                                       overwrite_sources=True,
+                                       overwrite_listeners=True,
                                        echogram_sample_rate=echogram_sample_rate,
                                        echogram_duration=shown_durations[room_name],
                                        output_folder_path=echograms_subfolder,
