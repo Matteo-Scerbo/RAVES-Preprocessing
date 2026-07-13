@@ -10,16 +10,16 @@ if __name__ == '__main__':
 
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
-    room_names = [# 'CR1_DoorAngle1_ubersimplified',
-                #   'CR1_DoorAngle3_ubersimplified',
+    room_names = ['CR1_DoorAngle1_ubersimplified',
+                  'CR1_DoorAngle3_ubersimplified',
                 #   'CR2_ubersimplified',
-                #   'CR1_DoorAngle1_simplified',
-                #   'CR1_DoorAngle3_simplified',
+                  'CR1_DoorAngle1_simplified',
+                  'CR1_DoorAngle3_simplified',
                 #   'CR2_simplified',
-                #   'CR1_DoorAngle1',
-                #   'CR1_DoorAngle3',
+                  'CR1_DoorAngle1',
+                  'CR1_DoorAngle3',
                 #   'CR2',
-                  'CR3',
+                #   'CR3',
                   'CR4',
                   ]
     
@@ -71,8 +71,8 @@ if __name__ == '__main__':
                     'CR3': (22.4, 40.9),
                     'CR4': (20.9, 37.5),
                     }
-    shown_durations = {'CR1_DoorAngle1': 3.0,
-                       'CR1_DoorAngle3': 3.0,
+    shown_durations = {'CR1_DoorAngle1': 4.0,
+                       'CR1_DoorAngle3': 4.0,
                        'CR2': 2.5,
                        'CR3': 2.0,
                        'CR4': 2.5,
@@ -83,8 +83,8 @@ if __name__ == '__main__':
         base_name = base_name.replace('_ubersimplified', '')
 
         for remeshing_strategy in ['naive_obj', 'naive_trng',
-                                   'split_area', 'split_area_length',
-                                   'uber_split_area', 'uber_split_area_length'
+                                   'split_area', 'uber_split_area',
+                                   'split_area_length', 'uber_split_area_length'
                                    ]:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)

@@ -124,9 +124,8 @@ if __name__ == '__main__':
                          'Genelec8020c_LSorientation-03',
                          'Genelec8020c_LSorientation-04'
                          ]
-    # TODO: Run longer simulations of CR1; some are shorter than the references.
-    shown_durations = {'CR1_DoorAngle1': 3.0,
-                       'CR1_DoorAngle3': 3.0,
+    shown_durations = {'CR1_DoorAngle1': 4.0,
+                       'CR1_DoorAngle3': 4.0,
                        'CR2': 2.5,
                        'CR3': 2.0,
                        'CR4': 2.5,
@@ -190,11 +189,9 @@ if __name__ == '__main__':
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = ref_data.T
 
-                    # TODO: Run longer simulations of CR1; some are shorter than the references.
                     max_duration = int(shown_durations[base_name] * audio_sample_rate)
                     max_duration = (max_duration // audio_stride) * audio_stride
                     if echogram.shape[-1] >= max_duration:
-                        # print('Reference longer than simulation:', short_name, np.round(echogram.shape[-1] / audio_sample_rate, 2))
                         echogram = echogram[:, :max_duration]
                     elif echogram.shape[-1] < max_duration:
                         echogram = np.pad(echogram, ((0, 0), (0, max_duration - echogram.shape[-1])))
@@ -332,16 +329,16 @@ if __name__ == '__main__':
             continue
         # if 'ubersimplified' in short_name:
         #     continue
-        if 'CR1' in short_name:
-            continue
+        # if 'CR1' in short_name:
+        #     continue
         # if 'DoorAngle1' in short_name:
         #     continue
         # if 'DoorAngle3' in short_name:
         #     continue
-        # if 'CR2' in short_name:
-        #     continue
-        # if 'CR3' in short_name:
-        #     continue
+        if 'CR2' in short_name:
+            continue
+        if 'CR3' in short_name:
+            continue
         if 'CR4' in short_name:
             continue
         
