@@ -1,3 +1,8 @@
+"""
+The website ImageToStl.com was used to convert the SketchUp files provided by BRAS into OBJ/MTL meshes.
+This script reformats the resulting OBJ/MTL meshes to match the requirements of the MoD-ART package.
+Outputs of this script are the "largest patches possible" and "naive triangulation" segmentations.
+"""
 import os
 import shutil
 import numpy as np

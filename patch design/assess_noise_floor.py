@@ -9,6 +9,14 @@ from scipy.signal.windows import get_window
 from raves.src.utils import load_frequencies
 
 if __name__ == '__main__':
+    """
+    This script loads all RIRs from the BRAS dataset and converts each one to an echogram,
+     i.e., energy in each octave band.
+    Each RIR is band-bassed with an octave-band filterbank;
+     each band signal is smoothed out;
+     the start of noise floor and/or deconvolution artefacts is determined;
+     the non-smoothed energy is truncated and saved.
+    """
     mesh_folder = os.path.join('..', 'BRAS meshes')
     response_folder = os.path.join('..', '..', '..', 'BRAS', '1 Scene descriptions')
 
@@ -26,7 +34,7 @@ if __name__ == '__main__':
     #     20,   18,   15,   14,   12,   10,    9,    7,
     #      6,    5,    4,    3,    2,    1]
 
-    # Broadest: 'cosine', 'lanczos', 'tukey'
+    # Broadest windows: 'cosine', 'lanczos', 'tukey'
     longest_window = get_window('tukey', int(1.2 * downsampled_rate))
     longest_window /= np.sum(longest_window)
     long_window = get_window('tukey', int(0.8 * downsampled_rate))

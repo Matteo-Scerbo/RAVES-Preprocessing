@@ -6,29 +6,32 @@ from raves import compute_ART, run_ART
 from raves.src.utils import visualize_mesh
 
 if __name__ == '__main__':
+    """
+    This script runs all ART simulations for the study.
+    """
     echogram_sample_rate = 8820
 
     mesh_folder = os.path.join('..', 'BRAS meshes')
 
     room_names = [# 'CR1_DoorAngle1_ubersimplified',
                   # 'CR1_DoorAngle3_ubersimplified',
-                  'CR2_ubersimplified',
-                #   'CR1_DoorAngle1_simplified',
-                #   'CR1_DoorAngle3_simplified',
+                  # 'CR2_ubersimplified',
+                  'CR1_DoorAngle1_simplified',
+                  'CR1_DoorAngle3_simplified',
                   'CR2_simplified',
-                #   'CR1_DoorAngle1',
-                #   'CR1_DoorAngle3',
-                #   'CR2',
-                #   'CR3',
+                  'CR1_DoorAngle1',
+                  'CR1_DoorAngle3',
+                  'CR2',
+                  'CR3',
                   # 'CR4',
                   ]
     
     source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
-                                        'LS2': [-1.77, -2.28, 1.189],
-                                        },
+                                           'LS2': [-1.77, -2.28, 1.189],
+                                           },
                         'CR1_DoorAngle3': {'LS1': [1.5, -2.225, 1.239],
-                                        'LS2': [-1.77, -2.28, 1.189],
-                                        },
+                                           'LS2': [-1.77, -2.28, 1.189],
+                                           },
                         'CR2': {'LS1': [0.931, -2.547, 1.23],
                                 'LS2': [0.119, 2.88, 1.23],
                                 },
@@ -41,11 +44,11 @@ if __name__ == '__main__':
                                 },
                         }
     listener_positions = {'CR1_DoorAngle1': {'MP3': [-1.205, 0.68, 1.235],
-                                            'MP4': [-4.35, 0.695, 1.235],
-                                            },
+                                             'MP4': [-4.35, 0.695, 1.235],
+                                             },
                         'CR1_DoorAngle3': {'MP3': [-1.205, 0.68, 1.235],
-                                            'MP4': [-4.35, 0.695, 1.235],
-                                            },
+                                           'MP4': [-4.35, 0.695, 1.235],
+                                           },
                         'CR2': {'MP1': [-0.993, -1.426, 1.23],
                                 'MP2': [0.439, -0.147, 1.23],
                                 'MP3': [1.361, -0.603, 1.23],
@@ -66,11 +69,11 @@ if __name__ == '__main__':
                                 },
                         }
     air_parameters = {'CR1_DoorAngle1': (18.2, 47.6),
-                    'CR1_DoorAngle3': (18.2, 47.6),
-                    'CR2': (19.5, 41.7),
-                    'CR3': (22.4, 40.9),
-                    'CR4': (20.9, 37.5),
-                    }
+                      'CR1_DoorAngle3': (18.2, 47.6),
+                      'CR2': (19.5, 41.7),
+                      'CR3': (22.4, 40.9),
+                      'CR4': (20.9, 37.5),
+                      }
     shown_durations = {'CR1_DoorAngle1': 4.0,
                        'CR1_DoorAngle3': 4.0,
                        'CR2': 2.5,

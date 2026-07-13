@@ -1,3 +1,7 @@
+"""
+This script takes the "largest patches possible" meshes produced by `reformat_obj.py` and produces the "target area" segmentations.
+It also produces segmentations with a constraint on compactness, but those were unused in the study, as they do not significantly differ from the others.
+"""
 import os
 import shutil
 import numpy as np

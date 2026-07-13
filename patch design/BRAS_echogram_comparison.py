@@ -22,20 +22,6 @@ from collections import defaultdict
 from raves.src.utils import load_frequencies
 
 
-# https://gist.github.com/vishalkuo/f4aec300cf6252ed28d3
-def remove_outliers(x, outlier_const):
-    a = np.array(x).flatten()
-    if outlier_const <= 0:
-        return a
-    
-    upper_quartile = np.percentile(a, 75)
-    lower_quartile = np.percentile(a, 25)
-    iqr = (upper_quartile - lower_quartile) * outlier_const
-    quartileSet = (lower_quartile - iqr, upper_quartile + iqr)
-    
-    return a[np.where((a >= quartileSet[0]) & (a <= quartileSet[1]))]
-
-
 # https://stackoverflow.com/a/58324984
 def add_violin_label(violin, label, label_list):
     color = violin["bodies"][0].get_facecolor().flatten()
@@ -43,18 +29,23 @@ def add_violin_label(violin, label, label_list):
 
 
 if __name__ == '__main__':
+    """
+    This script loads all recorded and simulated echograms,
+     and produces a variety of plots visualizing them.
+    Data from some of the plots is exported for Tikz figures in the paper.
+    """
     mesh_folder = os.path.join('..', 'BRAS meshes')
     output_folder = os.path.join('.', 'data_for_figures')
     # output_folder = None
 
-    shown_plots = ['All echograms',
+    shown_plots = [# 'All echograms',
                    # 'Echogram',
                    # 'Full echogram',
                    # 'Spectrogram error',
                    # 'Single spectrogram error',
                    # 'Violin plot',
                    # 'Single violin plot',
-                   # 'Freq-wise violin plot'
+                   'Freq-wise violin plot'
                    ]
 
     audio_sample_rate = 44100
@@ -85,28 +76,26 @@ if __name__ == '__main__':
     plotted_time_range = 'max'
     plotted_band_range = (0, 7)
     backwards_integration = False
-    forwards_integration = False
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
     normalization_period = 0
     # Normalize each frequency band separately, or all together.
     band_wise_norm = False
-    outlier_constant = 0.0
 
     dode_2k_compensation = 4.0
 
     reference_name = 'Dodecahedron'
     # reference_name = 'Genelec 1'
 
-    full_room_names = {# 'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                    #    'CR2': 'CR2 small room (seminar room)',
-                    #    'CR2_simplified': 'CR2 small room (seminar room)',
-                    #    'CR2_ubersimplified': 'CR2 small room (seminar room)',
+    full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       # 'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       # 'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR2': 'CR2 small room (seminar room)',
+                       'CR2_simplified': 'CR2 small room (seminar room)',
+                       # 'CR2_ubersimplified': 'CR2 small room (seminar room)',
                        'CR3': 'CR3 medium room (chamber music hall)',
                        # 'CR4': 'CR4 large room (auditorium)',
                        }
@@ -128,11 +117,11 @@ if __name__ == '__main__':
                                 },
                         }
     listener_positions = {'CR1_DoorAngle1': {'MP3': [-1.205, 0.68, 1.235],
-                                            'MP4': [-4.35, 0.695, 1.235],
-                                            },
+                                             'MP4': [-4.35, 0.695, 1.235],
+                                             },
                         'CR1_DoorAngle3': {'MP3': [-1.205, 0.68, 1.235],
-                                            'MP4': [-4.35, 0.695, 1.235],
-                                            },
+                                           'MP4': [-4.35, 0.695, 1.235],
+                                           },
                         'CR2': {'MP1': [-0.993, -1.426, 1.23],
                                 'MP2': [0.439, -0.147, 1.23],
                                 'MP3': [1.361, -0.603, 1.23],
@@ -302,11 +291,6 @@ if __name__ == '__main__':
                         echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
                         # Downsampling the EDC is easy, just skip values
                         echogram = echogram[:, ::audio_stride]
-                    elif forwards_integration:
-                        # Regular integration
-                        echogram = np.cumsum(echogram, axis=-1)
-                        # Downsampling the accumulated energy is easy, just skip values
-                        echogram = echogram[:, ::audio_stride]
                     else:
                         # Short-time average (and downsampling)
                         num_windows = echogram.shape[-1] // audio_stride
@@ -340,11 +324,10 @@ if __name__ == '__main__':
                     elif echogram.shape[-1] < max_duration:
                         echogram = np.pad(echogram,
                                           ((0, 0), (0, max_duration - echogram.shape[-1])),
-                                          mode=('edge' if forwards_integration else 'constant'))
+                                          mode='constant')
                     
-                    if not forwards_integration:
-                        # dB scale
-                        echogram = 10 * np.log10(echogram)
+                    # dB scale
+                    echogram = 10 * np.log10(echogram)
                 
                     echos_per_room[short_name][(src, lst, ls_short)] = echogram
 
@@ -403,11 +386,6 @@ if __name__ == '__main__':
                         echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
                         # Downsampling the EDC is easy, just skip values
                         echogram = echogram[:, ::audio_stride]
-                    elif forwards_integration:
-                        # Regular integration
-                        echogram = np.cumsum(echogram, axis=-1)
-                        # Downsampling the accumulated energy is easy, just skip values
-                        echogram = echogram[:, ::audio_stride]
                     else:
                         # Short-time average (and downsampling)
                         num_windows = echogram.shape[-1] // audio_stride
@@ -436,11 +414,10 @@ if __name__ == '__main__':
                     elif echogram.shape[-1] < max_duration:
                         echogram = np.pad(echogram,
                                           ((0, 0), (0, max_duration - echogram.shape[-1])),
-                                          mode=('edge' if forwards_integration else 'constant'))
+                                          mode='constant')
                     
-                    if not forwards_integration:
-                        # dB scale
-                        echogram = 10 * np.log10(echogram)
+                    # dB scale
+                    echogram = 10 * np.log10(echogram)
                 
                     full_echos_per_room[short_name][(src, lst, ls_short)] = echogram
 
@@ -494,11 +471,6 @@ if __name__ == '__main__':
                         echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
                         # Downsampling the EDC is easy, just skip values
                         echogram = echogram[:, ::echo_stride]
-                    elif forwards_integration:
-                        # Regular integration
-                        echogram = np.cumsum(echogram, axis=-1)
-                        # Downsampling the accumulated energy is easy, just skip values
-                        echogram = echogram[:, ::audio_stride]
                     else:
                         # Short-time average (and downsampling)
                         num_windows = echogram.shape[-1] // echo_stride
@@ -531,7 +503,7 @@ if __name__ == '__main__':
                     elif echogram.shape[-1] < max_duration:
                         echogram = np.pad(echogram,
                                           ((0, 0), (0, max_duration - echogram.shape[-1])),
-                                          mode=('edge' if forwards_integration else 'constant'))
+                                          mode='constant')
                     
                     # dB scale
                     echogram = 10 * np.log10(echogram)
@@ -569,11 +541,6 @@ if __name__ == '__main__':
                         echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
                         # Downsampling the EDC is easy, just skip values
                         echogram = echogram[:, ::echo_stride]
-                    elif forwards_integration:
-                        # Regular integration
-                        echogram = np.cumsum(echogram, axis=-1)
-                        # Downsampling the accumulated energy is easy, just skip values
-                        echogram = echogram[:, ::audio_stride]
                     else:
                         # Short-time average (and downsampling)
                         num_windows = echogram.shape[-1] // echo_stride
@@ -662,7 +629,7 @@ if __name__ == '__main__':
 
                     if backwards_integration and np.isinf(normalization_period):
                         axes[i, j].set_ylim(-60, 0)
-                    # elif not forwards_integration:
+                    # else:
                     #     axes[i, j].set_ylim(-60, None)
                     
                     if i == num_sl_configs-1:
@@ -707,7 +674,7 @@ if __name__ == '__main__':
                          else plotted_time_range))
             if backwards_integration and np.isinf(normalization_period):
                 plt.ylim(-60, 0)
-            elif not forwards_integration:
+            else:
                 plt.ylim(bottom, None)
             
             plt.xlabel('Time [s]')
@@ -757,7 +724,7 @@ if __name__ == '__main__':
                          else plotted_time_range))
             if backwards_integration and np.isinf(normalization_period):
                 plt.ylim(-60, 0)
-            elif not forwards_integration:
+            else:
                 plt.ylim(bottom, None)
             
             plt.xlabel('Time [s]')
@@ -823,9 +790,6 @@ if __name__ == '__main__':
             if backwards_integration:
                 cbar.ax.set_ylabel('Backward-integrated energy difference',
                                    rotation=270, labelpad=15)
-            elif forwards_integration:
-                cbar.ax.set_ylabel('Forward-integrated energy difference',
-                                   rotation=270, labelpad=15)
             else:
                 cbar.ax.set_ylabel('Short-time-average energy difference',
                                    rotation=270, labelpad=15)
@@ -863,9 +827,6 @@ if __name__ == '__main__':
             if backwards_integration:
                 cbar.ax.set_ylabel('Backward-integrated energy difference',
                                    rotation=270, labelpad=15)
-            elif forwards_integration:
-                cbar.ax.set_ylabel('Forward-integrated energy difference',
-                                   rotation=270, labelpad=15)
             else:
                 cbar.ax.set_ylabel('Short-time-average energy difference',
                                    rotation=270, labelpad=15)
@@ -902,8 +863,7 @@ if __name__ == '__main__':
                                       for e in error_data]
 
                         positions = group_centers - 0.5 + group_margin + (k+0.5)*width
-                        violin = axes[i, j].violinplot([remove_outliers(x, outlier_constant)
-                                                        for x in error_data],
+                        violin = axes[i, j].violinplot(error_data,
                                                        positions=positions,
                                                        widths=width-mid_margin,
                                                        side='both',
@@ -947,8 +907,6 @@ if __name__ == '__main__':
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
-            elif forwards_integration:
-                plt.suptitle(f'{room_aliases[short_name]} - forward-integrated energy diff')
             else:
                 plt.suptitle(f'{room_aliases[short_name]} - short-time-average energy diff')
             plt.show()
@@ -984,8 +942,7 @@ if __name__ == '__main__':
             
             for k, (mesh_strat, error_data) in enumerate(combined_data.items()):
                 positions = group_centers - 0.5 + group_margin + (k+0.5)*width
-                violin = ax.violinplot([remove_outliers(x, outlier_constant)
-                                        for x in error_data.values()],
+                violin = ax.violinplot(error_data.values(),
                                        positions=positions,
                                        widths=width-mid_margin,
                                        side='both',
@@ -1023,8 +980,6 @@ if __name__ == '__main__':
 
             if backwards_integration:
                 plt.suptitle(f'{room_aliases[short_name]} - backward-integrated energy diff')
-            elif forwards_integration:
-                plt.suptitle(f'{room_aliases[short_name]} - forward-integrated energy diff')
             else:
                 plt.suptitle(f'{room_aliases[short_name]} - short-time-average energy diff')
             plt.show()
@@ -1066,17 +1021,16 @@ if __name__ == '__main__':
                                 else np.zeros(1))
                                for short_name in violin_keys]
 
-                violin = ax.violinplot([remove_outliers(x, outlier_constant)
-                                        for x in violin_data],
-                                        positions=positions,
-                                        widths=width-mid_margin,
-                                        side='both',
-                                        points=75,
-                                        bw_method=0.2,
-                                        # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
-                                        showextrema=False,
-                                        showmeans=True,
-                                        showmedians=False)
+                violin = ax.violinplot(violin_data,
+                                       positions=positions,
+                                       widths=width-mid_margin,
+                                       side='both',
+                                       points=75,
+                                       bw_method=0.2,
+                                       # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
+                                       showextrema=False,
+                                       showmeans=True,
+                                       showmedians=False)
 
                 for i, body in enumerate(violin['bodies']):
                     if 'Genelec' in comparison_key and 'simplified' in violin_keys[i]:
@@ -1121,8 +1075,6 @@ if __name__ == '__main__':
             
             if backwards_integration:
                 plt.ylim(-15, 15)
-            elif forwards_integration:
-                pass
             else:
                 plt.ylim(-20, 20)
             plt.xlim(-0.5, num_rooms-0.5)
@@ -1140,8 +1092,6 @@ if __name__ == '__main__':
 
             if backwards_integration:
                 plt.suptitle(f'{tick_label_func(band_idx)}Hz band - backward-integrated energy diff')
-            elif forwards_integration:
-                plt.suptitle(f'{tick_label_func(band_idx)}Hz band - forward-integrated energy diff')
             else:
                 plt.suptitle(f'{tick_label_func(band_idx)}Hz band - short-time-average energy diff')
             plt.show()

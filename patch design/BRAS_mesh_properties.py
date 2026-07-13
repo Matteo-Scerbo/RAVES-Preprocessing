@@ -132,6 +132,11 @@ def recolor_mesh(folder_path):
 
 
 if __name__ == '__main__':
+    """
+    This script loads all prepared ART models,
+     and produces a variety of plots visualizing statistics about the patches.
+    Data from some of the plots is exported for Tikz figures in the paper.
+    """
     mesh_folder = os.path.join('..', 'BRAS meshes')
     output_folder = os.path.join('.', 'data_for_figures')
 
