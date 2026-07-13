@@ -48,7 +48,8 @@ def air_absorption_db(frequency: Union[np.ndarray, float],
     return 8.686 * (f**2) * (x + ((T / To)**(-5/2)) * (y + z))
 
 
-def gain_from_dbm(dbm: Union[np.ndarray, float], distance: float = 1.) -> Union[np.ndarray, float]:
+def gain_from_dbm(dbm: Union[np.ndarray, float], distance: Union[np.ndarray, float] = 1.,
+                  energy_domain: bool = False) -> Union[np.ndarray, float]:
     """
     Convert per-meter attenuation (dB/m) to linear pressure gain over a distance.
 
@@ -56,20 +57,29 @@ def gain_from_dbm(dbm: Union[np.ndarray, float], distance: float = 1.) -> Union[
     ----------
     dbm : float or ndarray
         Attenuation in dB per meter.
-    distance : float, default 1.0
+    distance : float or ndarray, default 1.0
         Propagation distance in meters.
+    energy_domain : bool, default False
+        If True, return the energy gain (squared pressure gain).
 
     Returns
     -------
     float or ndarray
         Linear pressure gain (amplitude scale factor).
+        If both ``dbm`` and ``distance`` are arrays, the returned array has shape (M, N)
+         where M is the length of ``distance`` and N is the length of ``dbm``.
     """
 
-    return 10 ** (-dbm * distance / 20)
+    if (type(dbm) == float or type(distance) == float
+        or len(dbm) == 1 or len(distance) == 1):
+        return 10 ** (-dbm * distance / (10 if energy_domain else 20))
+    else:
+        return 10 ** (-dbm[None] * distance[:, None] / (10 if energy_domain else 20))
 
 
-def air_absorption_linear(frequency: Union[np.ndarray, float], distance: float,
-                          humidity: float, temperature: float, pressure: float = 100.) -> Union[np.ndarray, float]:
+def air_absorption_linear(frequency: Union[np.ndarray, float], distance: Union[np.ndarray, float],
+                          humidity: float, temperature: float, pressure: float = 100.,
+                          energy_domain: bool = False) -> Union[np.ndarray, float]:
     """
     Compute linear pressure gain due to air absorption over a distance.
 
@@ -77,7 +87,7 @@ def air_absorption_linear(frequency: Union[np.ndarray, float], distance: float,
     ----------
     frequency : float or ndarray
         Frequency in Hz. Can be a scalar or a vector (process multiple at once).
-    distance : float
+    distance : float or ndarray
         Propagation distance in meters.
     humidity : float
         Ambient relative humidity (%).
@@ -85,18 +95,22 @@ def air_absorption_linear(frequency: Union[np.ndarray, float], distance: float,
         Ambient temperature (°C).
     pressure : float, default: 100.0
         Ambient pressure (kPa).
+    energy_domain : bool, default False
+        If True, return the energy gain (squared pressure gain).
 
     Returns
     -------
     float or ndarray
         Linear pressure gain (amplitude scale factor) at the given frequency or frequencies.
+        If both ``frequency`` and ``distance`` are arrays, the returned array has shape (M, N)
+         where M is the length of ``distance`` and N is the length of ``frequency``.
     """
-    return gain_from_dbm(air_absorption_db(frequency, humidity, temperature, pressure), distance)
+    return gain_from_dbm(air_absorption_db(frequency, humidity, temperature, pressure), distance, energy_domain)
 
 
-def air_absorption_in_band(fc: float, fd: float, distance: float,
+def air_absorption_in_band(fc: float, fd: float, distance: Union[np.ndarray, float],
                            humidity: float, temperature: float, pressure: float = 100.,
-                           num_samples: int = 1000) -> float:
+                           num_samples: int = 100, energy_domain: bool = False) -> float:
     """
     Compute band-average linear pressure gain via RMS over a fractional band.
 
@@ -108,7 +122,7 @@ def air_absorption_in_band(fc: float, fd: float, distance: float,
         Band center frequency in Hz.
     fd : float
         Band width factor (e.g., sqrt(2) for full octave band).
-    distance : float
+    distance : float or ndarray
         Propagation distance in meters.
     humidity : float
         Ambient relative humidity (%).
@@ -116,21 +130,39 @@ def air_absorption_in_band(fc: float, fd: float, distance: float,
         Ambient temperature (°C).
     pressure : float, default: 100.0
         Ambient pressure (kPa).
-    num_samples : int, default 1000
+    num_samples : int, default 100
         Number of frequency samples used inside the band.
+    energy_domain : bool, default False
+        If True, return the energy gain (squared pressure gain).
 
     Returns
     -------
-    float
+    float or ndarray
         RMS linear pressure gain for the band.
+    
+    Notes
+    -----
+    The root-mean-square is always taken w.r.t. energy-domain values.
+    If pressure gains are requested, the square root is taken at the end.
     """
-    return np.sqrt(np.mean(air_absorption_linear(np.linspace(fc/fd, fc*fd, num_samples),
-                                                 distance, humidity, temperature, pressure)**2))
+    sampled_values = air_absorption_linear(np.linspace(fc/fd, fc*fd, num_samples),
+                                           distance, humidity, temperature, pressure,
+                                           energy_domain=True)
+    
+    if type(distance) == float or len(distance) == 1:
+        rms = np.sqrt(np.mean(sampled_values**2))
+    else:
+        rms = np.sqrt(np.mean(sampled_values**2, axis=-1))
+    
+    if energy_domain:
+        return rms
+    else:
+        return np.sqrt(rms)
 
 
-def air_absorption_in_bands(band_centers: np.ndarray, fd: float, distance: float,
+def air_absorption_in_bands(band_centers: np.ndarray, fd: float, distance: Union[np.ndarray, float],
                             humidity: float, temperature: float, pressure: float = 100,
-                            num_samples: int = 1000) -> np.ndarray:
+                            num_samples: int = 100, energy_domain: bool = False) -> np.ndarray:
     """
     Compute band-average linear pressure gain for multiple band centers.
 
@@ -140,7 +172,7 @@ def air_absorption_in_bands(band_centers: np.ndarray, fd: float, distance: float
         Array of band center frequencies in Hz.
     fd : float
         Band width factor (e.g., sqrt(2) for full octave band).
-    distance : float
+    distance : float or ndarray
         Propagation distance in meters.
     humidity : float
         Ambient relative humidity (%).
@@ -148,15 +180,24 @@ def air_absorption_in_bands(band_centers: np.ndarray, fd: float, distance: float
         Ambient temperature (°C).
     pressure : float, default: 100.0
         Ambient pressure (kPa).
-    num_samples : int, default 1000
+    num_samples : int, default 100
         Number of frequency samples used inside each band.
+    energy_domain : bool, default False
+        If True, return the energy gain (squared pressure gain).
 
     Returns
     -------
     ndarray
         Linear pressure gain per band center, same length as band_centers.
+    
+    Notes
+    -----
+    The root-mean-square is always taken w.r.t. energy-domain values.
+    If pressure gains are requested, the square root is taken at the end.
     """
-    return np.array([air_absorption_in_band(fc, fd, distance, humidity, temperature, pressure, num_samples)
+    return np.array([air_absorption_in_band(fc, fd, distance,
+                                            humidity, temperature, pressure,
+                                            num_samples, energy_domain)
                      for fc in band_centers])
 
 

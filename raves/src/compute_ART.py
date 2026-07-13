@@ -913,6 +913,9 @@ def compute_ART(folder_path: str,
             # Retrieve the coefficients of patch i for this frequency band.
             patch_i_absorption = material_coefficients[patch_mat][0, band_idx]
             patch_i_scattering = material_coefficients[patch_mat][1, band_idx]
+            # Prepare the kernel weights to avoid extra computations.
+            coeff_d = patch_i_scattering * (1 - patch_i_absorption)
+            coeff_s = (1 - patch_i_scattering) * (1 - patch_i_absorption)
 
             # Locate all propagation paths which originate at patch i. See docs of `csr_array`.
             all_outgoing_paths_from_i = path_indexing.data[path_indexing.indptr[i]:path_indexing.indptr[i+1]]
@@ -921,23 +924,19 @@ def compute_ART(folder_path: str,
 
             # Weighted sum of diffuse and specular kernels.
             reflection_kernel[:, all_outgoing_paths_from_i] =\
-                patch_i_scattering * diffuse_kernel[:, all_outgoing_paths_from_i]\
-                + (1 - patch_i_scattering) * specular_kernel[:, all_outgoing_paths_from_i]
-
-            # Add surface material energy losses.
-            reflection_kernel[:, all_outgoing_paths_from_i] *= 1 - patch_i_absorption
+                coeff_d * diffuse_kernel[:, all_outgoing_paths_from_i]\
+                + coeff_s* specular_kernel[:, all_outgoing_paths_from_i]
 
         # Add air absorption energy losses (based on path lengths).
-        air_absorption_pressure_gains = np.array([
-            air_absorption_in_band(fc=center_frequency, fd=np.sqrt(2),  # Using full octave bands, the half-band factor is sqrt(2).
-                                   distance=propagation_distance,
-                                   humidity=humidity, temperature=temperature, pressure=pressure)
-            for propagation_distance in path_lengths
-        ])
-        # Power level is the square of the pressure amplitude level.
-        air_absorption_energy_gains = air_absorption_pressure_gains**2
+        # Note: Using full octave bands, the half-band factor is sqrt(2).
+        air_pressure_scaling = air_absorption_in_band(fc=center_frequency, fd=np.sqrt(2),
+                                                      distance=path_lengths,
+                                                      humidity=humidity,
+                                                      temperature=temperature,
+                                                      pressure=pressure,
+                                                      energy_domain=True)
         # Scale each column by the relative gain.
-        reflection_kernel = reflection_kernel @ diags(air_absorption_energy_gains)
+        reflection_kernel = reflection_kernel @ diags(air_pressure_scaling)
         # TODO: Air absorption, to be totally correct, should not be baked into the reflection kernel.
         #       Making it part of the matrix means that it's applied one too many times when MoD-ART is performed.
         #       In the future, the air_absorption_energy_gains will be saved to a separate file and applied alongside delays.
