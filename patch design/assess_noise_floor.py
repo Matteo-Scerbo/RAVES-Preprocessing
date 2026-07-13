@@ -16,9 +16,11 @@ if __name__ == '__main__':
     audio_nyquist = audio_sample_rate / 2
 
     # Broadest: 'cosine', 'lanczos', 'tukey'
-    long_window = get_window('tukey', int(0.5 * audio_sample_rate))
+    longest_window = get_window('tukey', int(1.0 * audio_sample_rate))
+    longest_window /= np.sum(longest_window)
+    long_window = get_window('tukey', int(0.8 * audio_sample_rate))
     long_window /= np.sum(long_window)
-    short_window = get_window('tukey', int(0.2 * audio_sample_rate))
+    short_window = get_window('tukey', int(0.4 * audio_sample_rate))
     short_window /= np.sum(short_window)
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
@@ -27,7 +29,7 @@ if __name__ == '__main__':
                        'CR3': 'CR3 medium room (chamber music hall)',
                        'CR4': 'CR4 large room (auditorium)',
                        }
-    source_positions = {'CR1_DoorAngle1': {# 'LS1': [1.5, -2.225, 1.239],
+    source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
                                            'LS2': [-1.77, -2.28, 1.189],
                                            },
                         'CR1_DoorAngle3': {'LS1': [1.5, -2.225, 1.239],
@@ -45,11 +47,11 @@ if __name__ == '__main__':
                                 },
                         }
     listener_positions = {'CR1_DoorAngle1': {'MP3': [-1.205, 0.68, 1.235],
-                                            'MP4': [-4.35, 0.695, 1.235],
+                                             'MP4': [-4.35, 0.695, 1.235],
                                             },
                         'CR1_DoorAngle3': {'MP3': [-1.205, 0.68, 1.235],
-                                            'MP4': [-4.35, 0.695, 1.235],
-                                            },
+                                           'MP4': [-4.35, 0.695, 1.235],
+                                           },
                         'CR2': {'MP1': [-0.993, -1.426, 1.23],
                                 'MP2': [0.439, -0.147, 1.23],
                                 'MP3': [1.361, -0.603, 1.23],
@@ -147,36 +149,46 @@ if __name__ == '__main__':
                             # Trim the windowing artefact at the end of the response,
                             #  but keep the one at the start to preserve time indexing.
                             smooth_energy = smooth_energy[:-int(len(short_window) / 2)]
-                        else:
+                        elif band_centers[b] > 5e2:
                             smooth_energy = fftconvolve(band_energy, long_window, mode='same')
                             # Trim the windowing artefact at the end of the response,
                             #  but keep the one at the start to preserve time indexing.
                             smooth_energy = smooth_energy[:-int(len(long_window) / 2)]
-                        
+                        else:
+                            smooth_energy = fftconvolve(band_energy, longest_window, mode='same')
+                            # Trim the windowing artefact at the end of the response,
+                            #  but keep the one at the start to preserve time indexing.
+                            smooth_energy = smooth_energy[:-int(len(longest_window) / 2)]
+
                         # dB scale. Add an offset to avoid true zeros.
                         smooth_energy_dB = 10 * np.log10(smooth_energy + 1e-20)
 
-                        time_axis = np.arange(len(smooth_energy))
+                        # Extend the array, repeating the end value, to facilitate the linear regression.
+                        smooth_energy_dB = np.pad(smooth_energy_dB,
+                                                  (0, int(audio_sample_rate)),
+                                                  mode='edge')
 
-                        noise_floor = None
-                        start_of_noise = None
+                        time_axis = np.arange(len(smooth_energy_dB))
+                        
+                        start_of_noise = len(smooth_energy_dB)
                         best_slope = -np.inf
                         
                         for cursor in range(np.argmax(smooth_energy),
-                                            len(smooth_energy),
+                                            len(smooth_energy_dB),
                                             int(5e-3 * audio_sample_rate)):
                             regression = linregress(time_axis[cursor:],
                                                     smooth_energy_dB[cursor:])
                             
                             if regression.slope > best_slope:
-                                best_slope = regression.slope
                                 noise_floor = regression.intercept + regression.slope * cursor
                                 # noise_floor = smooth_energy_dB[cursor]
 
-                                # start_of_noise = cursor
-                                start_of_noise = np.min(np.flatnonzero(smooth_energy_dB <= noise_floor))
+                                if np.any(smooth_energy_dB <= noise_floor):
+                                    best_slope = regression.slope
+                                    start_of_noise = np.min(np.flatnonzero(smooth_energy_dB <= noise_floor))
                             
-                            if regression.slope > -3e-5:
+                            # A slope shallower than 1dB per second is considered flat.
+                            if regression.slope > -1 / audio_sample_rate:
                                 break
 
                             """
@@ -187,13 +199,13 @@ if __name__ == '__main__':
                             # upward_zero_crossings = np.flatnonzero(np.diff(np.sign(error)) > 0)
                             # downward_zero_crossings = np.flatnonzero(np.diff(np.sign(error)) < 0)
 
-                            # plt.plot(time_axis / audio_sample_rate,
+                            # plt.plot(time_axis,
                             #          linear_approx)
-                            # plt.plot(time_axis[upward_zero_crossings] / audio_sample_rate,
+                            # plt.plot(time_axis[upward_zero_crossings],
                             #          linear_approx[upward_zero_crossings],
                             #          marker='^', ls=':',
                             #          color=plt.gca().lines[-1].get_color())
-                            # plt.plot(time_axis[downward_zero_crossings] / audio_sample_rate,
+                            # plt.plot(time_axis[downward_zero_crossings],
                             #          linear_approx[downward_zero_crossings],
                             #          marker='v', ls=':',
                             #          color=plt.gca().lines[-1].get_color())
@@ -213,42 +225,64 @@ if __name__ == '__main__':
                             smooth_energy_dB = smooth_energy_dB[:noise_floor_onset]
                             time_axis = time_axis[:noise_floor_onset]
                             """
+
+                        if 'DoorAngle' in short_name:
+                            # The most reverberant recordings, where the loudspeaker is inside
+                            #  the reverberation chamber, have truncated energy before the noise floor.
+                            # These frequency-dependent artefacts may have been caused by a truncation
+                            #  which was carried out before the sine-sweep deconvolution.
+                            # The unnatural energy roll-off into the noise floor prevents a fair comparison
+                            #  with simulation results, so we cut off responses before it.
+
+                            # The artefact only appears in octave bands 500Hz to 4kHz.
+                            if 500 <= band_centers[b] <= 4e3:
+                                decay_slope = np.gradient(smooth_energy_dB)
+
+                                energy_peak = np.argmax(smooth_energy)
+
+                                slope_estimate = np.median(decay_slope[energy_peak:start_of_noise])
+                                steeper_than_estimate = (decay_slope <= slope_estimate * 1.5)
+                                # Sometimes the early response is erroneously caught. Ignore it.
+                                steeper_than_estimate &= (time_axis / audio_sample_rate > 1.0)
+
+                                if np.any(steeper_than_estimate):
+                                    start_of_noise = np.min(np.flatnonzero(steeper_than_estimate))
+
+                            # plt.plot(time_axis[energy_peak:] / audio_sample_rate,
+                            #          decay_slope[energy_peak:],
+                            #          label=f'{band_centers[b]}Hz')
+                            
+                            # plt.scatter(start_of_noise / audio_sample_rate,
+                            #             decay_slope[start_of_noise-1],
+                            #             marker='v', label=f'{(start_of_noise / audio_sample_rate):.2f}s',
+                            #             color=plt.gca().lines[-1].get_color())
                         
-                        if noise_floor is None:
+                        if start_of_noise == len(smooth_energy_dB):
                             # No noise floor was detected. The entire duration of the echogram is preserved.
                             echogram[b] = band_energy
                         else:
                             # A noise floor was detected. The echogram is truncated before the floor is reached.
                             echogram[b, :start_of_noise-1] = band_energy[:start_of_noise-1]
 
-                        plt.plot(time_axis / audio_sample_rate,
-                                 smooth_energy_dB,
-                                 label=f'{band_centers[b]}Hz')
+                        # plt.plot(time_axis / audio_sample_rate,
+                        #          smooth_energy_dB,
+                        #          label=f'{band_centers[b]}Hz')
                         
-                        plt.scatter(start_of_noise / audio_sample_rate,
-                                    smooth_energy_dB[start_of_noise-1],
-                                    marker='v', label=f'{(start_of_noise / audio_sample_rate):.2f}s',
-                                    color=plt.gca().lines[-1].get_color())
+                        # plt.scatter(start_of_noise / audio_sample_rate,
+                        #             smooth_energy_dB[start_of_noise-1],
+                        #             marker='v', label=f'{(start_of_noise / audio_sample_rate):.2f}s',
+                        #             color=plt.gca().lines[-1].get_color())
                         
-                        # print(f'Chosen cutoff for {band_centers[b]:.0f}Hz: {(noise_floor_onset / audio_sample_rate):.2f}s.')
-
                     # Truncate to the longest nonzero value.
                     max_valid_sample = np.max(np.nonzero(echogram)[-1])
                     echogram = echogram[:, :max_valid_sample]
 
                     # plt.xlim(0, max_valid_sample / audio_sample_rate)
-                    plt.xlim(0, 4.5)
-                    plt.ylim(-90, None)
-                    plt.title(short_name)
-                    plt.tight_layout()
-                    plt.legend(ncol=2)
-                    plt.show()
-
-                    break
+                    # plt.ylim(-90, None)
+                    # plt.title(short_name)
+                    # plt.tight_layout()
+                    # plt.legend(ncol=2)
+                    # plt.show()
 
                     # Save the "masked" echogram.
-                    # write(echo_path, int(audio_sample_rate), echogram.T)
-
-                break
-            break
-        break
+                    write(echo_path, int(audio_sample_rate), echogram.T)
