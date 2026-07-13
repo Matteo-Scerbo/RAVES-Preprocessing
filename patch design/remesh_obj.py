@@ -225,23 +225,30 @@ if __name__ == '__main__':
     area_threshold = 4.
     target_sample_distance = 5e-2
 
-    room_names = ['CR1_DoorAngle1',
-                  'CR1_DoorAngle3',
-                  'CR2',
-                  'CR3',
-                  'CR4',
+    room_names = [# 'CR1_DoorAngle1',
+                  # 'CR1_DoorAngle3',
+                  # 'CR2',
+                  'CR1_DoorAngle1_simplified',
+                  'CR1_DoorAngle3_simplified',
+                  'CR2_simplified',
+                  'CR1_DoorAngle1_ubersimplified',
+                  'CR1_DoorAngle3_ubersimplified',
+                  'CR2_ubersimplified',
+                  # 'CR3',
+                  # 'CR4',
                   ]
 
     for room_name in room_names:
         naive_name = room_name + '_naive_obj'
         naive_dir = os.path.join(mesh_folder, room_name, naive_name)
 
-        for remeshing_strategy in ['split_area', 'split_area_length']:
+        for remeshing_strategy in ['split_area', # 'split_area_length',
+                                   ]:
             new_name = room_name + '_' + remeshing_strategy
             new_dir = os.path.join(mesh_folder, room_name, new_name)
             os.makedirs(new_dir, exist_ok=True)
 
-            if remeshing_strategy == 'split_area_length':
+            if 'length' in remeshing_strategy:
                 narrowness_threshold = 5.
             else:
                 narrowness_threshold = None
@@ -251,6 +258,27 @@ if __name__ == '__main__':
             # visualize_mesh(naive_dir)
 
             verts, faces, patch_ids, patch_materials = load_mesh_as_arrays(naive_dir)
+
+            # polyscope.set_verbosity(0)
+            # polyscope.set_use_prefs_file(False)
+            # polyscope.set_enable_render_error_checks(False)
+            # polyscope.init()
+            
+            # ps_mesh = polyscope.register_surface_mesh(naive_name,
+            #                                           verts,
+            #                                           faces)
+            # random_colors = np.random.uniform(size=(int(np.max(patch_ids))+1, 3))
+            # ps_mesh.add_color_quantity('face_colors', random_colors[patch_ids],
+            #                            defined_on='faces', enabled=True)
+            # ps_mesh.set_back_face_policy('cull')
+
+            # polyscope.set_up_dir('z_up')
+            # polyscope.set_navigation_style('turntable')
+            # polyscope.reset_camera_to_home_view()
+
+            # polyscope.show()
+
+            # polyscope.remove_all_structures()
 
             new_vertices = np.zeros((0, 3))
             new_faces = np.zeros((0, 3), dtype=int)
@@ -325,7 +353,7 @@ if __name__ == '__main__':
             shutil.copy(os.path.join(naive_dir, 'materials.csv'),
                         os.path.join(new_dir, 'materials.csv'))
 
-            # visualize_mesh(new_dir)
+            visualize_mesh(new_dir)
             
             mesh, patch_materials, _ = load_mesh(new_dir,
                                                  assert_coplanarity=False)

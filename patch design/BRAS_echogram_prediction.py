@@ -68,8 +68,10 @@ if __name__ == '__main__':
     for room_name in source_positions.keys():
         if room_name == 'CR4':
             continue
+        if room_name != 'CR3':
+            continue
     
-        for remeshing_strategy in ['naive_obj', 'naive_trng', 'split_area', 'split_area_length']:
+        for remeshing_strategy in ['naive_obj', 'split_area', 'naive_trng', 'split_area_length']:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
 
@@ -79,14 +81,13 @@ if __name__ == '__main__':
             
             print('\nPrecomputing environment', env_name, '...\n')
 
-            if env_name == 'CR3_split_area_length':
-                # if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
-                compute_ART(env_folder, assert_coplanarity=False,
-                            points_per_square_meter=(100.0 if 'CR1' in room_name else 30.0),
-                            rays_per_hemisphere=(10000 if 'CR1' in room_name else 1000),
-                            multiprocess_pool_size=16,
-                            temperature=air_parameters[room_name][0],
-                            humidity=air_parameters[room_name][1])
+            # if not os.path.isfile(os.path.join(env_folder, 'path_delays.csv')):
+            compute_ART(env_folder, assert_coplanarity=False,
+                        points_per_square_meter=(100.0 if 'CR1' in room_name else 30.0),
+                        rays_per_hemisphere=(10000 if 'CR1' in room_name else 1000),
+                        multiprocess_pool_size=16,
+                        temperature=air_parameters[room_name][0],
+                        humidity=air_parameters[room_name][1])
             
             print('\nRunning environment', env_name, '...\n')
             
@@ -105,7 +106,7 @@ if __name__ == '__main__':
                                        echogram_sample_rate=echogram_sample_rate,
                                        echogram_duration=shown_durations[room_name],
                                        output_folder_path=echograms_subfolder,
-                                       multiprocess_pool_size=16,
+                                       multiprocess_pool_size=(4 if room_name == 'CR3' else 8),
                                        temperature=air_parameters[room_name][0],
                                        humidity=air_parameters[room_name][1],
                                        assert_coplanarity=False,

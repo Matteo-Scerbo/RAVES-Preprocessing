@@ -70,7 +70,7 @@ def gain_from_dbm(dbm: Union[np.ndarray, float], distance: Union[np.ndarray, flo
          where M is the length of ``distance`` and N is the length of ``dbm``.
     """
 
-    if (type(dbm) == float or type(distance) == float
+    if (np.ndim(dbm) == 0 or np.ndim(distance) == 0
         or len(dbm) == 1 or len(distance) == 1):
         return 10 ** (-dbm * distance / (10 if energy_domain else 20))
     else:
@@ -114,7 +114,7 @@ def air_absorption_in_band(fc: float, fd: float, distance: Union[np.ndarray, flo
     """
     Compute band-average linear pressure gain via RMS over a fractional band.
 
-    The band is [fc/fd, fc*fd] and the response is averaged over linear frequency.
+    The band is [fc/fd, fc*fd] and the response is averaged over log-spaced frequency samples.
 
     Parameters
     ----------
@@ -138,18 +138,21 @@ def air_absorption_in_band(fc: float, fd: float, distance: Union[np.ndarray, flo
     Returns
     -------
     float or ndarray
-        RMS linear pressure gain for the band.
+        Average linear pressure gain for the band.
     
     Notes
     -----
     The root-mean-square is always taken w.r.t. energy-domain values.
     If pressure gains are requested, the square root is taken at the end.
     """
-    sampled_values = air_absorption_linear(np.linspace(fc/fd, fc*fd, num_samples),
+    log_spaced_samples = np.logspace(np.log10(fc/fd), np.log10(fc*fd), num_samples)
+    
+    sampled_values = air_absorption_linear(log_spaced_samples,
                                            distance, humidity, temperature, pressure,
                                            energy_domain=True)
     
-    if type(distance) == float or len(distance) == 1:
+    # The number of dimensions in the result depends on whether ´distance´ is a scalar or array.
+    if np.ndim(sampled_values) == 1:
         rms = np.sqrt(np.mean(sampled_values**2))
     else:
         rms = np.sqrt(np.mean(sampled_values**2, axis=-1))

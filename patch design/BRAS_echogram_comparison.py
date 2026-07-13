@@ -249,6 +249,8 @@ if __name__ == '__main__':
 
         if short_name == 'CR4':
             continue
+        # if 'CR1' not in short_name:
+        #     continue
         
         fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
 
@@ -413,5 +415,3 @@ if __name__ == '__main__':
         else:
             plt.suptitle(f'{short_name} - short-time-average energy diff')
         plt.show()
-
-        # break
