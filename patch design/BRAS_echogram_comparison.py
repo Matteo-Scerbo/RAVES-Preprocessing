@@ -10,7 +10,7 @@ import matplotlib.patches as mpatches
 from scipy.io.wavfile import read
 from collections import defaultdict
 
-from raves.src.utils import load_frequencies, air_impedance
+from raves.src.utils import load_frequencies
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
@@ -46,9 +46,9 @@ if __name__ == '__main__':
     echo_stride = int(echo_sample_rate / downsampled_rate)
     audio_nyquist = audio_sample_rate / 2
 
-    plotted_band_idx = 5
+    plotted_band_idx = 3
     plotted_time_range = 2.5
-    backwards_integration = False
+    backwards_integration = True
     # Responses are normalized to have unit mean energy between 0 and ´normalization_period´.
     # Set it to 0 to disable normalization. Set it to np.inf to normalize the total energy.
     normalization_period = 0
@@ -124,7 +124,22 @@ if __name__ == '__main__':
                          'Genelec8020c_LSorientation-03',
                          'Genelec8020c_LSorientation-04'
                          ]
-    
+    # TODO: Run longer simulations of CR1; some are shorter than the references.
+    shown_durations = {'CR1_DoorAngle1': 3.0,
+                       'CR1_DoorAngle3': 3.0,
+                       'CR2': 2.5,
+                       'CR3': 2.0,
+                       'CR4': 2.5,
+                       }
+
+    strategy_alias = {'naive_trng': 'Bad triangulation',
+                      'naive_obj': 'Largest patches possible',
+                      'split_area': r'Max area $4\text{m}^2$',
+                      'split_area_length': r'Max area $4\text{m}^2$, compact',
+                      'uber_split_area': r'Max area $2\text{m}^2$',
+                      'uber_split_area_length': r'Max area $2\text{m}^2$, compact'
+                      }
+
     # Consider the frequency band centers provided alongside the input data.
     band_centers = load_frequencies(mesh_folder, 'materials_oct_bands.csv')
     num_bands = len(band_centers)
@@ -175,6 +190,15 @@ if __name__ == '__main__':
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = ref_data.T
 
+                    # TODO: Run longer simulations of CR1; some are shorter than the references.
+                    max_duration = int(shown_durations[base_name] * audio_sample_rate)
+                    max_duration = (max_duration // audio_stride) * audio_stride
+                    if echogram.shape[-1] >= max_duration:
+                        # print('Reference longer than simulation:', short_name, np.round(echogram.shape[-1] / audio_sample_rate, 2))
+                        echogram = echogram[:, :max_duration-1]
+                    elif echogram.shape[-1] < max_duration:
+                        echogram = np.pad(echogram, ((0, 0), (0, max_duration - echogram.shape[-1])))
+
                     # The recording setup was calibrated based on the sound pressure at 1kHz,
                     #  in front of the loudspeaker. There are two problems with this.
                     # First, the dodecahedron measurements have a "dip" around 2kHz, due to
@@ -185,6 +209,13 @@ if __name__ == '__main__':
                         echogram /= dodecahedron_normalization[:, None]
                     else:
                         echogram /= genelec_normalization[:, None]
+
+                    # Trim the duration to a multiple of the downsampling stride.
+                    # This is necessary to match the truncation of the simulations.
+                    for b in range(num_bands):
+                        ref_duration = np.max(np.flatnonzero(echogram[b]))
+                        ref_duration = (ref_duration // audio_stride) * audio_stride
+                        echogram[b, ref_duration+1:] = 0
                     
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
@@ -241,10 +272,10 @@ if __name__ == '__main__':
                     # This is necessary for a fair comparison with backwards integration.
                     reference = echos_per_room[short_name][(src, lst, 'Dodecahedron')]
                     for b in range(num_bands):
-                        ref_duration_sec = np.max(np.flatnonzero(np.isfinite(reference[b]))) / downsampled_rate
-                        ref_duration_samp = int(ref_duration_sec * echo_sample_rate)
-                        ref_duration_samp = min(ref_duration_samp, echogram.shape[-1]-1)
-                        echogram[b, ref_duration_samp:] = 0
+                        # Note: the reference was converted to dB, the zero values are now NaN.
+                        ref_duration = np.max(np.flatnonzero(np.isfinite(reference[b])))
+                        ref_duration *= echo_stride
+                        echogram[b, ref_duration+1:] = 0
                     
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
@@ -275,11 +306,6 @@ if __name__ == '__main__':
                         echogram = 10 * np.log10(echogram)
                     
                     echos_per_room[short_name][(src, lst, mesh_strat)] = echogram
-
-                # Trim all echograms in the room to the length of the shortest one.
-                min_length_in_room = min([e.shape[-1] for e in echos_per_room[short_name].values()])
-                echos_per_room[short_name] = {k: e[:, :min_length_in_room]
-                                              for k, e in echos_per_room[short_name].items()}
 
     for short_name, echos_dict in echos_per_room.items():
         base_name = short_name.replace('_simplified', '')
@@ -327,7 +353,7 @@ if __name__ == '__main__':
                              ls=':')
                 else:
                     plt.plot(time_axis, echogram[plotted_band_idx],
-                            label=key)
+                             label=strategy_alias[key])
 
             plt.xlim(0, plotted_time_range)
             if backwards_integration and np.isinf(normalization_period):
@@ -398,7 +424,7 @@ if __name__ == '__main__':
                         
                         axes[i, j].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
                     else:
-                        axes[i, j].text(0.5, 0.5, 'MISSING ART DATA',
+                        axes[i, j].text(0.5, plotted_time_range/2, 'MISSING ART DATA',
                                         ha='center', va='center')
                     
                     axes[i, j].set_title(f'{src} {lst} {mesh_strat}')
@@ -419,7 +445,7 @@ if __name__ == '__main__':
                     
                     axes[i, -1].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
                 elif show_genelecs:
-                    axes[i, -1].text(0.5, 0.5, 'MISSING GENELEC DATA',
+                    axes[i, -1].text(0.5, plotted_time_range/2, 'MISSING GENELEC DATA',
                                      ha='center', va='center')
                 
                 axes[i, -1].set_title(f'{src} {lst} Genelec')
@@ -444,9 +470,9 @@ if __name__ == '__main__':
         # Plot the energy differences statistics.
 
         # https://stackoverflow.com/a/58324984
-        def add_violin_label(violin, label):
+        def add_violin_label(violin, label, label_list):
             color = violin["bodies"][0].get_facecolor().flatten()
-            violin_labels.append((mpatches.Patch(color=color), label))
+            label_list.append((mpatches.Patch(color=color), label))
 
         if 'Violin plot' in shown_plots:
             fig, axes = plt.subplots(num_listeners, num_sources,
@@ -483,7 +509,10 @@ if __name__ == '__main__':
                                                        showmeans=False,
                                                        showmedians=False)
 
-                        add_violin_label(violin, mesh_strat)
+                        add_violin_label(violin, (mesh_strat
+                                                  if 'Genelec' in mesh_strat else
+                                                  strategy_alias[mesh_strat]),
+                                         violin_labels)
                     
                     axes[i, j].set_title(f'{src} {lst}')
 
@@ -548,7 +577,10 @@ if __name__ == '__main__':
                                        showmeans=False,
                                        showmedians=False)
 
-                add_violin_label(violin, mesh_strat)
+                add_violin_label(violin, (mesh_strat
+                                          if 'Genelec' in mesh_strat else
+                                          strategy_alias[mesh_strat]),
+                                 violin_labels)
             
             plt.ylim(-15, 15)
             plt.xlim(-0.5, num_bands-0.5)
