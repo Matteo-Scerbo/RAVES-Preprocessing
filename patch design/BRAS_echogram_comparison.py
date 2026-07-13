@@ -45,9 +45,11 @@ def add_violin_label(violin, label, label_list):
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
     output_folder = os.path.join('.', 'data_for_figures')
+    # output_folder = None
 
-    shown_plots = [# 'Echogram',
-                   'Full echogram',
+    shown_plots = ['All echograms',
+                   # 'Echogram',
+                   # 'Full echogram',
                    # 'Spectrogram error',
                    # 'Single spectrogram error',
                    # 'Violin plot',
@@ -60,7 +62,7 @@ if __name__ == '__main__':
     # Choose a low sample rate for plotting and evaluating energy results.
     # In order to avoid having to do any resampling, choose a common divider of
     #  the recording and ART sample rates.
-    downsampled_rate = 2205
+    downsampled_rate = 105
     # Possible divisors:
     #  [8820, 4410, 2940, 2205, 1764, 1470, 1260,  980,
     #    882,  735,  630,  588,  490,  441,  420,  315,
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     smoothing_window = get_window('tukey', int(smoothing_window_len * downsampled_rate))
     smoothing_window /= np.sum(smoothing_window)
 
-    plotted_src_lst_band = ('LS2', 'MP4', 3)
+    plotted_src_lst_band = ('LS1', 'MP5', 0)
     plotted_time_range = 'max'
     plotted_band_range = (0, 7)
     backwards_integration = False
@@ -97,15 +99,15 @@ if __name__ == '__main__':
     # reference_name = 'Genelec 1'
 
     full_room_names = {# 'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       # 'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       # 'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                    #    'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     #    'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     #    'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                     #    'CR2': 'CR2 small room (seminar room)',
                     #    'CR2_simplified': 'CR2 small room (seminar room)',
                     #    'CR2_ubersimplified': 'CR2 small room (seminar room)',
-                    #    'CR3': 'CR3 medium room (chamber music hall)',
+                       'CR3': 'CR3 medium room (chamber music hall)',
                        # 'CR4': 'CR4 large room (auditorium)',
                        }
     source_positions = {'CR1_DoorAngle1': {'LS1': [1.5, -2.225, 1.239],
@@ -176,9 +178,9 @@ if __name__ == '__main__':
     strategy_aliases = {'naive_obj': 'Largest possible',
                         'naive_trng': 'Bad triangulation',
                         'split_area': r'Target $4\text{m}^2$',
-                        'split_area_length': r'Target $4\text{m}^2$, compact',
+                        # 'split_area_length': r'Target $4\text{m}^2$, compact',
                         'uber_split_area': r'Target $2\text{m}^2$',
-                        'uber_split_area_length': r'Target $2\text{m}^2$, compact'
+                        # 'uber_split_area_length': r'Target $2\text{m}^2$, compact'
                         }
     room_aliases = {k: k.replace(
                         '_DoorAngle1',
@@ -246,11 +248,15 @@ if __name__ == '__main__':
                         # print(f'Missing reference file:\n\t{rir_name}\nFull path:\n\t{ref_echo_path}\n')
                         if rir_name == 'CR2_RIR_LS1_MP5_Genelec8020c_LSorientation-positiveY':
                             # This RIR is missing from the dataset. Replace it to make plots fit correctly.
-                            ref_data = np.ones_like(echogram.T)
+                            ref_data = np.ones((audio_stride*3, num_bands))
                         else:
                             continue
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = ref_data.copy().T
+
+                    assert echogram.ndim == 2
+                    assert echogram.shape[0] == num_bands
+                    assert echogram.shape[1] > audio_stride
 
                     # The recording setup was calibrated based on the sound pressure at 1kHz,
                     #  in front of the loudspeaker. There is a problem with this.
@@ -307,6 +313,7 @@ if __name__ == '__main__':
                         remainder = echogram.shape[-1] % audio_stride
                         if remainder != 0:
                             echogram = echogram[:, :-remainder]
+                        
                         # https://stackoverflow.com/a/71800940
                         echogram = np.array(np.split(echogram, num_windows, axis=-1)
                                             ).sum(axis=-1).T
@@ -335,8 +342,9 @@ if __name__ == '__main__':
                                           ((0, 0), (0, max_duration - echogram.shape[-1])),
                                           mode=('edge' if forwards_integration else 'constant'))
                     
-                    # dB scale
-                    echogram = 10 * np.log10(echogram)
+                    if not forwards_integration:
+                        # dB scale
+                        echogram = 10 * np.log10(echogram)
                 
                     echos_per_room[short_name][(src, lst, ls_short)] = echogram
 
@@ -348,11 +356,15 @@ if __name__ == '__main__':
                         # print(f'Missing reference file:\n\t{rir_name}\nFull path:\n\t{ref_echo_path}\n')
                         if rir_name == 'CR2_RIR_LS1_MP5_Genelec8020c_LSorientation-positiveY':
                             # This RIR is missing from the dataset. Replace it to make plots fit correctly.
-                            full_data = np.ones_like(echogram.T)
+                            full_data = np.ones((audio_stride*3, num_bands))
                         else:
                             continue
                     assert fs == audio_sample_rate, (fs, audio_sample_rate)
                     echogram = full_data.copy().T
+
+                    assert echogram.ndim == 2
+                    assert echogram.shape[0] == num_bands
+                    assert echogram.shape[1] > audio_stride
 
                     # The recording setup was calibrated based on the sound pressure at 1kHz,
                     #  in front of the loudspeaker. There is a problem with this.
@@ -426,15 +438,13 @@ if __name__ == '__main__':
                                           ((0, 0), (0, max_duration - echogram.shape[-1])),
                                           mode=('edge' if forwards_integration else 'constant'))
                     
-                    # dB scale
-                    echogram = 10 * np.log10(echogram)
+                    if not forwards_integration:
+                        # dB scale
+                        echogram = 10 * np.log10(echogram)
                 
                     full_echos_per_room[short_name][(src, lst, ls_short)] = echogram
 
                 for mesh_strat in strategy_aliases.keys():
-                    if 'CR3' in short_name and mesh_strat not in ['naive_obj', 'naive_trng', 'split_area']:
-                        continue
-
                     env_name = short_name + '_' + mesh_strat
                     env_folder = os.path.join(mesh_folder, short_name, env_name)
                     sim_echo_subfolder = os.path.join(env_folder, 'Echograms')
@@ -447,6 +457,10 @@ if __name__ == '__main__':
                         continue
                     assert fs == echo_sample_rate, (fs, echo_sample_rate)
                     echogram = sim_data.copy().T
+
+                    assert echogram.ndim == 2
+                    assert echogram.shape[0] == num_bands
+                    assert echogram.shape[1] > echo_stride
 
                     # Trim the duration in each band to the length of the reference.
                     # This is necessary for a fair comparison with backwards integration.
@@ -528,6 +542,10 @@ if __name__ == '__main__':
 
                     echogram = sim_data.copy().T
 
+                    assert echogram.ndim == 2
+                    assert echogram.shape[0] == num_bands
+                    assert echogram.shape[1] > echo_stride
+
                     # Normalize by early or total energy.
                     if np.isinf(normalization_period):
                         if band_wise_norm:
@@ -605,6 +623,64 @@ if __name__ == '__main__':
         num_sources = len(source_positions[base_name])
         num_listeners = len(listener_positions[base_name])
 
+        if 'All echograms' in shown_plots:
+            sl_config_indexing = dict()
+            for (src, lst, key) in echos_dict:
+                if (src, lst) not in sl_config_indexing:
+                    sl_config_indexing[(src, lst)] = len(sl_config_indexing)
+
+            fig, axes = plt.subplots(num_sl_configs, num_bands,
+                                     figsize=(4*num_bands, 3*num_sl_configs),
+                                     squeeze=False, constrained_layout=True)
+
+            cs = None
+            for (src, lst, key), echogram in echos_dict.items():
+                i = sl_config_indexing[(src, lst)]
+                time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
+                reference = echos_dict[(src, lst, reference_name)]
+                for j in range(num_bands):
+                    # axes[i, j].plot(time_axis, echogram[j],
+                    #                 ls=('-' if 'Genelec' in key or 'Dodecahedron' in key else '--'),
+                    #                 label=(key
+                    #                        if 'Genelec' in key or 'Dodecahedron' in key else
+                    #                        strategy_aliases[key]))
+                    
+                    # axes[i, j].plot(time_axis, echogram[j] - reference[j],
+                    #                 ls=('-' if 'Genelec' in key or 'Dodecahedron' in key else '--'),
+                    #                 color=axes[i, j].lines[-1].get_color())
+                    
+                    axes[i, j].plot(time_axis, echogram[j] - reference[j],
+                                    ls=('-' if 'Genelec' in key or 'Dodecahedron' in key else '--'),
+                                    label=(key
+                                           if 'Genelec' in key or 'Dodecahedron' in key else
+                                           strategy_aliases[key]))
+                    
+                    axes[i, j].set_title(f'{src} {lst} {band_centers[j]}Hz')
+                    # axes[i, j].set_xlim(0, (shown_durations[base_name]
+                    #                         if plotted_time_range == 'max'
+                    #                         else plotted_time_range))
+
+                    if backwards_integration and np.isinf(normalization_period):
+                        axes[i, j].set_ylim(-60, 0)
+                    # elif not forwards_integration:
+                    #     axes[i, j].set_ylim(-60, None)
+                    
+                    if i == num_sl_configs-1:
+                        axes[i, j].set_xlabel('Time [s]')
+                    else:
+                        axes[i, j].set_xlabel('')
+                    if j == 0:
+                        axes[i, j].set_ylabel('Energy [dB]')
+                    else:
+                        axes[i, j].set_ylabel('')
+                    
+                    if i == j == 0:
+                        # https://stackoverflow.com/a/77328370
+                        axes[i, j].legend(ncol=2, handleheight=2)
+
+            plt.suptitle(f'Room {room_aliases[short_name]}')
+            plt.show()
+        
         if 'Echogram' in shown_plots:
             fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
@@ -647,6 +723,8 @@ if __name__ == '__main__':
         if 'Full echogram' in shown_plots and short_name == 'CR1_DoorAngle3':
             fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
+            full_reference = full_echos_per_room[short_name][(plotted_src_lst_band[0], plotted_src_lst_band[1], reference_name)]
+
             bottom = np.inf
             for (src, lst, key), echogram in full_echos_per_room[short_name].items():
                 if src != plotted_src_lst_band[0]:
@@ -662,11 +740,14 @@ if __name__ == '__main__':
                                 if 'Genelec' in key or 'Dodecahedron' in key else
                                 strategy_aliases[key]))
                 
-                with open(os.path.join(output_folder, f'{tick_label_func(plotted_src_lst_band[2])}Hz_{short_name}_{src}_{lst}_{key.replace(' ', '_')}-echogram.dat'),
-                          mode='w') as file:
-                    for time_idx in range(echogram.shape[-1]):
-                        if np.isfinite(echogram[plotted_src_lst_band[2], time_idx]):
-                            file.write(f'{time_axis[time_idx]} {echogram[plotted_src_lst_band[2], time_idx]}\n')
+                if output_folder is not None:
+                    with open(os.path.join(output_folder, f'{tick_label_func(plotted_src_lst_band[2])}Hz_{short_name}_{src}_{lst}_{key.replace(' ', '_')}-echogram.dat'),
+                            mode='w') as file:
+                        for time_idx in range(echogram.shape[-1]):
+                            val = echogram[plotted_src_lst_band[2], time_idx]
+                            ref = full_reference[plotted_src_lst_band[2], time_idx]
+                            if np.isfinite(val):
+                                file.write(f'{time_axis[time_idx]} {val} {val - ref}\n')
 
                 nonzero_idxs = np.isfinite(echogram[plotted_src_lst_band[2]])
                 bottom = min(bottom, np.min(echogram[plotted_src_lst_band[2]][nonzero_idxs]))
@@ -990,7 +1071,7 @@ if __name__ == '__main__':
                                         positions=positions,
                                         widths=width-mid_margin,
                                         side='both',
-                                        points=100,
+                                        points=75,
                                         bw_method=0.2,
                                         # quantiles=[[0.05, 0.5, 0.95]]*num_bands,
                                         showextrema=False,
@@ -1012,20 +1093,22 @@ if __name__ == '__main__':
                     sorting = np.argsort(pos_violin_contour[:, 1])
                     pos_violin_contour = pos_violin_contour[sorting][::-1]
 
-                    with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{comparison_key.replace(' ','_')}_{violin_keys[i]}-pos.dat'),
-                              mode='w') as file:
-                        for x, y in pos_violin_contour:
-                            file.write(f'{x} {y}\n')
+                    if output_folder is not None:
+                        with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{comparison_key.replace(' ','_')}_{violin_keys[i]}-pos.dat'),
+                                mode='w') as file:
+                            for x, y in pos_violin_contour:
+                                file.write(f'{x} {y}\n')
 
                     negative = (violin_contour[:, 0] <= 0)
                     neg_violin_contour = violin_contour[negative]
                     sorting = np.argsort(neg_violin_contour[:, 1])
                     neg_violin_contour = neg_violin_contour[sorting]
 
-                    with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{comparison_key.replace(' ','_')}_{violin_keys[i]}-neg.dat'),
-                              mode='w') as file:
-                        for x, y in neg_violin_contour:
-                            file.write(f'{x} {y}\n')
+                    if output_folder is not None:
+                        with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{comparison_key.replace(' ','_')}_{violin_keys[i]}-neg.dat'),
+                                mode='w') as file:
+                            for x, y in neg_violin_contour:
+                                file.write(f'{x} {y}\n')
 
                 for pc in violin['bodies']:
                     pc.set_edgecolor(pc.get_facecolor())
@@ -1038,6 +1121,8 @@ if __name__ == '__main__':
             
             if backwards_integration:
                 plt.ylim(-15, 15)
+            elif forwards_integration:
+                pass
             else:
                 plt.ylim(-20, 20)
             plt.xlim(-0.5, num_rooms-0.5)
