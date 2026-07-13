@@ -14,7 +14,7 @@ default_cycler = (cycler(color=[lightblue, yellow, orange, green, black, purple,
 plt.rc('axes', prop_cycle=default_cycler)
 
 from scipy.io.wavfile import read
-from scipy.signal import convolve
+from scipy.signal import fftconvolve
 from scipy.signal.windows import get_window
 
 from collections import defaultdict
@@ -44,8 +44,10 @@ def add_violin_label(violin, label, label_list):
 
 if __name__ == '__main__':
     mesh_folder = os.path.join('..', 'BRAS meshes')
+    output_folder = os.path.join('.', 'data_for_figures')
 
-    shown_plots = [# 'EDC',
+    shown_plots = ['Echogram',
+                   'Full echogram',
                    # 'Spectrogram error',
                    # 'Single spectrogram error',
                    # 'Violin plot',
@@ -72,13 +74,13 @@ if __name__ == '__main__':
     audio_nyquist = audio_sample_rate / 2
 
     # Length of the smoothing window applied to the energy envelopes after downsampling.
-    smoothing_window_len = 50e-3
+    smoothing_window_len = 100e-3
     # Broadest: 'cosine', 'lanczos', 'tukey'
     smoothing_window = get_window('tukey', int(smoothing_window_len * downsampled_rate))
     smoothing_window /= np.sum(smoothing_window)
 
-    edc_src_lst_band = ('LS1', 'MP1', 2)
-    plotted_time_range = 2.0
+    plotted_src_lst_band = ('LS1', 'MP3', 3)
+    plotted_time_range = 'max'
     plotted_band_range = (0, 7)
     backwards_integration = False
     forwards_integration = False
@@ -87,7 +89,7 @@ if __name__ == '__main__':
     normalization_period = 0
     # Normalize each frequency band separately, or all together.
     band_wise_norm = False
-    outlier_constant = 1.0
+    outlier_constant = 0.0
 
     dode_2k_compensation = 4.0
 
@@ -96,13 +98,13 @@ if __name__ == '__main__':
 
     full_room_names = {'CR1_DoorAngle1': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle1_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       # 'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle1_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle3': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR1_DoorAngle3_simplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
-                       # 'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
+                       'CR1_DoorAngle3_ubersimplified': 'CR1 coupled rooms (laboratory and reverberation chamber)',
                        'CR2': 'CR2 small room (seminar room)',
                        'CR2_simplified': 'CR2 small room (seminar room)',
-                       # 'CR2_ubersimplified': 'CR2 small room (seminar room)',
+                       'CR2_ubersimplified': 'CR2 small room (seminar room)',
                        'CR3': 'CR3 medium room (chamber music hall)',
                        # 'CR4': 'CR4 large room (auditorium)',
                        }
@@ -174,9 +176,9 @@ if __name__ == '__main__':
     strategy_aliases = {'naive_obj': 'Largest possible',
                         'naive_trng': 'Bad triangulation',
                         'split_area': r'Target $4\text{m}^2$',
-                        # 'split_area_length': r'Target $4\text{m}^2$, compact',
+                        'split_area_length': r'Target $4\text{m}^2$, compact',
                         'uber_split_area': r'Target $2\text{m}^2$',
-                        # 'uber_split_area_length': r'Target $2\text{m}^2$, compact'
+                        'uber_split_area_length': r'Target $2\text{m}^2$, compact'
                         }
     room_aliases = {k: k.replace(
                         '_DoorAngle1',
@@ -216,6 +218,7 @@ if __name__ == '__main__':
             return f'{int(band_centers[int(val)] / 1e3)}k'
 
     echos_per_room = defaultdict(dict)
+    full_echos_per_room = defaultdict(dict)
     
     for short_name, full_name in full_room_names.items():
         print('Loading echograms,', short_name)
@@ -235,6 +238,7 @@ if __name__ == '__main__':
                 for ls_long, ls_short in loudspeaker_aliases.items():
                     rir_name = '_'.join([rir_prefix, src, lst, ls_long])
                     ref_echo_path = os.path.join(ref_echo_subfolder, rir_name + '.wav')
+                    full_echo_path = os.path.join(ref_echo_subfolder, rir_name + '_unmasked.wav')
                     
                     try:
                         fs, ref_data = read(ref_echo_path)
@@ -308,11 +312,21 @@ if __name__ == '__main__':
                                             ).sum(axis=-1).T
 
                         # Finally, apply smoothing.
-                        # Cannot use an FFT convolution, because it screws up the zero padding.
-                        echogram = np.vstack([convolve(echogram[b], smoothing_window,
-                                                       method='direct', mode='same')
-                                              for b in range(num_bands)])
-                    
+                        for b in range(num_bands):
+                            # The strict zero elements need to be preserved through the smoothing,
+                            #  because they define the mise floor "masking" of the references,
+                            #  i.e., which samples are suitable for comparison.
+                            max_valid_sample = np.max(np.nonzero(echogram[b])[-1])
+
+                            echogram[b] = fftconvolve(echogram[b], smoothing_window,
+                                                      mode='same')
+                            
+                            # N.B.: This gets rid of the artifacts at both ends of the response,
+                            #  which means the early reflections are NOT part of the comparison.
+                            half_window_len = int(len(smoothing_window) // 2)
+                            echogram[b, :half_window_len] = 0
+                            echogram[b, max_valid_sample-half_window_len:] = 0
+
                     max_duration = int(np.floor(shown_durations[base_name] * downsampled_rate))
                     if echogram.shape[-1] >= max_duration:
                         echogram = echogram[:, :max_duration]
@@ -326,8 +340,99 @@ if __name__ == '__main__':
                 
                     echos_per_room[short_name][(src, lst, ls_short)] = echogram
 
+                    # Load the unmasked echogram as well, for a figure in the paper.
+
+                    try:
+                        fs, full_data = read(full_echo_path)
+                    except FileNotFoundError:
+                        # print(f'Missing reference file:\n\t{rir_name}\nFull path:\n\t{ref_echo_path}\n')
+                        if rir_name == 'CR2_RIR_LS1_MP5_Genelec8020c_LSorientation-positiveY':
+                            # This RIR is missing from the dataset. Replace it to make plots fit correctly.
+                            full_data = np.ones_like(echogram.T)
+                        else:
+                            continue
+                    assert fs == audio_sample_rate, (fs, audio_sample_rate)
+                    echogram = full_data.T
+
+                    # The recording setup was calibrated based on the sound pressure at 1kHz,
+                    #  in front of the loudspeaker. There is a problem with this.
+                    # The dodecahedron measurements have a "dip" around 2kHz, possibly due to
+                    #  phase cancellation in the crossover between the mid and high speakers.
+                    if ls_short == 'Dodecahedron':
+                        echogram[4] *= dode_2k_compensation
+
+                    # The simulations are calibrated such that, when a unit-energy signal is band-passed
+                    #  to the relative octave band and modulated by the (simulated) echogram's root, it
+                    #  has the correct energy. The band-passing removes energy according to the bandwidth,
+                    #  which we need to compensate for.
+                    echogram /= band_widths[:, None]
+                    echogram *= audio_sample_rate
+
+                    # Normalize by early or total energy.
+                    if np.isinf(normalization_period):
+                        if band_wise_norm:
+                            echogram /= np.sum(echogram, axis=-1)[:, None]
+                        else:
+                            band_energies = np.sum(echogram, axis=-1)
+                            band_energies /= band_widths / np.sum(band_widths)
+                            echogram /= np.average(band_energies)
+                    elif normalization_period > 0:
+                        if band_wise_norm:
+                            echogram /= np.sum(echogram[:int(fs*normalization_period)],
+                                               axis=-1)[:, None]
+                        else:
+                            band_energies = np.sum(echogram[:int(fs*normalization_period)],
+                                                   axis=-1)
+                            band_energies /= band_widths / np.sum(band_widths)
+                            echogram /= np.average(band_energies)
+        
+                    if backwards_integration:
+                        # Reverse integration
+                        echogram = np.cumsum(echogram[:, ::-1], axis=-1)[:, ::-1]
+                        # Downsampling the EDC is easy, just skip values
+                        echogram = echogram[:, ::audio_stride]
+                    elif forwards_integration:
+                        # Regular integration
+                        echogram = np.cumsum(echogram, axis=-1)
+                        # Downsampling the accumulated energy is easy, just skip values
+                        echogram = echogram[:, ::audio_stride]
+                    else:
+                        # Short-time average (and downsampling)
+                        num_windows = echogram.shape[-1] // audio_stride
+                        remainder = echogram.shape[-1] % audio_stride
+                        if remainder != 0:
+                            echogram = echogram[:, :-remainder]
+                        # https://stackoverflow.com/a/71800940
+                        echogram = np.array(np.split(echogram, num_windows, axis=-1)
+                                            ).sum(axis=-1).T
+
+                        # Finally, apply smoothing.
+                        for b in range(num_bands):
+                            # The strict zero elements need to be preserved through the smoothing,
+                            #  because they define the mise floor "masking" of the references,
+                            #  i.e., which samples are suitable for comparison.
+                            max_valid_sample = np.max(np.nonzero(echogram[b])[-1])
+
+                            echogram[b] = fftconvolve(echogram[b], smoothing_window,
+                                                      mode='same')
+                            
+                            # N.B.: The windowing artifacts are NOT removed for the full responses.
+
+                    max_duration = int(np.floor(shown_durations[base_name] * downsampled_rate))
+                    if echogram.shape[-1] >= max_duration:
+                        echogram = echogram[:, :max_duration]
+                    elif echogram.shape[-1] < max_duration:
+                        echogram = np.pad(echogram,
+                                          ((0, 0), (0, max_duration - echogram.shape[-1])),
+                                          mode=('edge' if forwards_integration else 'constant'))
+                    
+                    # dB scale
+                    echogram = 10 * np.log10(echogram)
+                
+                    full_echos_per_room[short_name][(src, lst, ls_short)] = echogram
+
                 for mesh_strat in strategy_aliases.keys():
-                    if 'CR3' in short_name and 'naive' not in mesh_strat:
+                    if 'CR3' in short_name and mesh_strat not in ['naive_obj', 'naive_trng', 'split_area']:
                         continue
 
                     env_name = short_name + '_' + mesh_strat
@@ -391,11 +496,21 @@ if __name__ == '__main__':
                                             ).sum(axis=-1).T
                     
                         # Finally, apply smoothing.
-                        # Cannot use an FFT convolution, because it screws up the zero padding.
-                        echogram = np.vstack([convolve(echogram[b], smoothing_window,
-                                                       method='direct', mode='same')
-                                              for b in range(num_bands)])
-                    
+                        for b in range(num_bands):
+                            # The strict zero elements need to be preserved through the smoothing,
+                            #  because they define the mise floor "masking" of the references,
+                            #  i.e., which samples are suitable for comparison.
+                            max_valid_sample = np.max(np.nonzero(echogram[b])[-1])
+
+                            echogram[b] = fftconvolve(echogram[b], smoothing_window,
+                                                      mode='same')
+                            
+                            # N.B.: This gets rid of the artifacts at both ends of the response,
+                            #  which means the early reflections are NOT part of the comparison.
+                            half_window_len = int(len(smoothing_window) // 2)
+                            echogram[b, :half_window_len] = 0
+                            echogram[b, max_valid_sample-half_window_len:] = 0
+
                     max_duration = int(np.floor(shown_durations[base_name] * downsampled_rate))
                     if echogram.shape[-1] >= max_duration:
                         echogram = echogram[:, :max_duration]
@@ -433,27 +548,30 @@ if __name__ == '__main__':
         num_sources = len(source_positions[base_name])
         num_listeners = len(listener_positions[base_name])
 
-        if 'EDC' in shown_plots:
+        if 'Echogram' in shown_plots:
             fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
+            bottom = np.inf
             for (src, lst, key), echogram in echos_dict.items():
-                if src != edc_src_lst_band[0]:
+                if src != plotted_src_lst_band[0]:
                     continue
-                if lst != edc_src_lst_band[1]:
+                if lst != plotted_src_lst_band[1]:
                     continue
 
                 time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
 
-                plt.plot(time_axis, echogram[edc_src_lst_band[2]],
+                plt.plot(time_axis, echogram[plotted_src_lst_band[2]],
                          ls=('-' if 'Genelec' in key or 'Dodecahedron' in key else '--'),
                          label=(key
                                 if 'Genelec' in key or 'Dodecahedron' in key else
                                 strategy_aliases[key]))
                 
-                if key == reference_name:
-                    bottom = np.max(echogram[edc_src_lst_band[2]]) - 60
+                nonzero_idxs = np.isfinite(echogram[plotted_src_lst_band[2]])
+                bottom = min(bottom, np.min(echogram[plotted_src_lst_band[2]][nonzero_idxs]))
 
-            plt.xlim(0, plotted_time_range)
+            plt.xlim(0, (shown_durations[base_name]
+                         if plotted_time_range == 'max'
+                         else plotted_time_range))
             if backwards_integration and np.isinf(normalization_period):
                 plt.ylim(-60, 0)
             elif not forwards_integration:
@@ -465,7 +583,72 @@ if __name__ == '__main__':
             # https://stackoverflow.com/a/77328370
             plt.legend(ncol=2, handleheight=2)
 
-            plt.title(f'Room {room_aliases[short_name]}; {band_centers[edc_src_lst_band[2]]}Hz octave band.')
+            plt.title(f'Room {room_aliases[short_name]}; {band_centers[plotted_src_lst_band[2]]}Hz octave band.')
+            plt.tight_layout()
+            plt.show()
+        
+        if 'Full echogram' in shown_plots and short_name == 'CR1_DoorAngle3':
+            fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
+
+            for (src, lst, key), echogram in echos_dict.items():
+                if src != plotted_src_lst_band[0]:
+                    continue
+                if lst != plotted_src_lst_band[1]:
+                    continue
+                if 'Genelec' in key or 'Dodecahedron' in key:
+                    continue
+
+                time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
+
+                plt.plot(time_axis, echogram[plotted_src_lst_band[2]],
+                         ls='--', label=strategy_aliases[key])
+
+                with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{short_name}_{src}_{lst}_{key}-echogram.dat'),
+                          mode='w') as file:
+                    for idx in range(echogram.shape[-1]):
+                        if np.isfinite(echogram[plotted_src_lst_band[2], idx]):
+                            file.write(f'{time_axis[idx]} {echogram[plotted_src_lst_band[2], idx]}\n')
+                        else:
+                            break
+
+            bottom = np.inf
+            for (src, lst, key), echogram in full_echos_per_room[short_name].items():
+                if src != plotted_src_lst_band[0]:
+                    continue
+                if lst != plotted_src_lst_band[1]:
+                    continue
+
+                time_axis = np.arange(echogram.shape[-1]) / downsampled_rate
+
+                plt.plot(time_axis, echogram[plotted_src_lst_band[2]],
+                         ls='-', label=key)
+                
+                with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{short_name}_{src}_{lst}_{key.replace(' ', '_')}-echogram.dat'),
+                          mode='w') as file:
+                    for idx in range(echogram.shape[-1]):
+                        if np.isfinite(echogram[plotted_src_lst_band[2], idx]):
+                            file.write(f'{time_axis[idx]} {echogram[plotted_src_lst_band[2], idx]}\n')
+                        else:
+                            break
+
+                nonzero_idxs = np.isfinite(echogram[plotted_src_lst_band[2]])
+                bottom = min(bottom, np.min(echogram[plotted_src_lst_band[2]][nonzero_idxs]))
+
+            plt.xlim(0, (shown_durations[base_name]
+                         if plotted_time_range == 'max'
+                         else plotted_time_range))
+            if backwards_integration and np.isinf(normalization_period):
+                plt.ylim(-80, 0)
+            elif not forwards_integration:
+                plt.ylim(bottom, None)
+            
+            plt.xlabel('Time [s]')
+            plt.ylabel('Energy [dB]')
+
+            # https://stackoverflow.com/a/77328370
+            plt.legend(ncol=2, handleheight=2)
+
+            plt.title(f'Room {room_aliases[short_name]}; {band_centers[plotted_src_lst_band[2]]}Hz octave band.')
             plt.tight_layout()
             plt.show()
         
@@ -505,7 +688,9 @@ if __name__ == '__main__':
                     axes[i, j].yaxis.set_major_formatter(ticker.FuncFormatter(tick_label_func))
 
                     axes[i, j].set_title(f'{src} {lst} {strat}')
-                    axes[i, j].set_xlim(0, plotted_time_range)
+                    axes[i, j].set_xlim(0, (shown_durations[base_name]
+                         if plotted_time_range == 'max'
+                         else plotted_time_range))
                     # axes[i, j].set_ylim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
                     if i == num_sl_configs-1:
                         axes[i, j].set_xlabel('Time [s]')
@@ -533,7 +718,7 @@ if __name__ == '__main__':
         if 'Single spectrogram error' in shown_plots:
             fig, ax = plt.subplots(dpi=100, figsize=(2.0*4, 2.0*3))
 
-            src, lst = edc_src_lst_band[0], edc_src_lst_band[1]
+            src, lst = plotted_src_lst_band[0], plotted_src_lst_band[1]
             spec_dict = spectrogram_errors[(src, lst)]
 
             strat = 'split_area'
@@ -549,7 +734,9 @@ if __name__ == '__main__':
             ax.set_title(f'{src}, {lst}, {(strat
                                            if 'Genelec' in strat or 'Dodecahedron' in mesh_strat else
                                            strategy_aliases[strat])}')
-            ax.set_xlim(0, plotted_time_range)
+            ax.set_xlim(0, (shown_durations[base_name]
+                         if plotted_time_range == 'max'
+                         else plotted_time_range))
             # ax.set_ylim(plotted_band_range[0]-0.5, plotted_band_range[1]+0.5)
             ax.set_xlabel('Time [s]')
             ax.set_ylabel('Octave band center [Hz]')
@@ -755,10 +942,11 @@ if __name__ == '__main__':
             for k, comparison_key in enumerate(comparison_keys):
                 positions = group_centers - 0.5 + group_margin + (k+0.5)*width
                 
+                violin_keys = list(room_aliases.keys())
                 violin_data = [(all_violin_data[short_name][comparison_key][band_idx]
                                 if comparison_key in all_violin_data[short_name]
                                 else np.zeros(1))
-                               for short_name in room_aliases]
+                               for short_name in violin_keys]
 
                 violin = ax.violinplot([remove_outliers(x, outlier_constant)
                                         for x in violin_data],
@@ -771,6 +959,36 @@ if __name__ == '__main__':
                                         showextrema=False,
                                         showmeans=True,
                                         showmedians=False)
+
+                for i, body in enumerate(violin['bodies']):
+                    if 'Genelec' in comparison_key and 'simplified' in violin_keys[i]:
+                        continue
+
+                    violin_contour = body.get_paths()
+                    assert len(body.get_paths()) == 1
+                    violin_contour = violin_contour[0].vertices.copy()
+
+                    violin_contour[:, 0] -= positions[i]
+
+                    positive = (violin_contour[:, 0] > 0)
+                    pos_violin_contour = violin_contour[positive]
+                    sorting = np.argsort(pos_violin_contour[:, 1])
+                    pos_violin_contour = pos_violin_contour[sorting][::-1]
+
+                    with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{comparison_key.replace(' ','_')}_{violin_keys[i]}-pos.dat'),
+                              mode='w') as file:
+                        for x, y in pos_violin_contour:
+                            file.write(f'{x} {y}\n')
+
+                    negative = (violin_contour[:, 0] <= 0)
+                    neg_violin_contour = violin_contour[negative]
+                    sorting = np.argsort(neg_violin_contour[:, 1])
+                    neg_violin_contour = neg_violin_contour[sorting]
+
+                    with open(os.path.join(output_folder, f'{tick_label_func(band_idx)}Hz_{comparison_key.replace(' ','_')}_{violin_keys[i]}-neg.dat'),
+                              mode='w') as file:
+                        for x, y in neg_violin_contour:
+                            file.write(f'{x} {y}\n')
 
                 for pc in violin['bodies']:
                     pc.set_edgecolor(pc.get_facecolor())

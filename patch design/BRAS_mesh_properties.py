@@ -305,7 +305,7 @@ if __name__ == '__main__':
             sorting = np.argsort(pos_violin_contour[:, 1])
             pos_violin_contour = pos_violin_contour[sorting][::-1]
 
-            with open(os.path.join(output_folder, 'patch_areas_' + mesh_strat + '_' + violin_keys[i] + '-pos.dat'),
+            with open(os.path.join(output_folder, f'patch_areas_{mesh_strat}_{violin_keys[i]}-pos.dat'),
                       mode='w') as file:
                 for x, y in pos_violin_contour:
                     file.write(f'{x} {y}\n')
@@ -315,7 +315,7 @@ if __name__ == '__main__':
             sorting = np.argsort(neg_violin_contour[:, 1])
             neg_violin_contour = neg_violin_contour[sorting]
 
-            with open(os.path.join(output_folder, 'patch_areas_' + mesh_strat + '_' + violin_keys[i] + '-neg.dat'),
+            with open(os.path.join(output_folder, f'patch_areas_{mesh_strat}_{violin_keys[i]}-neg.dat'),
                       mode='w') as file:
                 for x, y in neg_violin_contour:
                     file.write(f'{x} {y}\n')
