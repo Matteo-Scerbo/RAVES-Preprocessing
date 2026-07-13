@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read, write
-from scipy.signal import butter, sosfilt
+from scipy.signal import butter, sosfiltfilt
 from scipy.signal.windows import get_window
 
 from raves.src.utils import load_frequencies
@@ -13,9 +13,9 @@ if __name__ == '__main__':
 
     audio_sample_rate = 44.1e3
     audio_nyquist = audio_sample_rate / 2
-    window_length = int(1e-2 * audio_sample_rate)
+    window_length = int(0.1 * audio_sample_rate)
     # The responses are trimmed when they reach these many dB above the detected noise floor.
-    cutoff_before_floor = 10
+    cutoff_before_floor = 12
 
     window = get_window('hann', window_length, fftbins=False)
     window /= np.sum(window)
@@ -128,11 +128,14 @@ if __name__ == '__main__':
                         lower_lim = band_centers[b] / band_bound
                         
                         # Prepare the suitable band-pass filter...
-                        sos = butter(6, (lower_lim, upper_lim),
+                        sos = butter(3, (lower_lim, upper_lim),
                                      btype='bandpass', output='sos',
                                      fs=audio_sample_rate)
                         # ...and apply it to the room impulse response.
-                        bandpassed_rir = sosfilt(sos, rir_data)
+                        # N.B.: using ´sosfiltfilt´ means the filter is applied both forward and backward,
+                        #  therefore negating any introduced delay. This way, the onset time of the noise floor
+                        #  is evaluated correctly.
+                        bandpassed_rir = sosfiltfilt(sos, rir_data)
                             
                         band_energy = bandpassed_rir**2
                         # Normalize to energy-per-second, matching our echogram convention.
@@ -141,36 +144,84 @@ if __name__ == '__main__':
                         # Short-time average.
                         smooth_energy = np.apply_along_axis(lambda m: np.convolve(m, window),
                                                             arr=band_energy, axis=-1)
+                        
+                        # Start by assuming there is no detectable noise floor.
+                        noise_floor = None
+                        
+                        # Consider possible starting times for the examined range, in 50ms increments.
+                        for start_of_range in range(0, len(smooth_energy), int(0.05*audio_sample_rate)):
+                            examined_range_duration = len(smooth_energy) - start_of_range
+                            if examined_range_duration / audio_sample_rate < 0.05:
+                                # A range of less than 50ms is considered insufficient to detect a noise floor.
+                                break
 
-                        # Consider values from 2 seconds and onwards.
-                        late_values = smooth_energy[int(2*audio_sample_rate):]
-                        # dB scale.
-                        late_values = 10 * np.log10(late_values)
+                            # Consider the energy values from 'start_of_range' onwards.
+                            late_values = smooth_energy[start_of_range:]
+                            # Raise true-zero values to the lowest nonzero value, to avoid errors.
+                            late_values = late_values.clip(np.min(late_values[late_values != 0]))
+                            # dB scale.
+                            late_values = 10 * np.log10(late_values)
 
-                        # Determine the noise floor based on the most common value in the late response.
-                        hist, bin_edges = np.histogram(late_values, bins=150,
-                                                       range=(-150.5, -0.5))
-                        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-                        noise_floor = int(bin_centers[np.argmax(hist)])
+                            # In some responses, the energy appears to rise towards the end of the response.
+                            # This is assumed to be an artefact and is removed.
+                            # If energy is higher in the later half of the examined range than in the earlier half,
+                            #  the average energy in the range is taken to be the noise floor.
+                            range_midpoint = start_of_range + int(examined_range_duration / 2)
+                            if np.sum(smooth_energy[range_midpoint:]) > np.sum(smooth_energy[start_of_range:range_midpoint]):
+                                noise_floor = int(np.mean(late_values))
+                                break
 
-                        # Find the indices of all samples below the noise floor.
-                        low_energy_indices = np.flatnonzero(smooth_energy <= 10**((noise_floor + cutoff_before_floor)/10))
-                        # Drop the indices earlier than 0.1 seconds (response onset).
-                        low_energy_indices = low_energy_indices[low_energy_indices > int(0.1 * audio_sample_rate)]
-                        # Find the earliest sample below the noise floor.
-                        max_valid_sample = np.min(low_energy_indices)
+                            # Make a histogram of the energy values, with bins which are 1 dB wide.
+                            hist, bin_edges = np.histogram(late_values, bins=150,
+                                                           range=(-150.5, -0.5))
+                            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-                        echogram[b, :max_valid_sample] = band_energy[:max_valid_sample]
+                            # Note: hist[hist_peak] is the most common energy value in the examined range.
+                            hist_peak = np.argmax(hist)
+                            
+                            # Count the duration of time during which the energy is within +-5dB of the most common value.
+                            within_10dB_of_peak = range(hist_peak-6, hist_peak+5)
+                            noise_duration = np.sum(hist[within_10dB_of_peak])
+                            # Compare that with the total duration of time of the examined range.
+                            noise_percentage = 100 * noise_duration / examined_range_duration
 
-                        # plt.plot(np.arange(0, len(rir_data)) / audio_sample_rate,
-                        #          echogram[b], label=f'{band_centers[b]}Hz -> {noise_floor}dB')
+                            if noise_percentage > 95:
+                                # If this condition is satisfied, it means that the response energy
+                                #  stays within a 10dB range for more than 95% of the examined range.
+                                # In other words, the energy is "flat" for a prolonged period.
+                                # The middle of the "flat" energy range is taken to be the noise floor.
+                                noise_floor = int(bin_centers[hist_peak])
+                                break
+
+                        if noise_floor is None:
+                            # No noise floor was detected. The entire duration of the echogram is preserved.
+                            echogram[b] = band_energy
+                        else:
+                            # A noise floor was detected. The echogram is truncated before the floor is reached.
+
+                            # Find the indices of all samples below the noise floor.
+                            low_energy_indices = np.flatnonzero(smooth_energy <= 10**((noise_floor + cutoff_before_floor)/10))
+                            # Drop the indices earlier than the peak energy (response onset).
+                            low_energy_indices = low_energy_indices[low_energy_indices > np.argmax(smooth_energy)]
+                            # Find the earliest sample below the noise floor.
+                            max_valid_sample = np.min(low_energy_indices)
+
+                            echogram[b, :max_valid_sample] = band_energy[:max_valid_sample]
+                            smooth_energy[max_valid_sample:] = 0
+
+                        # plt.plot(np.arange(len(smooth_energy)) / audio_sample_rate,
+                        #          smooth_energy,
+                        #          label=(f'{band_centers[b]}Hz -> {noise_floor}dB'
+                        #                 if noise_floor is not None else
+                        #                 f'{band_centers[b]}Hz -> None'))
                     
                     # Truncate to the longest nonzero value.
                     max_valid_sample = np.max(np.nonzero(echogram)[-1])
-                    echogram = echogram[:, :np.max(np.flatnonzero(echogram))]
+                    echogram = echogram[:, :max_valid_sample]
 
                     # plt.yscale('log')
                     # plt.xlim(0, max_valid_sample / audio_sample_rate)
+                    # plt.ylim(10**(-9), None)
                     # plt.title(short_name)
                     # plt.tight_layout()
                     # plt.legend()
@@ -178,7 +229,3 @@ if __name__ == '__main__':
 
                     # Save the "masked" echogram.
                     write(echo_path, int(audio_sample_rate), echogram.T)
-                    
-            #         break
-            #     break
-            # break
