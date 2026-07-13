@@ -219,6 +219,39 @@ def sound_speed(humidity: float, temperature: float, pressure: float = 100.) -> 
     return C1 + C2 - C3
 
 
+def air_impedance(humidity: float, temperature: float) -> float:
+    """
+    Compute the characteristic impedance of air.
+
+    Parameters
+    ----------
+    humidity : float
+        Ambient relative humidity (%).
+    temperature : float
+        Ambient temperature (°C).
+
+    Returns
+    -------
+    float
+        Characteristic impedance in rayls (pascal-seconds per meter).
+
+    Notes
+    -----
+    Formula taken from: George SK. Wong, "Characteristic impedance of humid air."
+    The Journal of the Acoustical Society of America 80.4 (1986): 1203-1204.
+    """
+    t = temperature
+    Tow = 273.15
+    h = humidity / 100.
+
+    variation_ratio = 1 - h * (1.3238e-3 +
+                               1.02404e-4 * t +
+                               2.0624e-6 * t**2 +
+                               1.11e-7 * t**3)
+    
+    return 428.11 * variation_ratio * (Tow/(Tow+t))**0.5
+
+
 if __name__ == "__main__":
     # Test (visualization) code
     import matplotlib.pyplot as plt

@@ -5,7 +5,7 @@ import gzip
 github_size_limit = 100 * 2**20
 overwrite_existing_compressed = True
 
-for root, dirs, files in os.walk('./example environments'):
+for root, dirs, files in os.walk(os.path.join('.', 'example environments')):
     # Check if at least one file in the folder exceeds the limit.
     all_within_limit = True
     for file in files:

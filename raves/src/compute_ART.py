@@ -511,7 +511,8 @@ def compute_ART(folder_path: str,
                 area_threshold: float = 0., thoroughness: float = 0.,
                 points_per_square_meter: float = 30., rays_per_hemisphere: int = 1000,
                 multiprocess_pool_size: int = 4,
-                humidity: float = 50., temperature: float = 20., pressure: float = 100.
+                humidity: float = 50., temperature: float = 20., pressure: float = 100.,
+                assert_coplanarity: bool = True
                 ) -> str:
     """
     Build ART kernels and per-frequency-band reflection matrices for an environment.
@@ -547,6 +548,8 @@ def compute_ART(folder_path: str,
         Air temperature (deg C) used for air absorption and sound speed.
     pressure
         Atmospheric pressure (kPa) used for air absorption.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
 
     Returns
     -------
@@ -560,7 +563,7 @@ def compute_ART(folder_path: str,
     if not os.path.isdir(folder_path):
         raise ValueError('Not a valid folder path:\n\t' + folder_path)
 
-    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness)
+    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness, assert_coplanarity)
 
     num_patches = len(patch_materials)
 
