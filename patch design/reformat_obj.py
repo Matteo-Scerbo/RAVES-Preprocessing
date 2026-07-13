@@ -299,9 +299,6 @@ for root, dirs, files in os.walk(root_folder):
             # Assume it's the output of a previous reformatting.
             continue
 
-        if 'simplified' not in old_file:
-            continue
-        
         if old_file[-4:] == '.obj':
             for remeshing_strategy in ['naive_obj', 'naive_trng']:
                 new_name = old_file[:-4] + '_' + remeshing_strategy

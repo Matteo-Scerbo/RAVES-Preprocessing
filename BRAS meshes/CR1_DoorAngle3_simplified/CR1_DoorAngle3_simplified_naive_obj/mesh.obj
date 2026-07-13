@@ -90,7 +90,7 @@ v -2.803 -3.648 1.1
 v -2.803 -3.648 0.0
 v -0.0 -3.648 1.1
 v -0.0 -3.648 2.768
-usemtl Patch_10_Mat_CR1_concrete
+usemtl Patch_10_Mat_CR1_paintedConcrete
 f 37 38 39
 f 40 41 42
 f 41 40 38
@@ -102,7 +102,7 @@ v -0.0 2.523 2.768
 v -6.251 0.93 2.768
 v -6.251 3.094 2.768
 v -0.0 0.93 2.768
-usemtl Patch_11_Mat_CR1_tablesEquipment
+usemtl Patch_11_Mat_CR1_concrete
 f 45 46 47
 f 46 45 48
 
@@ -119,7 +119,7 @@ v -6.251 3.094 1.1
 v -6.251 -3.648 2.768
 v -6.251 -3.648 1.1
 v -6.251 0.499 2.768
-usemtl Patch_12_Mat_CR1_tablesEquipment
+usemtl Patch_12_Mat_CR1_concrete
 f 49 50 51
 f 50 49 52
 f 52 49 53
@@ -136,7 +136,7 @@ v -0.0 0.499 2.768
 v -6.251 0.499 2.276
 v -0.0 0.499 2.276
 v -6.251 0.499 2.768
-usemtl Patch_13_Mat_CR1_tablesEquipment
+usemtl Patch_13_Mat_CR1_concrete
 f 61 62 63
 f 62 61 64
 
@@ -145,7 +145,7 @@ v -0.0 0.93 2.276
 v -6.251 0.499 2.276
 v -6.251 0.93 2.276
 v -0.0 0.499 2.276
-usemtl Patch_14_Mat_CR1_tablesEquipment
+usemtl Patch_14_Mat_CR1_concrete
 f 65 66 67
 f 66 65 68
 
@@ -154,7 +154,7 @@ v -6.251 0.93 2.276
 v -0.0 0.93 2.768
 v -0.0 0.93 2.276
 v -6.251 0.93 2.768
-usemtl Patch_15_Mat_CR1_tablesEquipment
+usemtl Patch_15_Mat_CR1_concrete
 f 69 70 71
 f 70 69 72
 
@@ -163,7 +163,7 @@ v -0.0 0.499 2.768
 v -6.251 -3.648 2.768
 v -6.251 0.499 2.768
 v -0.0 -3.648 2.768
-usemtl Patch_16_Mat_CR1_tablesEquipment
+usemtl Patch_16_Mat_CR1_concrete
 f 73 74 75
 f 74 73 76
 
@@ -176,7 +176,7 @@ v -4.416 2.926 1.1
 v -4.416 2.926 -0.0
 v -6.251 3.094 1.1
 v -6.251 3.094 2.768
-usemtl Patch_17_Mat_CR1_tablesEquipment
+usemtl Patch_17_Mat_CR1_concrete
 f 77 78 79
 f 80 81 82
 f 81 80 78
@@ -201,7 +201,7 @@ v -0.0 -0.012 0.0
 v -0.0 0.499 2.276
 v -0.0 1.598 0.0
 v -0.0 -1.488 0.0
-usemtl Patch_18_Mat_CR1_tablesEquipment
+usemtl Patch_18_Mat_CR1_concrete
 f 85 86 87
 f 86 85 88
 f 88 85 89
@@ -265,7 +265,7 @@ v -4.51 1.985 1.1
 v -6.251 3.094 1.1
 v -6.251 2.156 1.1
 v -4.416 2.926 1.1
-usemtl Patch_22_Mat_CR1_absorber
+usemtl Patch_22_Mat_CR1_tablesEquipment
 f 121 122 123
 f 122 121 124
 
@@ -274,7 +274,7 @@ v -4.416 2.926 -0.0
 v -4.51 1.985 1.1
 v -4.51 1.985 -0.0
 v -4.416 2.926 1.1
-usemtl Patch_23_Mat_CR1_absorber
+usemtl Patch_23_Mat_CR1_tablesEquipment
 f 125 126 127
 f 126 125 128
 
@@ -283,7 +283,7 @@ v -4.51 1.985 1.1
 v -6.251 2.156 -0.0
 v -4.51 1.985 -0.0
 v -6.251 2.156 1.1
-usemtl Patch_24_Mat_CR1_absorber
+usemtl Patch_24_Mat_CR1_tablesEquipment
 f 129 130 131
 f 130 129 132
 
@@ -292,7 +292,7 @@ v -6.251 -3.053 1.1
 v -4.522 -3.053 0.0
 v -6.251 -3.053 0.0
 v -4.522 -3.053 1.1
-usemtl Patch_25_Mat_CR1_absorber
+usemtl Patch_25_Mat_CR1_tablesEquipment
 f 133 134 135
 f 134 133 136
 
@@ -301,7 +301,7 @@ v -4.522 -3.648 1.1
 v -6.251 -3.053 1.1
 v -6.251 -3.648 1.1
 v -4.522 -3.053 1.1
-usemtl Patch_26_Mat_CR1_absorber
+usemtl Patch_26_Mat_CR1_tablesEquipment
 f 137 138 139
 f 138 137 140
 
@@ -310,7 +310,7 @@ v -4.522 -3.053 0.0
 v -4.522 -3.648 1.1
 v -4.522 -3.648 0.0
 v -4.522 -3.053 1.1
-usemtl Patch_27_Mat_CR1_absorber
+usemtl Patch_27_Mat_CR1_tablesEquipment
 f 141 142 143
 f 142 141 144
 
@@ -319,7 +319,7 @@ v -0.0 1.598 1.1
 v -1.677 2.676 1.1
 v -1.741 1.715 1.1
 v -0.0 2.523 1.1
-usemtl Patch_28_Mat_CR1_absorber
+usemtl Patch_28_Mat_CR1_tablesEquipment
 f 145 146 147
 f 146 145 148
 
@@ -328,7 +328,7 @@ v -0.0 1.598 1.1
 v -1.741 1.715 0.0
 v -0.0 1.598 0.0
 v -1.741 1.715 1.1
-usemtl Patch_29_Mat_CR1_absorber
+usemtl Patch_29_Mat_CR1_tablesEquipment
 f 149 150 151
 f 150 149 152
 
@@ -337,7 +337,7 @@ v -1.677 2.676 1.1
 v -1.741 1.715 0.0
 v -1.741 1.715 1.1
 v -1.677 2.676 0.0
-usemtl Patch_30_Mat_CR1_absorber
+usemtl Patch_30_Mat_CR1_tablesEquipment
 f 153 154 155
 f 154 153 156
 
@@ -346,7 +346,7 @@ v -5.442 1.479 0.0
 v -5.442 -0.091 1.0
 v -5.442 -0.091 0.0
 v -5.442 1.479 1.0
-usemtl Patch_31_Mat_CR1_unknown
+usemtl Patch_31_Mat_CR1_absorber
 f 157 158 159
 f 158 157 160
 
@@ -355,7 +355,7 @@ v -2.509 2.562 1.0
 v -3.509 2.562 0.0
 v -2.509 2.562 0.0
 v -3.509 2.562 1.0
-usemtl Patch_32_Mat_CR1_unknown
+usemtl Patch_32_Mat_CR1_absorber
 f 161 162 163
 f 162 161 164
 
@@ -364,7 +364,7 @@ v -2.39 2.524 1.0
 v -1.784 1.729 0.0
 v -1.784 1.729 1.0
 v -2.39 2.524 0.0
-usemtl Patch_33_Mat_CR1_unknown
+usemtl Patch_33_Mat_CR1_absorber
 f 165 166 167
 f 166 165 168
 
@@ -373,7 +373,7 @@ v -4.389 1.977 1.0
 v -5.318 1.607 0.0
 v -4.389 1.977 0.0
 v -5.318 1.607 1.0
-usemtl Patch_34_Mat_CR1_unknown
+usemtl Patch_34_Mat_CR1_absorber
 f 169 170 171
 f 170 169 172
 
@@ -382,7 +382,7 @@ v -2.803 -2.798 1.1
 v -2.803 -3.648 0.0
 v -2.803 -3.648 1.1
 v -2.803 -2.798 0.0
-usemtl Patch_35_Mat_CR1_absorber
+usemtl Patch_35_Mat_CR1_tablesEquipment
 f 173 174 175
 f 174 173 176
 
@@ -391,7 +391,7 @@ v -2.803 -2.798 1.1
 v -0.913 -2.798 0.0
 v -2.803 -2.798 0.0
 v -0.913 -2.798 1.1
-usemtl Patch_36_Mat_CR1_absorber
+usemtl Patch_36_Mat_CR1_tablesEquipment
 f 177 178 179
 f 178 177 180
 
@@ -402,7 +402,7 @@ v -2.803 -3.648 1.1
 v -0.913 -2.798 1.1
 v -0.913 -1.983 1.1
 v -0.0 -1.983 1.1
-usemtl Patch_37_Mat_CR1_absorber
+usemtl Patch_37_Mat_CR1_tablesEquipment
 f 181 182 183
 f 182 181 184
 f 184 181 185
@@ -413,7 +413,7 @@ v -0.913 -1.983 1.1
 v -0.913 -2.798 0.0
 v -0.913 -2.798 1.1
 v -0.913 -1.983 0.0
-usemtl Patch_38_Mat_CR1_absorber
+usemtl Patch_38_Mat_CR1_tablesEquipment
 f 187 188 189
 f 188 187 190
 
@@ -422,7 +422,7 @@ v -0.913 -1.983 1.1
 v -0.0 -1.983 0.0
 v -0.913 -1.983 0.0
 v -0.0 -1.983 1.1
-usemtl Patch_39_Mat_CR1_absorber
+usemtl Patch_39_Mat_CR1_tablesEquipment
 f 191 192 193
 f 192 191 194
 
@@ -443,7 +443,7 @@ v -4.416 2.926 -0.0
 v -1.677 2.676 0.0
 v -6.251 -3.053 0.0
 v -6.251 2.156 -0.0
-usemtl Patch_40_Mat_CR1_tablesEquipment
+usemtl Patch_40_Mat_CR1_concrete
 f 195 196 197
 f 196 195 198
 f 196 198 199
@@ -463,7 +463,7 @@ v -3.556 2.559 1.0
 v -4.422 2.059 0.0
 v -3.556 2.559 0.0
 v -4.422 2.059 1.0
-usemtl Patch_41_Mat_CR1_unknown
+usemtl Patch_41_Mat_CR1_absorber
 f 211 212 213
 f 212 211 214
 
@@ -472,7 +472,7 @@ v -0.0 -1.488 2.193
 v 0.571 -1.488 0.05
 v -0.0 -1.488 0.0
 v 0.571 -1.488 2.193
-usemtl Patch_42_Mat_CR1_tablesEquipment
+usemtl Patch_42_Mat_CR1_concrete
 f 215 216 217
 f 216 215 218
 
@@ -524,7 +524,7 @@ v 0.571 -1.488 0.05
 v -0.0 -0.012 0.0
 v -0.0 -1.488 0.0
 v 0.571 -0.012 0.05
-usemtl Patch_46_Mat_CR1_tablesEquipment
+usemtl Patch_46_Mat_CR1_concrete
 f 239 240 241
 f 240 239 242
 
@@ -533,7 +533,7 @@ v 0.571 -0.012 0.05
 v -0.0 -0.012 2.195
 v -0.0 -0.012 0.0
 v 0.571 -0.012 2.195
-usemtl Patch_47_Mat_CR1_tablesEquipment
+usemtl Patch_47_Mat_CR1_concrete
 f 243 244 245
 f 244 243 246
 
@@ -555,31 +555,31 @@ f 249 253 254
 f 253 249 248
 
 # obj49
-usemtl Patch_49_Mat_CR1_absorber
+usemtl Patch_49_Mat_CR1_tablesEquipment
 f 229 231 230
 f 230 232 229
 
 # obj50
-usemtl Patch_50_Mat_CR1_unknown
+usemtl Patch_50_Mat_CR1_absorber
 f 157 159 158
 f 158 160 157
 
 # obj51
-usemtl Patch_51_Mat_CR1_unknown
+usemtl Patch_51_Mat_CR1_absorber
 f 161 163 162
 f 162 164 161
 
 # obj52
-usemtl Patch_52_Mat_CR1_unknown
+usemtl Patch_52_Mat_CR1_absorber
 f 165 167 166
 f 166 168 165
 
 # obj53
-usemtl Patch_53_Mat_CR1_unknown
+usemtl Patch_53_Mat_CR1_absorber
 f 169 171 170
 f 170 172 169
 
 # obj54
-usemtl Patch_54_Mat_CR1_unknown
+usemtl Patch_54_Mat_CR1_absorber
 f 211 213 212
 f 212 214 211
