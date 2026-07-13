@@ -247,6 +247,9 @@ if __name__ == '__main__':
             print(f'No ART echograms were found for room {short_name}.')
             continue
 
+        if short_name == 'CR4':
+            continue
+        
         fig, ax = plt.subplots(dpi=200, figsize=(9, 6))
 
         for (src, lst, key), echogram in echos_dict.items():
@@ -272,9 +275,9 @@ if __name__ == '__main__':
             return itertools.chain(*[items[i::ncol]
                                      for i in range(ncol)])
         handles, labels = ax.get_legend_handles_labels()
-        plt.legend(flip(handles, 3),
-                   flip(labels, 3),
-                   ncol=3)
+        plt.legend(flip(handles, len(mesh_strategies)+1),
+                   flip(labels, len(mesh_strategies)+1),
+                   ncol=len(mesh_strategies)+1)
 
         plt.title(f'Room {short_name}; {band_centers[plotted_band_idx]}Hz octave band.')
         plt.tight_layout()
@@ -411,4 +414,4 @@ if __name__ == '__main__':
             plt.suptitle(f'{short_name} - short-time-average energy diff')
         plt.show()
 
-        # break
+        break

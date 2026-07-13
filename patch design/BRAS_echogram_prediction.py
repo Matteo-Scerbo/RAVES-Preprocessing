@@ -65,10 +65,16 @@ if __name__ == '__main__':
                        }
 
     for room_name in source_positions.keys():
-        for remeshing_strategy in ['naive_obj', 'naive_trng']:
+        if room_name == 'CR4':
+            continue
+        
+        for remeshing_strategy in ['naive_obj', 'naive_trng', 'split_area', 'split_area_length']:
             env_name = room_name + '_' + remeshing_strategy
             env_folder = os.path.join(mesh_folder, room_name, env_name)
-            
+
+            if room_name != 'CR1' and 'naive' in remeshing_strategy:
+                continue
+        
             # Results of the echogram comparison will be saved to this subfolder.
             echograms_subfolder = os.path.join(env_folder, 'Echograms')
             os.makedirs(echograms_subfolder, exist_ok=True)
