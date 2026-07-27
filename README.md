@@ -379,3 +379,8 @@ If you use it in conjunction with [RoomAcoustiC++](https://github.com/IoSR-Surre
 * Scerbo M, Schlecht SJ, Ali R, Savioja L, and De Sena E. "Efficient multichannel auralization based on the modal decomposition of acoustic radiance transfer (MoD-ART)," in IEEE Trans. Audio, Speech and Language Proc., 33:4748-4759, 2025.
 
 The development of MoD-ART was supported by the Engineering and Physical Sciences Research Council, in part through SCalable Room Acoustics Modelling under Grant EP/V002554/1 and in part through Challenges in Immersive Audio Technology under Grant EP/X032914/1.
+
+## Other references
+
+The following publication is supported by data and code found in this repository (under the `surface segmentation` branch):
+* Scerbo M, Hiselius P, Jeong CH. "Surface segmentation for acoustic radiance transfer modeling: a case study," in Proc. 12th Conv. of the European Acoustics Association Forum Acusticum, 2026.
