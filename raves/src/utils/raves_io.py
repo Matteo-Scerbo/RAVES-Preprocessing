@@ -336,7 +336,8 @@ def merge_small_patches(vertices: np.ndarray,
 
 def load_all_inputs(folder_path: str,
                     area_threshold: float = 0.,
-                    thoroughness: float = 0.
+                    thoroughness: float = 0.,
+                    assert_coplanarity: bool = True
                     ) -> Tuple[TriangleMesh, List[str], Dict[str, np.ndarray], str]:
     """
     Load mesh geometry and materials, optionally merging small patches.
@@ -352,6 +353,8 @@ def load_all_inputs(folder_path: str,
         If greater than 0, patches may be merged by ``load_mesh``.
     thoroughness : float, default 0.0
         Passed to ``load_mesh`` to control merge candidate selection.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
 
     Returns
     -------
@@ -364,44 +367,40 @@ def load_all_inputs(folder_path: str,
     str
         Resolved folder path, which may change if a merged mesh was written.
     """
-    mesh, patch_materials, folder_path = load_mesh(folder_path, area_threshold, thoroughness)
+    mesh, patch_materials, folder_path = load_mesh(folder_path,
+                                                   area_threshold, thoroughness,
+                                                   assert_coplanarity)
     material_coefficients = load_materials(folder_path, set(patch_materials))
 
     return mesh, patch_materials, material_coefficients, folder_path
 
 
-def load_mesh(folder_path: str,
-              area_threshold: float = 0.,
-              thoroughness: float = 0.
-              ) -> Tuple[TriangleMesh, List[str], str]:
+def load_mesh_as_arrays(folder_path: str,
+                        collapse_distance: float = 1e-7
+                        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, list]:
     """
-    Parse an OBJ mesh, validate per-patch consistency, and optionally merge patches.
+    Parse an OBJ mesh into vertex, triangle, and material arrays.
 
     The OBJ file ``mesh.obj`` is parsed following the specifications in `README.md`.
     Duplicate vertices are collapsed within a 1 mm tolerance before building the mesh.
-
-    If ``area_threshold > 0``, small coplanar, same-material patches may be merged;
-    if the number of patches changes, a new folder is created and updated mesh is
-    written there. The returned ``folder_path`` reflects this change.
 
     Parameters
     ----------
     folder_path : str
         Path to the environment folder.
-    area_threshold : float, default 0.0
-        If greater than 0, attempt to merge patches whose areas are below
-        the threshold.
-    thoroughness : float, default 0.0
-        Controls merge candidate selection when merging patches.
+    collapse_distance : float, default 1e-7
+        Vertices closer than this threshold are collapsed together.
 
     Returns
     -------
-    TriangleMesh
-        Structure-of-Arrays mesh with derived normals, areas, and plane offsets.
-    list of str
-        Material name per patch, updated if merges occurred.
-    str
-        Folder path; may point to a newly created folder if the mesh was rewritten.
+    np.ndarray
+        Coordinates of the mesh vertices.
+    np.ndarray
+        Triplets of integer vertex indices forming the mesh triangles.
+    np.ndarray
+        Integer patch ID of each triangle.
+    list
+        Strings denoting the surface material of each patch.
     """
     vertex_list = list()
     face_triplet_list = list()
@@ -429,7 +428,8 @@ def load_mesh(folder_path: str,
 
             if split_line[0] == 'v':
                 if len(split_line) == 5:
-                    print('`w` coordinates are ignored.')
+                    warnings.warn('`w` coordinates are ignored.'
+                                  + ' Bad line index: ' + str(line_idx) + ', bad line:\n\t' + line)
                     split_line = split_line[:-1]
 
                 if len(split_line) != 4:
@@ -498,11 +498,54 @@ def load_mesh(folder_path: str,
 
     # TODO: Cross-validate OBJ and MTL. Read original patch colors in the process.
 
-    # Collapse duplicate vertices (within a millimeter of each other).
-    keys = np.round(vertices * 1e3)
-    _, keep_idx, old2new = np.unique(keys, axis=0, return_index=True, return_inverse=True)
-    vertices = vertices[keep_idx]
-    vert_triplets = old2new[vert_triplets]
+    if collapse_distance > 0:
+        # Collapse duplicate vertices (within a given distance of each other).
+        keys = np.round(vertices / collapse_distance)
+        _, keep_idx, old2new = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+        vertices = vertices[keep_idx]
+        vert_triplets = old2new[vert_triplets]
+
+    return vertices, vert_triplets, patch_ids, patch_materials
+
+
+def load_mesh(folder_path: str,
+              area_threshold: float = 0.,
+              thoroughness: float = 0.,
+              assert_coplanarity: bool = True
+              ) -> Tuple[TriangleMesh, List[str], str]:
+    """
+    Parse an OBJ mesh, validate per-patch consistency, and optionally merge patches.
+
+    The OBJ file ``mesh.obj`` is parsed following the specifications in `README.md`.
+    Duplicate vertices are collapsed within a 1 mm tolerance before building the mesh.
+
+    If ``area_threshold > 0``, small coplanar, same-material patches may be merged;
+    if the number of patches changes, a new folder is created and updated mesh is
+    written there. The returned ``folder_path`` reflects this change.
+
+    Parameters
+    ----------
+    folder_path : str
+        Path to the environment folder.
+    area_threshold : float, default 0.0
+        If greater than 0, attempt to merge patches whose areas are below
+        the threshold.
+    thoroughness : float, default 0.0
+        Controls merge candidate selection when merging patches.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
+
+    Returns
+    -------
+    TriangleMesh
+        Structure-of-Arrays mesh with derived normals, areas, and plane offsets.
+    list of str
+        Material name per patch, updated if merges occurred.
+    str
+        Folder path; may point to a newly created folder if the mesh was rewritten.
+    """
+    # Parse the OBJ file.
+    vertices, vert_triplets, patch_ids, patch_materials = load_mesh_as_arrays(folder_path)
 
     # TODO: if area_threshold > 0:
     #           Re-mesh to INCREASE the number of triangles without changing the geometry.
@@ -511,133 +554,135 @@ def load_mesh(folder_path: str,
     # Create structure-of-arrays mesh (includes normal vectors, areas, etc).
     mesh = TriangleMesh(vertices, vert_triplets, patch_ids)
 
-    # Check that all triangles in each patch are coplanar.
-    # TODO: Make this a separate function to avoid repetition.
-    for patch_id in np.unique(mesh.patch_ids):
-        for triangle_a in np.where(mesh.patch_ids == patch_id)[0]:
-            for triangle_b in np.where(mesh.patch_ids == patch_id)[0]:
-                if triangle_a == triangle_b:
-                    continue
-
-                parallel_normals = np.isclose(np.dot(mesh.n[triangle_a],
-                                                     mesh.n[triangle_b]),
-                                              1.)
-                same_offset = np.isclose(mesh.d_0[triangle_a],
-                                         mesh.d_0[triangle_b])
-
-                if not (parallel_normals and same_offset):
-                    raise ValueError('All triangles forming a single ART surface patch should lie on the same plane.'
-                                     + ' See the section `Preparing the environment mesh` of `README.md`.'
-                                     + ' Bad patch ID: ' + str(patch_id)
-                                     + ' Bad triangle ID A: ' + str(triangle_a)
-                                     + ' Bad triangle ID B: ' + str(triangle_b))
-
-    new_folder_path = None
-    if area_threshold > 0:
-        old_num_patches = len(patch_materials)
-
-        merge_small_patches(vertices, vert_triplets,
-                            mesh, patch_materials,
-                            area_threshold, thoroughness)
-        # This was changed in-place: retrieve the new values to avoid mix-ups
-        patch_ids = mesh.patch_ids
-
-        # TODO: Re-mesh to REDUCE the number of triangles without changing the geometry nor patch assignment.
-
-        # For debugging: Check that all triangles in each patch are still coplanar.
-        """
-        for patch_id in np.unique(patch_ids):
-            for triangle_a in np.where(patch_ids == patch_id)[0]:
-                for triangle_b in np.where(patch_ids == patch_id)[0]:
+    if assert_coplanarity:
+        # Check that all triangles in each patch are coplanar.
+        # TODO: Make this a separate function to avoid repetition.
+        for patch_id in np.unique(mesh.patch_ids):
+            for triangle_a in np.where(mesh.patch_ids == patch_id)[0]:
+                for triangle_b in np.where(mesh.patch_ids == patch_id)[0]:
                     if triangle_a == triangle_b:
                         continue
-
+    
                     parallel_normals = np.isclose(np.dot(mesh.n[triangle_a],
                                                          mesh.n[triangle_b]),
                                                   1.)
                     same_offset = np.isclose(mesh.d_0[triangle_a],
                                              mesh.d_0[triangle_b])
-
+    
                     if not (parallel_normals and same_offset):
-                        raise ValueError('Patches should only contain coplanar triangles.'
+                        raise ValueError('All triangles forming a single ART surface patch should lie on the same plane.'
+                                         + ' See the section `Preparing the environment mesh` of `README.md`.'
                                          + ' Bad patch ID: ' + str(patch_id)
                                          + ' Bad triangle ID A: ' + str(triangle_a)
                                          + ' Bad triangle ID B: ' + str(triangle_b))
-         """
-
-        new_num_patches = len(patch_materials)
-
-        if new_num_patches != old_num_patches:
-            # Save the modified mesh in a new folder.
-            if '{}_patches'.format(old_num_patches) in folder_path:
-                new_folder_path = folder_path.replace('{}_patches'.format(old_num_patches),
-                                                      '{}_patches'.format(new_num_patches))
-            else:
-                new_folder_path = os.path.join(folder_path, '_{}_patches'.format(new_num_patches))
-
-            if os.path.isdir(new_folder_path):
-                warnings.warn('The following folder already exists, its contents may be overwritten:'
-                              '\n\t' + new_folder_path)
-            else:
-                os.mkdir(new_folder_path)
-
-            # Write the modified OBJ into the new folder.
-            with open(os.path.join(new_folder_path, 'mesh.obj'), mode='w') as file:
-                file.write('mtllib mesh.mtl\n\n')
-                for i in range(32):
-                    file.write('#')
-                file.write(' Vertices\n\n')
-
-                for vert_idx, vert_coords in enumerate(vertices):
-                    vertex_line = 'v ' + str(vert_coords[0]) + ' ' + str(vert_coords[1]) + ' ' + str(vert_coords[2])
-
-                    while len(vertex_line) < 31:
-                        vertex_line += ' '
-                    # Note: OBJ vertices are 1-indexed.
-                    vertex_line += '# Vertex ' + str(vert_idx+1) + '\n'
-
-                    file.write(vertex_line)
-
-                file.write('\n')
-                for i in range(32):
-                    file.write('#')
-                file.write(' Faces\n\n')
-
-                for patch_id in range(new_num_patches):
-                    patch_id_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
-
-                    file.write('usemtl ' + patch_id_str + '\n')
-
-                    for triangle_index, vert_triplet in enumerate(vert_triplets):
-                        if patch_ids[triangle_index] == patch_id:
-                            file.write('f ' + ' '.join([str(vert_idx+1) for vert_idx in vert_triplet]) + '\n')
-
-            # Write the modified MTL into the new folder.
-            with open(os.path.join(new_folder_path, 'mesh.mtl'), mode='w') as file:
-                for patch_id in range(new_num_patches):
-                    patch_id_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
-
-                    file.write('newmtl ' + patch_id_str + '\n')
-                    # TODO: Use colors from original MTL (pick one original color per material, alternate brightness).
-                    c = float(patch_id+1) / new_num_patches
-                    cycle = 7
-                    c = (c + (patch_id % cycle)) / cycle
-                    file.write('Kd {} {} {}\n'.format(c, c, c))
-                    # file.write('Ka {} {} {}\n'.format(c, c, c))
-                    # file.write('Ks {} {} {}\n'.format(c, c, c))
-                    # file.write('Ns 10\n')
-
-            # Copy the old CSV there as well (no change needed).
-            with open(os.path.join(folder_path, 'materials.csv'), mode='r') as old_file:
-                content = old_file.read()
-            with open(os.path.join(new_folder_path, 'materials.csv'), mode='w') as new_file:
-                new_file.write(content)
-
-            # For debugging:
-            # visualize_mesh(new_folder_path)
-
-    if new_folder_path is not None:
-        folder_path = new_folder_path
+    
+        # Only attempt remeshing if the coplanarity check was performed.
+        new_folder_path = None
+        if area_threshold > 0:
+            old_num_patches = len(patch_materials)
+    
+            merge_small_patches(vertices, vert_triplets,
+                                mesh, patch_materials,
+                                area_threshold, thoroughness)
+            # This was changed in-place: retrieve the new values to avoid mix-ups
+            patch_ids = mesh.patch_ids
+    
+            # TODO: Re-mesh to REDUCE the number of triangles without changing the geometry nor patch assignment.
+    
+            # For debugging: Check that all triangles in each patch are still coplanar.
+            """
+            for patch_id in np.unique(patch_ids):
+                for triangle_a in np.where(patch_ids == patch_id)[0]:
+                    for triangle_b in np.where(patch_ids == patch_id)[0]:
+                        if triangle_a == triangle_b:
+                            continue
+    
+                        parallel_normals = np.isclose(np.dot(mesh.n[triangle_a],
+                                                             mesh.n[triangle_b]),
+                                                      1.)
+                        same_offset = np.isclose(mesh.d_0[triangle_a],
+                                                 mesh.d_0[triangle_b])
+    
+                        if not (parallel_normals and same_offset):
+                            raise ValueError('Patches should only contain coplanar triangles.'
+                                             + ' Bad patch ID: ' + str(patch_id)
+                                             + ' Bad triangle ID A: ' + str(triangle_a)
+                                             + ' Bad triangle ID B: ' + str(triangle_b))
+             """
+    
+            new_num_patches = len(patch_materials)
+    
+            if new_num_patches != old_num_patches:
+                # Save the modified mesh in a new folder.
+                if '{}_patches'.format(old_num_patches) in folder_path:
+                    new_folder_path = folder_path.replace('{}_patches'.format(old_num_patches),
+                                                          '{}_patches'.format(new_num_patches))
+                else:
+                    new_folder_path = os.path.join(folder_path, '_{}_patches'.format(new_num_patches))
+    
+                if os.path.isdir(new_folder_path):
+                    warnings.warn('The following folder already exists, its contents may be overwritten:'
+                                  '\n\t' + new_folder_path)
+                else:
+                    os.mkdir(new_folder_path)
+    
+                # Write the modified OBJ into the new folder.
+                with open(os.path.join(new_folder_path, 'mesh.obj'), mode='w') as file:
+                    file.write('mtllib mesh.mtl\n\n')
+                    for i in range(32):
+                        file.write('#')
+                    file.write(' Vertices\n\n')
+    
+                    for vert_idx, vert_coords in enumerate(vertices):
+                        vertex_line = 'v ' + str(vert_coords[0]) + ' ' + str(vert_coords[1]) + ' ' + str(vert_coords[2])
+    
+                        while len(vertex_line) < 31:
+                            vertex_line += ' '
+                        # Note: OBJ vertices are 1-indexed.
+                        vertex_line += '# Vertex ' + str(vert_idx+1) + '\n'
+    
+                        file.write(vertex_line)
+    
+                    file.write('\n')
+                    for i in range(32):
+                        file.write('#')
+                    file.write(' Faces\n\n')
+    
+                    for patch_id in range(new_num_patches):
+                        patch_id_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
+    
+                        file.write('usemtl ' + patch_id_str + '\n')
+    
+                        for triangle_index, vert_triplet in enumerate(vert_triplets):
+                            if patch_ids[triangle_index] == patch_id:
+                                file.write('f ' + ' '.join([str(vert_idx+1) for vert_idx in vert_triplet]) + '\n')
+    
+                # Write the modified MTL into the new folder.
+                with open(os.path.join(new_folder_path, 'mesh.mtl'), mode='w') as file:
+                    for patch_id in range(new_num_patches):
+                        patch_id_str = 'Patch_' + str(patch_id+1) + '_Mat_' + patch_materials[patch_id]
+    
+                        file.write('newmtl ' + patch_id_str + '\n')
+                        # TODO: Use colors from original MTL (pick one original color per material, alternate brightness).
+                        c = float(patch_id+1) / new_num_patches
+                        cycle = 7
+                        c = (c + (patch_id % cycle)) / cycle
+                        file.write('Kd {} {} {}\n'.format(c, c, c))
+                        # file.write('Ka {} {} {}\n'.format(c, c, c))
+                        # file.write('Ks {} {} {}\n'.format(c, c, c))
+                        # file.write('Ns 10\n')
+    
+                # Copy the old CSV there as well (no change needed).
+                with open(os.path.join(folder_path, 'materials.csv'), mode='r') as old_file:
+                    content = old_file.read()
+                with open(os.path.join(new_folder_path, 'materials.csv'), mode='w') as new_file:
+                    new_file.write(content)
+    
+                # For debugging:
+                # visualize_mesh(new_folder_path)
+    
+        if new_folder_path is not None:
+            folder_path = new_folder_path
 
     return mesh, patch_materials, folder_path
 
@@ -737,7 +782,7 @@ def load_materials(folder_path: str, expected_names: Set[str]) -> Dict[str, np.n
     return material_coefficients
 
 
-def load_frequencies(folder_path: str) -> np.ndarray:
+def load_frequencies(folder_path: str, file_name: str = 'materials.csv') -> np.ndarray:
     """
     Load band centers from CSV, ignoring other data.
 
@@ -747,12 +792,14 @@ def load_frequencies(folder_path: str) -> np.ndarray:
     ----------
     folder_path : str
         Path to the environment folder.
+    file_name : str, default ``materials.csv``
+        Set this if you want to read a file other than the default.
 
     Returns
     -------
     1D array of band center frequencies.
     """
-    with open(os.path.join(folder_path, 'materials.csv'), mode='r', newline='') as csvfile:
+    with open(os.path.join(folder_path, file_name), mode='r', newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
 
         first_row = next(reader, None)

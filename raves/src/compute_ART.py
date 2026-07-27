@@ -9,9 +9,11 @@ from typing import List, Tuple
 from .utils import RayBundle, TriangleMesh, load_all_inputs, air_absorption_in_band, sound_speed
 
 
-# https://stackoverflow.com/a/21130146
-def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
-                    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int, int]:
+def integrate_patch(mesh: TriangleMesh, num_patches: int,
+                    patch_triangles: List[int],
+                    rays_per_hemisphere: int,
+                    points_per_square_meter: float
+                    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int]:
     """
     Integrate ART kernel contributions for one patch.
 
@@ -20,28 +22,20 @@ def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
     patch normal and (2) its specularly reflected counterpart. For each
     sample point, rays are traced, hits are tallied per target patch, and
     accumulators are updated for distances, departure cosines, and specular
-    pair counts. The index of the source patch is returned so that results
-    from multiprocessing can be re-associated (return order isn't guaranteed).
+    pair counts.
 
     Parameters
     ----------
-    args : tuple
-        Expected layout:
-        (mesh, num_patches, this_patch, patch_triangles,
-         rays_per_hemisphere, points_per_square_meter)
-
-        - mesh : TriangleMesh
-          Mesh defining the environment geometry.
-        - num_patches : int
-          Total number of patches in the mesh.
-        - this_patch : int
-          Index of the source patch to integrate.
-        - patch_triangles : sequence of int
-          Triangle indices that belong to this source patch.
-        - rays_per_hemisphere : int
-          Number of rays shot per surface sample point.
-        - points_per_square_meter : float
-          Surface sampling density used to generate sample points.
+    mesh : TriangleMesh
+        Mesh defining the environment geometry.
+    num_patches : int
+        Total number of patches in the mesh.
+    patch_triangles : sequence of int
+        Triangle indices that belong to this source patch.
+    rays_per_hemisphere : int
+        Number of rays shot per surface sample point.
+    points_per_square_meter : float
+        Surface sampling density used to generate sample points.
 
     Returns
     -------
@@ -60,11 +54,7 @@ def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
         this source hits j and its specular counterpart hits h.
     num_points
         Total number of surface sample points used on this source patch.
-    this_patch
-        The source patch index, returned to reconnect unordered results.
     """
-    mesh, num_patches, this_patch, patch_triangles, rays_per_hemisphere, points_per_square_meter = args
-
     # All triangles in each patch are coplanar. Take the plane normal from the first triangle.
     patch_normal = mesh.n[patch_triangles[0]]
 
@@ -137,7 +127,13 @@ def integrate_patch(args: Tuple[TriangleMesh, int, int, List[int], int, float]
                     # cum_specular_kernel[j, h] += np.count_nonzero(hemisphere_hits_per_patch[j] & specular_hits_per_patch[h])
                     # cum_specular_kernel[j, h] += np.count_nonzero(hemisphere_hits_per_patch[h] & specular_hits_per_patch[j])
 
-    return cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, this_patch
+    return cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points
+
+
+# https://stackoverflow.com/a/21130146
+def integrate_patch_wrapper(args: Tuple[TriangleMesh, int, List[int], int, float]
+                            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, int]:
+    return integrate_patch(*args)
 
 
 def assess_ART_on_grid(folder_path: str,
@@ -335,8 +331,8 @@ def assess_ART(folder_path: str,
         for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
             # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
             # Refer to "ART_theory.md" for more info on this process.
-            returned_tuple = integrate_patch((mesh, num_patches, i, patch_triangles[i],
-                                              rays_per_hemisphere, points_per_square_meter))
+            returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
+                                             rays_per_hemisphere, points_per_square_meter)
             cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
             # Normalize accumulators and add to global trackers.
@@ -366,18 +362,19 @@ def assess_ART(folder_path: str,
     else:
         task_list = list()
         for i in range(num_patches):
-            task = (mesh, num_patches, i, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
+            task = (mesh, num_patches, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
             task_list.append(task)
 
         with multiprocessing.Pool(multiprocess_pool_size) as pool:
-            patch_contributions = pool.imap_unordered(integrate_patch, task_list)
+            patch_contributions = pool.imap(integrate_patch_wrapper, task_list)
 
             # https://stackoverflow.com/a/41921948
             # https://stackoverflow.com/a/72514814
             with tqdm(total=num_patches, desc='ART surface integral (# patches)',
                       miniters=min(int(num_patches / 10), multiprocess_pool_size * 10), maxinterval=600) as progress_bar:
-                for returned_tuple in patch_contributions:
-                    cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
+                # Note: results of pool.imap() preserve the indexing order.
+                for i, returned_tuple in enumerate(patch_contributions):
+                    cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
 
                     # Normalize accumulators and add to global trackers.
                     for j in range(num_patches):
@@ -511,7 +508,8 @@ def compute_ART(folder_path: str,
                 area_threshold: float = 0., thoroughness: float = 0.,
                 points_per_square_meter: float = 30., rays_per_hemisphere: int = 1000,
                 multiprocess_pool_size: int = 4,
-                humidity: float = 50., temperature: float = 20., pressure: float = 100.
+                humidity: float = 50., temperature: float = 20., pressure: float = 100.,
+                assert_coplanarity: bool = True
                 ) -> str:
     """
     Build ART kernels and per-frequency-band reflection matrices for an environment.
@@ -547,6 +545,8 @@ def compute_ART(folder_path: str,
         Air temperature (deg C) used for air absorption and sound speed.
     pressure
         Atmospheric pressure (kPa) used for air absorption.
+    assert_coplanarity : bool, default True
+        If False, lift the restriction for all triangles in each patch to be coplanar.
 
     Returns
     -------
@@ -560,7 +560,7 @@ def compute_ART(folder_path: str,
     if not os.path.isdir(folder_path):
         raise ValueError('Not a valid folder path:\n\t' + folder_path)
 
-    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness)
+    mesh, patch_materials, material_coefficients, folder_path = load_all_inputs(folder_path, area_threshold, thoroughness, assert_coplanarity)
 
     num_patches = len(patch_materials)
 
@@ -684,8 +684,8 @@ def compute_ART(folder_path: str,
             for i in tqdm(range(num_patches), desc='ART surface integral (# patches)'):
                 # These accumulators will be built up at each surface sample point, and combined after the loop to form the patch contributions.
                 # Refer to "ART_theory.md" for more info on this process.
-                returned_tuple = integrate_patch((mesh, num_patches, i, patch_triangles[i],
-                                                  rays_per_hemisphere, points_per_square_meter))
+                returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
+                                                 rays_per_hemisphere, points_per_square_meter)
                 cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
 
                 # Normalize accumulators and add to global trackers.
@@ -715,18 +715,19 @@ def compute_ART(folder_path: str,
         else:
             task_list = list()
             for i in range(num_patches):
-                task = (mesh, num_patches, i, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
+                task = (mesh, num_patches, patch_triangles[i], rays_per_hemisphere, points_per_square_meter)
                 task_list.append(task)
 
             with multiprocessing.Pool(multiprocess_pool_size) as pool:
-                patch_contributions = pool.imap_unordered(integrate_patch, task_list)
+                patch_contributions = pool.imap(integrate_patch_wrapper, task_list)
 
                 # https://stackoverflow.com/a/41921948
                 # https://stackoverflow.com/a/72514814
                 with tqdm(total=num_patches, desc='ART surface integral (# patches)',
                           miniters=min(int(num_patches/10), multiprocess_pool_size*10), maxinterval=600) as progress_bar:
-                    for returned_tuple in patch_contributions:
-                        cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
+                    # Note: results of pool.imap() preserve the indexing order.
+                    for i, returned_tuple in enumerate(patch_contributions):
+                        cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
 
                         # Normalize accumulators and add to global trackers.
                         for j in range(num_patches):
@@ -910,6 +911,9 @@ def compute_ART(folder_path: str,
             # Retrieve the coefficients of patch i for this frequency band.
             patch_i_absorption = material_coefficients[patch_mat][0, band_idx]
             patch_i_scattering = material_coefficients[patch_mat][1, band_idx]
+            # Prepare the kernel weights to avoid extra computations.
+            coeff_d = patch_i_scattering * (1 - patch_i_absorption)
+            coeff_s = (1 - patch_i_scattering) * (1 - patch_i_absorption)
 
             # Locate all propagation paths which originate at patch i. See docs of `csr_array`.
             all_outgoing_paths_from_i = path_indexing.data[path_indexing.indptr[i]:path_indexing.indptr[i+1]]
@@ -918,23 +922,19 @@ def compute_ART(folder_path: str,
 
             # Weighted sum of diffuse and specular kernels.
             reflection_kernel[:, all_outgoing_paths_from_i] =\
-                patch_i_scattering * diffuse_kernel[:, all_outgoing_paths_from_i]\
-                + (1 - patch_i_scattering) * specular_kernel[:, all_outgoing_paths_from_i]
-
-            # Add surface material energy losses.
-            reflection_kernel[:, all_outgoing_paths_from_i] *= 1 - patch_i_absorption
+                coeff_d * diffuse_kernel[:, all_outgoing_paths_from_i]\
+                + coeff_s* specular_kernel[:, all_outgoing_paths_from_i]
 
         # Add air absorption energy losses (based on path lengths).
-        air_absorption_pressure_gains = np.array([
-            air_absorption_in_band(fc=center_frequency, fd=np.sqrt(2),  # Using full octave bands, the half-band factor is sqrt(2).
-                                   distance=propagation_distance,
-                                   humidity=humidity, temperature=temperature, pressure=pressure)
-            for propagation_distance in path_lengths
-        ])
-        # Power level is the square of the pressure amplitude level.
-        air_absorption_energy_gains = air_absorption_pressure_gains**2
+        # Note: Using full octave bands, the half-band factor is sqrt(2).
+        air_pressure_scaling = air_absorption_in_band(fc=center_frequency, fd=np.sqrt(2),
+                                                      distance=path_lengths,
+                                                      humidity=humidity,
+                                                      temperature=temperature,
+                                                      pressure=pressure,
+                                                      energy_domain=True)
         # Scale each column by the relative gain.
-        reflection_kernel = reflection_kernel @ diags(air_absorption_energy_gains)
+        reflection_kernel = reflection_kernel @ diags(air_pressure_scaling)
         # TODO: Air absorption, to be totally correct, should not be baked into the reflection kernel.
         #       Making it part of the matrix means that it's applied one too many times when MoD-ART is performed.
         #       In the future, the air_absorption_energy_gains will be saved to a separate file and applied alongside delays.
