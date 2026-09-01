@@ -333,7 +333,7 @@ def assess_ART(folder_path: str,
             # Refer to "ART_theory.md" for more info on this process.
             returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
                                              rays_per_hemisphere, points_per_square_meter)
-            cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
+            cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
 
             # Normalize accumulators and add to global trackers.
             for j in range(num_patches):
@@ -686,7 +686,7 @@ def compute_ART(folder_path: str,
                 # Refer to "ART_theory.md" for more info on this process.
                 returned_tuple = integrate_patch(mesh, num_patches, patch_triangles[i],
                                                  rays_per_hemisphere, points_per_square_meter)
-                cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points, i = returned_tuple
+                cum_distances, cum_cosines, cum_num_hits, cum_specular_kernel, num_points = returned_tuple
 
                 # Normalize accumulators and add to global trackers.
                 for j in range(num_patches):
