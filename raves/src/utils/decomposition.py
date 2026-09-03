@@ -230,7 +230,8 @@ def real_positive_search(ssm: csr_array,
                          T60_thresh: float,
                          num_thresh: int,
                          sample_rate: float = 5e3,
-                         imaginary_part_thresh: float = 1e-7
+                         imaginary_part_thresh: float = 1e-7,
+                         raise_on_failure: bool = False
                          ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Find real, positive eigenpairs of a sparse state matrix. Left and right
@@ -263,6 +264,8 @@ def real_positive_search(ssm: csr_array,
         Set to None to deactivate this stopping criterion.
     imaginary_part_thresh : float, default 1e-7
         Maximum absolute imaginary part for an eigenvalue to be treated as real.
+    raise_on_failure : bool, default False
+        Raise a RuntimeError if no eigenvalues are found.
 
     Returns
     -------
@@ -412,7 +415,10 @@ def real_positive_search(ssm: csr_array,
             num_valid_matches += 1
 
     if num_valid_matches == 0:
-        warnings.warn('No eigenvalues were shared between left and right.')
+        if raise_on_failure:
+            raise RuntimeError('No eigenvalues were shared between left and right.')
+        else:
+            warnings.warn('No eigenvalues were shared between left and right.')
     if num_valid_matches < max_num_valid:
         warnings.warn('Some eigenvalues were not shared between left and right: '
                       + str(num_valid_matches) + '/' + str(max_num_valid))

@@ -147,7 +147,8 @@ def plot_T60(folder_path: str,
 
 def compute_MoDART(folder_path: str,
                    T60_threshold: float = 1e-1, max_slopes_per_band: int = 10,
-                   echogram_sample_rate: float = 5e3, skip_T60_plots: bool = False
+                   echogram_sample_rate: float = 5e3, skip_T60_plots: bool = False,
+                   raise_on_failure: bool = False
                    ) -> None:
     """
     Perform modal decomposition of acoustic radiance transfer for all frequency bands.
@@ -175,6 +176,8 @@ def compute_MoDART(folder_path: str,
         Sample rate in Hz used to quantize propagation delays.
     skip_T60_plots : bool, default: False
         If True, do not generate T60 scatter plots.
+    raise_on_failure : bool, default False
+        Raise a RuntimeError if no eigenvalues are found in a band.
 
     Returns
     -------
@@ -249,7 +252,8 @@ def compute_MoDART(folder_path: str,
             real_positive_search(ssm=state_transition_matrix,
                                  T60_thresh=T60_threshold,
                                  sample_rate=echogram_sample_rate,
-                                 num_thresh=None)
+                                 num_thresh=None,
+                                 raise_on_failure=raise_on_failure)
 
         print('\tRearranging and scaling results.')
 
